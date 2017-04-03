@@ -1,0 +1,58 @@
+commodities:
+  - id: €
+    name: Euro
+    alias:
+      - EUR
+    desc: Currency used in the European Union
+    utc: 2017-04-02 19:33:53
+  - id: $
+    name: US Dollar
+    alias:
+      - USD
+      - Dollar
+    desc: Currency used in the United States of America
+    utc: 2017-04-02 19:34:07
+
+accounts:
+  - id: john
+    name: John Doe
+    utc: 2017-04-02 19:33:28
+    tags:
+      - person
+    children:
+      - id: wallet
+        name: Wallet
+        desc: John's black wallet
+        utc: 2017-04-02 19:33:28
+        tags:
+          - wallet
+      - id: visa
+        name: VISA card
+        desc: John's VISA card
+        utc: 2017-04-02 19:36:57
+        tags:
+          - credit card
+          - visa
+  - id: anna
+    name: Anna Smith
+    utc: 2017-04-02 20:11:45
+    tags:
+      - person
+  - id: evil-corp
+    name: Evil Corporation
+    utc: 2017-04-02 19:33:28
+    desc: The Evil Corporation in the United States of Evil
+    tags:
+      - company
+
+transactions:
+  - title: Purchase of evil machine
+    transfers:
+      - utc: 2017-02-17
+        from: anna
+        amount: 50000 €
+        to: evil-corp
+      - utc: 2017-02-17
+        from: evil-corp
+        amount: 1 evil-machine
+        to: anna
