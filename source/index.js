@@ -1,49 +1,15 @@
 const path = require('path')
 const Ybdb = require('ybdb')
+const math = require('mathjs')
+
+const dataPath = '/Users/adrian/Transactions'
 const db = new Ybdb({
-  storageFile: path.join(__dirname, 'database.yaml'),
+  storagePaths: [
+    path.join(dataPath, 'accounts.yaml'),
+    path.join(dataPath, 'commodities.yaml'),
+    path.join(dataPath, 'transactions'),
+  ],
 })
-
-db._.mixin({
-  log: (array) => {
-    // eslint-disable-next-line
-    console.dir(array, {depth: null, colors: true})
-    return array
-  },
-  normalizeTransactions: (array) => {
-    return array.map(transaction => {
-      if (!Array.isArray(transaction.transfers)) return transaction
-
-      transaction.transfers = transaction.transfers.map(
-        transfer => {
-          if (!Array.isArray(transfer)) return transfer
-
-          const [quantity, ...commodityFrags] = transfer[2].split(' ')
-
-          const normalizedTransfer = {
-            utc: transfer[0],
-            from: transfer[1],
-            quantity,
-            commodity: commodityFrags.join(' '),
-            to: transfer[3],
-          }
-
-          if (typeof transfer[4] !== 'undefined') {
-            normalizedTransfer.return = transfer[4]
-          }
-
-          return normalizedTransfer
-        }
-      )
-      return transaction
-    })
-  },
-})
-
-const normalizedTransactions = db
-  .get('transactions')
-  .normalizeTransactions()
-
 
 function addAccountAndCommodityToMap (account, commodity, map) {
   if (!map.has(account)) {
@@ -58,60 +24,170 @@ function addAccountAndCommodityToMap (account, commodity, map) {
   }
 }
 
-// Data-structure for balance:
-// Map {
-//   'john' => Map { '€' => 0, '$' => 0 },
-//   'anna' => Map { '€' => 0 },
-// }
-const dataStructureForBalance = normalizedTransactions
-  .reduce(
-    (accountBalanceMap, transaction) => {
-      transaction.transfers.forEach(transfer => {
-        addAccountAndCommodityToMap(
-          transfer.from,
-          transfer.commodity,
-          accountBalanceMap
-        )
-        addAccountAndCommodityToMap(
-          transfer.to,
-          transfer.commodity,
-          accountBalanceMap
-        )
-      })
-      return accountBalanceMap
+
+async function renderBalance () {
+  const inintalizedDb = await db.init()
+
+  inintalizedDb._.mixin({
+    log: array => {
+      // eslint-disable-next-line
+      console.dir(array, {depth: null, colors: true})
+      return array
     },
-    new Map()
-  )
-  .value()
+    printBalance: map => {
+      const accountWidth = 40
+      map.forEach((commodityMap, account) => {
+        account = (' '.repeat(accountWidth) + account).slice(-accountWidth)
+        process.stdout.write(`${account} `)
 
-// TODO: Print warnings for accounts which are referenced
-// in transfers, but not defined in the accounts list
+        let firstRun = true
+        const quantityWidth = 10
+        const commodityWidth = 15
 
-normalizedTransactions
-  .reduce(
-    (accountToBalance, transaction) => {
-      transaction.transfers.forEach(transfer => {
-        const from = accountToBalance.get(transfer.from)
-        const to = accountToBalance.get(transfer.to)
+        commodityMap.forEach((quantity, commodity) => {
+          if (!firstRun) {
+            process.stdout.write(' '.repeat(accountWidth + 1))
+          }
 
-        from.set(
-          transfer.commodity,
-          from.get(transfer.commodity) - Number(transfer.quantity)
-        )
+          const paddedQuantity = (
+            ' '.repeat(quantityWidth) +
+            quantity.toFixed(2)
+          ).replace(/\.00$/, '   ')
 
-        to.set(
-          transfer.commodity,
-          to.get(transfer.commodity) + Number(transfer.quantity)
-        )
+          const paddedCommodity = commodity + ' '.repeat(commodityWidth)
+
+          console.info(
+            paddedQuantity.slice(-quantityWidth) + ' ' +
+            paddedCommodity.slice(0, commodityWidth)
+          )
+          firstRun = false
+        })
       })
-      return accountToBalance
     },
-    dataStructureForBalance
-  )
-  .log()
-  .value()
+    normalizeTransactions: array => {
+      return array.map(transaction => {
+        if (!transaction.hasOwnProperty('transfers')) {
+          // Was written in single transfer style
+
+          if (transaction.hasOwnProperty('amount')) {
+            const amountFrags = transaction.amount.split(' ')
+            delete transaction.amount
+            transaction.quantity = transaction.quantity || amountFrags[0]
+            transaction.commodity = transaction.commodity || amountFrags[1]
+          }
+
+          const title = transaction.title || transaction.desc
+          delete transaction.title
+          delete transaction.desc
+
+          return {
+            title,
+            transfers: [transaction],
+          }
+        }
+
+        if (!Array.isArray(transaction.transfers)) return transaction
+
+        transaction.transfers = transaction.transfers.map(
+          transfer => {
+            if (!Array.isArray(transfer)) return transfer
+
+            const [quantity, ...commodityFrags] = transfer[2].split(' ')
+
+            const normalizedTransfer = {
+              utc: transfer[0],
+              from: transfer[1],
+              quantity,
+              commodity: commodityFrags.join(' '),
+              to: transfer[3],
+            }
+
+            if (typeof transfer[4] !== 'undefined') {
+              normalizedTransfer.return = transfer[4]
+            }
+
+            return normalizedTransfer
+          }
+        )
+        return transaction
+      })
+    },
+  })
+
+  const normalizedTransactions = inintalizedDb
+    .get('transactions')
+    .flatten() // TODO: This should already be retured flattened from ybdb
+    .normalizeTransactions()
 
 
-// console.dir(transactions, {depth: null, colors: true})
-// console.dir(accounts, {depth: null, colors: true})
-// console.dir(commodities, {depth: null, colors: true})
+
+  // Data-structure for balance:
+  // Map {
+  //   'john' => Map { '€' => 0, '$' => 0 },
+  //   'anna' => Map { '€' => 0 },
+  // }
+  const dataStructureForBalance = normalizedTransactions
+    .reduce(
+      (accountBalanceMap, transaction) => {
+        transaction.transfers.forEach(transfer => {
+          addAccountAndCommodityToMap(
+            transfer.from,
+            transfer.commodity,
+            accountBalanceMap
+          )
+          addAccountAndCommodityToMap(
+            transfer.to,
+            transfer.commodity,
+            accountBalanceMap
+          )
+        })
+        return accountBalanceMap
+      },
+      new Map()
+    )
+    .value()
+
+  // TODO: Print warnings for accounts which are referenced
+  // in transfers, but not defined in the accounts list
+
+  normalizedTransactions
+    .reduce(
+      (accountToBalance, transaction) => {
+        transaction.transfers.forEach(transfer => {
+          const from = accountToBalance.get(transfer.from)
+          const to = accountToBalance.get(transfer.to)
+
+          from.set(
+            transfer.commodity,
+            math.number(
+              math
+                .chain(math.bignumber(from.get(transfer.commodity)))
+                .subtract(math.bignumber(Number(transfer.quantity)))
+                .valueOf()
+            )
+          )
+
+          to.set(
+            transfer.commodity,
+            math.number(
+              math
+                .chain(math.bignumber(to.get(transfer.commodity)))
+                .add(math.bignumber(Number(transfer.quantity)))
+                .valueOf()
+            )
+          )
+        })
+        return accountToBalance
+      },
+      dataStructureForBalance
+    )
+    .printBalance()
+    .value()
+
+
+  // console.dir(transactions, {depth: null, colors: true})
+  // console.dir(accounts, {depth: null, colors: true})
+  // console.dir(commodities, {depth: null, colors: true})
+}
+
+renderBalance()
