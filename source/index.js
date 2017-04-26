@@ -1,6 +1,7 @@
 const path = require('path')
 const Ybdb = require('ybdb')
 const math = require('mathjs')
+const lodash = require('lodash')
 
 const dataPath = '/Users/adrian/Transactions'
 const db = new Ybdb({
@@ -30,7 +31,7 @@ async function renderBalance () {
 
   inintalizedDb._.mixin({
     log: array => {
-      // eslint-disable-next-line
+      // eslint-disable-next-line no-console
       console.dir(array, {depth: null, colors: true})
       return array
     },
@@ -66,31 +67,31 @@ async function renderBalance () {
     },
     normalizeTransactions: array => {
       return array.map(transaction => {
-        if (!transaction.hasOwnProperty('transfers')) {
+        if (!Array.isArray(transaction.transfers)) {
           // Was written in single transfer style
+          const transfer = lodash.clone(transaction)
+          delete transfer.date
+          transfer.title = transfer.title || transaction.desc
+          transaction.transfers = [transfer]
 
-          if (transaction.hasOwnProperty('amount')) {
-            const amountFrags = transaction.amount.split(' ')
-            delete transaction.amount
-            transaction.quantity = transaction.quantity || amountFrags[0]
-            transaction.commodity = transaction.commodity || amountFrags[1]
-          }
-
-          const title = transaction.title || transaction.desc
-          delete transaction.title
-          delete transaction.desc
-
-          return {
-            title,
-            transfers: [transaction],
-          }
+          delete transaction.amount
+          delete transaction.from
+          delete transaction.to
+          delete transaction.quantity
         }
-
-        if (!Array.isArray(transaction.transfers)) return transaction
 
         transaction.transfers = transaction.transfers.map(
           transfer => {
-            if (!Array.isArray(transfer)) return transfer
+            if (!Array.isArray(transfer)) {
+              if (transfer.hasOwnProperty('amount')) {
+                const amountFrags = transfer.amount.split(' ')
+                delete transfer.amount
+                transfer.quantity = transaction.quantity || amountFrags[0]
+                transfer.commodity = transaction.commodity || amountFrags[1]
+              }
+
+              return transfer
+            }
 
             const [quantity, ...commodityFrags] = transfer[2].split(' ')
 
@@ -118,8 +119,6 @@ async function renderBalance () {
     .get('transactions')
     .flatten() // TODO: This should already be retured flattened from ybdb
     .normalizeTransactions()
-
-
 
   // Data-structure for balance:
   // Map {
@@ -150,7 +149,7 @@ async function renderBalance () {
   // TODO: Print warnings for accounts which are referenced
   // in transfers, but not defined in the accounts list
 
-  normalizedTransactions
+  return normalizedTransactions
     .reduce(
       (accountToBalance, transaction) => {
         transaction.transfers.forEach(transfer => {
@@ -183,11 +182,6 @@ async function renderBalance () {
     )
     .printBalance()
     .value()
-
-
-  // console.dir(transactions, {depth: null, colors: true})
-  // console.dir(accounts, {depth: null, colors: true})
-  // console.dir(commodities, {depth: null, colors: true})
 }
 
 renderBalance()

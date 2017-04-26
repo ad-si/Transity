@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "start": "node source/index.js"
+  },
   "dependencies": {
     "mathjs": "^3.11.5",
     "ulid": "^0.1.0",
