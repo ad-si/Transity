@@ -1,7 +1,22 @@
 {
+  "name": "transity",
+  "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
+  "version": "1.0.0",
+  "main": "source/index.js",
   "scripts": {
-    "start": "node source/index.js"
+    "lint": "eslint --max-warnings 0 .",
+    "start": "node source/index.js",
+    "test": "yarn lint"
   },
+  "directories": {
+    "test": "tests"
+  },
+  "keywords": [
+    "transaction",
+    "ledger"
+  ],
+  "author": "Adrian Sieber",
+  "license": "ISC",
   "dependencies": {
     "@datatypes/config": "^0.4.0",
     "@datatypes/moment": "^0.10.0",
@@ -12,5 +27,8 @@
   "devDependencies": {
     "eslint": "^4.1.1",
     "eslint-config-javascript": "^1.3.0"
+  },
+  "eslintConfig": {
+    "extends": "eslint-config-javascript"
   }
 }
