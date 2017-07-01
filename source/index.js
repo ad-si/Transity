@@ -2,15 +2,10 @@ const path = require('path')
 const Ybdb = require('ybdb')
 const math = require('mathjs')
 const lodash = require('lodash')
+const {Instant} = require('@datatypes/moment')
 
-const dataPath = '/Users/adrian/Transactions'
-const db = new Ybdb({
-  storagePaths: [
-    path.join(dataPath, 'accounts.yaml'),
-    path.join(dataPath, 'commodities.yaml'),
-    path.join(dataPath, 'transactions'),
-  ],
-})
+const debug = false
+
 
 function addAccountAndCommodityToMap (account, commodity, map) {
   if (!map.has(account)) {
@@ -25,11 +20,123 @@ function addAccountAndCommodityToMap (account, commodity, map) {
   }
 }
 
+function toDatetimeArray (date) {
+  const unknown = ['????-??-??', ' '.repeat(5)]
+  if (!date) return unknown
 
-async function renderBalance () {
-  const inintalizedDb = await db.init()
+  return new Instant(date)
+    .toISOString()
+    .slice(0, 16)
+    .split('T')
+}
 
-  inintalizedDb._.mixin({
+function getPaddedQuantity (quantity, quantityWidth) {
+  if (typeof quantity !== 'number') {
+    throw new Error(`Quantity must be a number and not "${quantity}"`)
+  }
+
+  return Number(quantity)
+    .toFixed(2)
+    .toString()
+    .padStart(quantityWidth)
+    .replace(/\.00$/, '   ')
+}
+
+function debugLog (value) {
+  if (debug) {
+    // eslint-disable-next-line no-console
+    console.dir(value, {depth: null, colors: true})
+  }
+}
+
+function normalizeTransfer (transfer) {
+  const stringify = val => val ? String(val) : ''
+  const numberify = val => val ? Number(val) : 0
+  let transObj = {}
+
+  debugLog(transfer)
+
+  if (Array.isArray(transfer)) {
+    const [quantity, ...commodityFrags] = stringify(transfer[2])
+      .split(' ')
+
+    transObj = {
+      utc: transfer[0],
+      from: transfer[1],
+      to: transfer[3],
+      quantity: quantity,
+      commodity: commodityFrags.join(' '),
+    }
+
+    if (typeof transfer[4] !== 'undefined') {
+      transObj.return = transfer[4]
+    }
+  }
+  else {
+    transObj = transfer
+  }
+
+  if (transObj.hasOwnProperty('amount')) {
+    const amountFrags = stringify(transObj.amount)
+      .split(' ')
+    delete transObj.amount
+    transObj.quantity = transObj.quantity || amountFrags[0]
+    transObj.commodity = transObj.commodity || amountFrags[1]
+  }
+
+  const date = transObj['value-date'] ||
+    transObj.date ||
+    transObj.utc
+
+  const normalizedTransfer = {
+    utc: date ? new Instant(date) : undefined,
+    from: stringify(transObj.from),
+    to: stringify(transObj.to),
+    quantity: numberify(transObj.quantity),
+    commodity: stringify(transObj.commodity),
+    title: stringify(transObj.title || transObj.desc),
+  }
+
+  debugLog(normalizedTransfer)
+
+  return normalizedTransfer
+}
+
+function renderTransfer (transfer) {
+  const datetimeArray = toDatetimeArray(transfer.utc)
+  console.info(
+    '%s %s | %s => %s | %s %s | %s',
+    datetimeArray[0],
+    datetimeArray[1] !== '00:00'
+      ? datetimeArray[1]
+      : ' '.repeat(5),
+    transfer.from.padEnd(15), // eslint-disable-line
+    transfer.to.padEnd(20), // eslint-disable-line
+    getPaddedQuantity(transfer.quantity, 8),
+    transfer.commodity.padEnd(3),  // eslint-disable-line
+    transfer.title.slice(0, 50),  // eslint-disable-line
+  )
+}
+
+function renderTransaction (transaction) {
+  transaction.transfers.forEach(transfer => {
+    renderTransfer(normalizeTransfer(transfer))
+  })
+}
+
+
+async function getDb (config) {
+  const db = new Ybdb({
+    storagePaths: [
+      path.join(config.directory, 'accounts.yaml'),
+      path.join(config.directory, 'commodities.yaml'),
+      path.join(config.directory, 'transactions'),
+    ],
+  })
+
+  const initializedDb = await db.init()
+
+  initializedDb._.mixin({
     log: array => {
       // eslint-disable-next-line no-console
       console.dir(array, {depth: null, colors: true})
@@ -50,10 +157,7 @@ async function renderBalance () {
             process.stdout.write(' '.repeat(accountWidth + 1))
           }
 
-          const paddedQuantity = (
-            ' '.repeat(quantityWidth) +
-            quantity.toFixed(2)
-          ).replace(/\.00$/, '   ')
+          const paddedQuantity = getPaddedQuantity(quantity, quantityWidth)
 
           const paddedCommodity = commodity + ' '.repeat(commodityWidth)
 
@@ -65,66 +169,64 @@ async function renderBalance () {
         })
       })
     },
-    normalizeTransactions: array => {
-      return array.map(transaction => {
-        if (!Array.isArray(transaction.transfers)) {
-          // Was written in single transfer style
-          const transfer = lodash.clone(transaction)
-          delete transfer.date
-          transfer.title = transfer.title || transaction.desc
-          transaction.transfers = [transfer]
+    normalizeTransactions: array => array.map(transaction => {
+      let realTransaction = {}
+      let transactionMeta = {}
 
-          delete transaction.amount
-          delete transaction.from
-          delete transaction.to
-          delete transaction.quantity
+      if (!Array.isArray(transaction.transfers)) {
+        const title = transaction.title || transaction.desc
+        // Transaction is actually just one transfer
+        realTransaction = {
+          title,
+          transfers: [transaction],
         }
-
-        transaction.transfers = transaction.transfers.map(
-          transfer => {
-            if (!Array.isArray(transfer)) {
-              if (transfer.hasOwnProperty('amount')) {
-                const amountFrags = transfer.amount.split(' ')
-                delete transfer.amount
-                transfer.quantity = transaction.quantity || amountFrags[0]
-                transfer.commodity = transaction.commodity || amountFrags[1]
-              }
-
-              return transfer
-            }
-
-            const [quantity, ...commodityFrags] = transfer[2].split(' ')
-
-            const normalizedTransfer = {
-              utc: transfer[0],
-              from: transfer[1],
-              quantity,
-              commodity: commodityFrags.join(' '),
-              to: transfer[3],
-            }
-
-            if (typeof transfer[4] !== 'undefined') {
-              normalizedTransfer.return = transfer[4]
-            }
-
-            return normalizedTransfer
-          }
+        transactionMeta = {title}
+      }
+      else {
+        realTransaction = transaction
+        transactionMeta = lodash.cloneDeep(
+          lodash.omit(transaction, ['transfers'])
         )
-        return transaction
-      })
-    },
+        delete transactionMeta.transfers
+      }
+
+      realTransaction.transfers = realTransaction.transfers
+        .map(transfer => {
+          debugLog('++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+          debugLog(transfer)
+          // Merge meta data from transaction into transfers
+          const fullTransfer = Object.assign({}, transactionMeta, transfer)
+          return normalizeTransfer(fullTransfer)
+        })
+
+      delete realTransaction.date
+      delete realTransaction['entry-date']
+      delete realTransaction['value-date']
+      delete realTransaction.amount
+      delete realTransaction.from
+      delete realTransaction.to
+      delete realTransaction.quantity
+
+      return realTransaction
+    }),
   })
 
-  const normalizedTransactions = inintalizedDb
+  return initializedDb
+}
+
+async function _renderBalance (initalizedDb) {
+  const normalizedTransactions = initalizedDb
     .get('transactions')
     .flatten() // TODO: This should already be retured flattened from ybdb
     .normalizeTransactions()
 
-  // Data-structure for balance:
-  // Map {
-  //   'john' => Map { '€' => 0, '$' => 0 },
-  //   'anna' => Map { '€' => 0 },
-  // }
+  /*
+    Data-structure for balance:
+    Map {
+      'john' => Map { '€' => 0, '$' => 0 },
+      'anna' => Map { '€' => 0 },
+    }
+  */
   const dataStructureForBalance = normalizedTransactions
     .reduce(
       (accountBalanceMap, transaction) => {
@@ -184,4 +286,26 @@ async function renderBalance () {
     .value()
 }
 
-renderBalance()
+async function _renderTransactions (initalizedDb) {
+
+  const normalizedTransactions = initalizedDb
+    .get('transactions')
+    .flatten() // TODO: This should already be retured flattened from ybdb
+    .normalizeTransactions()
+    .value()
+
+  normalizedTransactions.forEach(transaction => {
+    renderTransaction(transaction)
+  })
+}
+
+
+module.exports = {
+  async renderBalance (config) {
+    _renderBalance(await getDb(config))
+  },
+
+  async renderTransactions (config) {
+    _renderTransactions(await getDb(config))
+  },
+}

@@ -10,6 +10,14 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.
 A commodity can be anything with can be assigned a quantity or amount.
 E.g. money, time, pigs, cows, coordinates, messages.
 
+There are 4 special commodities to simplify the tracking of sales:
+
+1. Request
+1. Offer
+1. Acceptance
+1. Certification
+
+
 A table of commodities looks like this:
 
 | Id | Name          | Description                                 | Alias Of |
@@ -22,14 +30,6 @@ A table of commodities looks like this:
 | 5  | EUR           |                                             |    4     |
 | 6  | Cow           | Most common type of domesticated ungulates  |          |
 | …  | …             | …                                           |    …     |
-
-
-There are 4 special commodities to simplify the tracking of sales:
-
-1. Request
-1. Offer
-1. Acceptance
-1. Certification
 
 
 ### Transfers

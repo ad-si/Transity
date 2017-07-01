@@ -3,6 +3,9 @@
   "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
   "version": "1.0.0",
   "main": "source/index.js",
+  "bin": {
+    "transity": "source/cli.js"
+  },
   "scripts": {
     "lint": "eslint --max-warnings 0 .",
     "start": "node source/index.js",
