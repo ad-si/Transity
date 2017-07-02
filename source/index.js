@@ -2,6 +2,7 @@ const path = require('path')
 const Ybdb = require('ybdb')
 const math = require('mathjs')
 const lodash = require('lodash')
+const chalk = require('chalk')
 const {Instant} = require('@datatypes/moment')
 
 const debug = false
@@ -34,12 +35,27 @@ function getPaddedQuantity (quantity, quantityWidth) {
   if (typeof quantity !== 'number') {
     throw new Error(`Quantity must be a number and not "${quantity}"`)
   }
+  quantity = Number(quantity)
+  const quantityStr = quantity.toString()
+  const quantityString = quantityStr.includes('.')
+    ? /\.[0-9]{1,2}$/.test(quantityStr)
+      ? quantity.toFixed(2)
+      : quantityStr
+    : quantityStr + '   '
 
-  return Number(quantity)
-    .toFixed(2)
-    .toString()
+  const dimmedString = quantityString
     .padStart(quantityWidth)
-    .replace(/\.00$/, '   ')
+    .split('.')
+    .map((fragment, index) => {
+      if (index === 0) return fragment
+      else return chalk.dim(fragment)
+    })
+    .join(chalk.dim('.'))
+
+  if (quantity < 0) return chalk.red(dimmedString)
+  // Avoids output "-0"
+  else if (quantity === 0) return chalk.dim('0   '.padStart(quantityWidth))
+  else return dimmedString
 }
 
 function debugLog (value) {
@@ -80,8 +96,12 @@ function normalizeTransfer (transfer) {
     const amountFrags = stringify(transObj.amount)
       .split(' ')
     delete transObj.amount
-    transObj.quantity = transObj.quantity || amountFrags[0]
-    transObj.commodity = transObj.commodity || amountFrags[1]
+    transObj.quantity = transObj.quantity
+      ? transObj.quantity
+      : amountFrags[0]
+    transObj.commodity = transObj.commodity
+      ? transObj.commodity
+      : amountFrags[1]
   }
 
   const date = transObj['value-date'] ||
@@ -120,32 +140,50 @@ async function getDb (config) {
       console.dir(array, {depth: null, colors: true})
       return array
     },
-    printBalance: map => {
+    toAccountEntries: map => {
+      return Array
+        .from(map.entries())
+    },
+    printBalance: accountEntries => {
       const accountWidth = 40
-      map.forEach((commodityMap, account) => {
-        account = (' '.repeat(accountWidth) + account).slice(-accountWidth)
-        process.stdout.write(`${account} `)
+      const byAlphabet = (entryA, entryB) =>
+        entryA[0].localeCompare(entryB[0])
 
-        let firstRun = true
-        const quantityWidth = 10
-        const commodityWidth = 15
+      // TODO: Make available via cli flag
+      // eslint-disable-next-line
+      const byBalance = (entryA, entryB) => {
+        const valueA = entryA[1]
+          .values()
+          .next().value
+        const valueB = entryB[1]
+          .values()
+          .next().value
+        return valueB - valueA
+      }
 
-        commodityMap.forEach((quantity, commodity) => {
-          if (!firstRun) {
-            process.stdout.write(' '.repeat(accountWidth + 1))
-          }
+      accountEntries
+        .sort(byAlphabet)
+        .forEach(entry => {
+          const [account, commodityMap] = entry
+          process.stdout.write(account.padStart(accountWidth))
 
-          const paddedQuantity = getPaddedQuantity(quantity, quantityWidth)
+          let firstRun = true
+          const quantityWidth = 11
+          const commodityWidth = 15
 
-          const paddedCommodity = commodity + ' '.repeat(commodityWidth)
+          commodityMap.forEach((quantity, commodity) => {
+            if (!firstRun) {
+              // Correctly indent accounts with several commodities
+              process.stdout.write(' '.repeat(accountWidth))
+            }
 
-          console.info(
-            paddedQuantity.slice(-quantityWidth) + ' ' +
-            paddedCommodity.slice(0, commodityWidth)
-          )
-          firstRun = false
+            const paddedQuantity = getPaddedQuantity(quantity, quantityWidth)
+            const paddedCommodity = commodity.padEnd(commodityWidth)
+            console.info(`${paddedQuantity} ${paddedCommodity}`)
+
+            firstRun = false
+          })
         })
-      })
     },
     normalizeTransactions: array => array.map(transaction => {
       let realTransaction = {}
@@ -201,6 +239,13 @@ async function getDb (config) {
         return itemA.utc - itemB.utc
       }
     ),
+    removeEmptyAccounts: accountEntries => {
+      return accountEntries.filter(accountEntry =>
+        Array
+          .from(accountEntry[1].values())
+          .some(balance => balance !== 0)
+      )
+    },
     printTransfers: transfers => transfers.forEach(transfer => {
       const datetimeArray = toDatetimeArray(transfer.utc)
       console.info(
@@ -289,6 +334,8 @@ async function _renderBalance (initalizedDb) {
       },
       dataStructureForBalance
     )
+    .toAccountEntries()
+    .removeEmptyAccounts()
     .printBalance()
     .value()
 }
