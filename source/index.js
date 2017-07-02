@@ -102,28 +102,6 @@ function normalizeTransfer (transfer) {
   return normalizedTransfer
 }
 
-function renderTransfer (transfer) {
-  const datetimeArray = toDatetimeArray(transfer.utc)
-  console.info(
-    '%s %s | %s => %s | %s %s | %s',
-    datetimeArray[0],
-    datetimeArray[1] !== '00:00'
-      ? datetimeArray[1]
-      : ' '.repeat(5),
-    transfer.from.padEnd(15), // eslint-disable-line
-    transfer.to.padEnd(20), // eslint-disable-line
-    getPaddedQuantity(transfer.quantity, 8),
-    transfer.commodity.padEnd(3),  // eslint-disable-line
-    transfer.title.slice(0, 50),  // eslint-disable-line
-  )
-}
-
-function renderTransaction (transaction) {
-  transaction.transfers.forEach(transfer => {
-    renderTransfer(normalizeTransfer(transfer))
-  })
-}
-
 
 async function getDb (config) {
   const db = new Ybdb({
@@ -209,6 +187,35 @@ async function getDb (config) {
 
       return realTransaction
     }),
+    reduceToTransfers: array => array.reduce(
+      (transfers, current) => transfers.concat(current.transfers),
+      []
+    ),
+    sortByDate: array => array.sort(
+      (itemA, itemB) => {
+        if (!itemA.utc) {
+          if (!itemB.utc) return 0
+          else return 1
+        }
+        if (!itemB.utc) return -1
+        return itemA.utc - itemB.utc
+      }
+    ),
+    printTransfers: transfers => transfers.forEach(transfer => {
+      const datetimeArray = toDatetimeArray(transfer.utc)
+      console.info(
+        '%s %s | %s => %s | %s %s | %s',
+        datetimeArray[0],
+        datetimeArray[1] !== '00:00'
+          ? datetimeArray[1]
+          : ' '.repeat(5),
+        transfer.from.padEnd(15), // eslint-disable-line
+        transfer.to.padEnd(20), // eslint-disable-line
+        getPaddedQuantity(transfer.quantity, 8),
+        transfer.commodity.padEnd(3),  // eslint-disable-line
+        transfer.title.slice(0, 50),  // eslint-disable-line
+      )
+    }),
   })
 
   return initializedDb
@@ -286,17 +293,15 @@ async function _renderBalance (initalizedDb) {
     .value()
 }
 
-async function _renderTransactions (initalizedDb) {
-
-  const normalizedTransactions = initalizedDb
+async function _renderTransfers (initalizedDb) {
+  initalizedDb
     .get('transactions')
     .flatten() // TODO: This should already be retured flattened from ybdb
     .normalizeTransactions()
+    .reduceToTransfers()
+    .sortByDate()
+    .printTransfers()
     .value()
-
-  normalizedTransactions.forEach(transaction => {
-    renderTransaction(transaction)
-  })
 }
 
 
@@ -305,7 +310,7 @@ module.exports = {
     _renderBalance(await getDb(config))
   },
 
-  async renderTransactions (config) {
-    _renderTransactions(await getDb(config))
+  async renderTransfers (config) {
+    _renderTransfers(await getDb(config))
   },
 }

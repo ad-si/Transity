@@ -4,7 +4,7 @@ const path = require('path')
 
 const subcommands = {
   'help': {
-    desc: 'Display current usage information',
+    desc: 'Display usage information',
     func: printUsage,
   },
   'balance': {
@@ -15,12 +15,12 @@ const subcommands = {
       transity.renderBalance(config)
     },
   },
-  'transactions': {
-    desc: 'Display all transactions',
+  'transfers': {
+    desc: 'Display all transfers of all transactions',
     func: (args, config) => {
       // Lazy load transity to make cli more repsonsive
       const transity = require('.')
-      transity.renderTransactions(config)
+      transity.renderTransfers(config)
     },
   },
 }
