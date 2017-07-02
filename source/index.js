@@ -1,4 +1,6 @@
 const path = require('path')
+const assert = require('assert')
+
 const Ybdb = require('ybdb')
 const math = require('mathjs')
 const lodash = require('lodash')
@@ -9,12 +11,15 @@ const debug = false
 
 
 function addAccountAndCommodityToMap (account, commodity, map) {
+  assert(account)
+  assert(commodity)
+  assert(map)
+
   if (!map.has(account)) {
     map.set(account, new Map())
   }
 
-  const commodityQuantityMap = map
-    .get(account)
+  const commodityQuantityMap = map.get(account)
 
   if (!commodityQuantityMap.has(commodity)) {
     commodityQuantityMap.set(commodity, 0)
@@ -240,11 +245,17 @@ async function getDb (config) {
       }
     ),
     removeEmptyAccounts: accountEntries => {
-      return accountEntries.filter(accountEntry =>
-        Array
+      return accountEntries
+        .filter(accountEntry => Array
           .from(accountEntry[1].values())
           .some(balance => balance !== 0)
-      )
+        )
+        .map(accountEntry => {
+          accountEntry[1].forEach((balance, commodity) => {
+            if (balance === 0) accountEntry[1].delete(commodity)
+          })
+          return accountEntry
+        })
     },
     printTransfers: transfers => transfers.forEach(transfer => {
       const datetimeArray = toDatetimeArray(transfer.utc)
@@ -267,6 +278,11 @@ async function getDb (config) {
 }
 
 async function _renderBalance (initalizedDb) {
+  const isValidTransfer = transfer =>
+    transfer.from &&
+    transfer.to &&
+    transfer.quantity &&
+    transfer.commodity
   const normalizedTransactions = initalizedDb
     .get('transactions')
     .flatten() // TODO: This should already be retured flattened from ybdb
@@ -282,18 +298,20 @@ async function _renderBalance (initalizedDb) {
   const dataStructureForBalance = normalizedTransactions
     .reduce(
       (accountBalanceMap, transaction) => {
-        transaction.transfers.forEach(transfer => {
-          addAccountAndCommodityToMap(
-            transfer.from,
-            transfer.commodity,
-            accountBalanceMap
-          )
-          addAccountAndCommodityToMap(
-            transfer.to,
-            transfer.commodity,
-            accountBalanceMap
-          )
-        })
+        transaction.transfers
+          .filter(isValidTransfer)
+          .forEach(transfer => {
+            addAccountAndCommodityToMap(
+              transfer.from,
+              transfer.commodity,
+              accountBalanceMap
+            )
+            addAccountAndCommodityToMap(
+              transfer.to,
+              transfer.commodity,
+              accountBalanceMap
+            )
+          })
         return accountBalanceMap
       },
       new Map()
@@ -306,30 +324,32 @@ async function _renderBalance (initalizedDb) {
   return normalizedTransactions
     .reduce(
       (accountToBalance, transaction) => {
-        transaction.transfers.forEach(transfer => {
-          const from = accountToBalance.get(transfer.from)
-          const to = accountToBalance.get(transfer.to)
+        transaction.transfers
+          .filter(isValidTransfer)
+          .forEach(transfer => {
+            const from = accountToBalance.get(transfer.from)
+            const to = accountToBalance.get(transfer.to)
 
-          from.set(
-            transfer.commodity,
-            math.number(
-              math
-                .chain(math.bignumber(from.get(transfer.commodity)))
-                .subtract(math.bignumber(Number(transfer.quantity)))
-                .valueOf()
+            from.set(
+              transfer.commodity,
+              math.number(
+                math
+                  .chain(math.bignumber(from.get(transfer.commodity)))
+                  .subtract(math.bignumber(Number(transfer.quantity)))
+                  .valueOf()
+              )
             )
-          )
 
-          to.set(
-            transfer.commodity,
-            math.number(
-              math
-                .chain(math.bignumber(to.get(transfer.commodity)))
-                .add(math.bignumber(Number(transfer.quantity)))
-                .valueOf()
+            to.set(
+              transfer.commodity,
+              math.number(
+                math
+                  .chain(math.bignumber(to.get(transfer.commodity)))
+                  .add(math.bignumber(Number(transfer.quantity)))
+                  .valueOf()
+              )
             )
-          )
-        })
+          })
         return accountToBalance
       },
       dataStructureForBalance
