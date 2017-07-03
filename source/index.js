@@ -1,5 +1,6 @@
 const path = require('path')
 const assert = require('assert')
+const util = require('util')
 
 const Ybdb = require('ybdb')
 const math = require('mathjs')
@@ -85,7 +86,7 @@ function normalizeTransfer (transfer) {
       utc: transfer[0],
       from: transfer[1],
       to: transfer[3],
-      quantity: quantity,
+      quantity,
       commodity: commodityFrags.join(' '),
     }
 
@@ -120,6 +121,12 @@ function normalizeTransfer (transfer) {
     quantity: numberify(transObj.quantity),
     commodity: stringify(transObj.commodity),
     title: stringify(transObj.title || transObj.desc),
+  }
+
+  if (normalizedTransfer.quantity < 0) {
+    throw new Error(
+      `Quantity must not be negative in\n${util.inspect(normalizedTransfer)}`
+    )
   }
 
   debugLog(normalizedTransfer)
@@ -217,8 +224,17 @@ async function getDb (config) {
           debugLog(transfer)
           // Merge meta data from transaction into transfers
           const fullTransfer = Object.assign({}, transactionMeta, transfer)
-          return normalizeTransfer(fullTransfer)
+          let normalizedTransfer
+          try {
+            normalizedTransfer = normalizeTransfer(fullTransfer)
+          }
+          catch (error) {
+            console.error(chalk.red(error))
+            normalizedTransfer = null
+          }
+          return normalizedTransfer
         })
+        .filter(Boolean)
 
       delete realTransaction.date
       delete realTransaction['entry-date']
