@@ -1,6 +1,20 @@
 # Transity
 
-Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.
+The plain text accounting tool of the future.
+Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
+
+
+## Import from Ledger CLI
+
+```sh
+bash -c '{ echo date,id,payee,account,commodity,amount,note; ledger csv; } \
+> transactions.csv'
+```
+
+Convert `transactions.csv` to YAML with e.g. [browserling.com/tools/csv-to-yaml]
+
+[browserling.com/tools/csv-to-yaml]:
+  https://www.browserling.com/tools/csv-to-yaml
 
 
 ## Data structures
@@ -155,3 +169,11 @@ transactions:
         amount: 1 evil-machine
         to: anna
 ```
+
+
+## TODO
+
+- [ ] Nanoseconds
+- [ ] List all used transaction keys (to easily spot typos)
+- [ ] Verify transaction keys and values
+- [ ] CSV import
