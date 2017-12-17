@@ -1,0 +1,36 @@
+owner: John Doe
+transactions:
+  - entryDate: '2014-12-24'
+    valueDate: '2015-01-05'
+    from: john:giro
+    to: evil-corp
+    desc: Money for evil deal
+    amount: 15 €
+
+  - entryDate: '2015-01-05'
+    valueDate: '2015-01-05'
+    from: good-inc
+    to: john:wallet
+    amount: 100 €
+    desc: ''
+
+  - entryDate: '2015-01-04 17:05'
+    valueDate: '2015-01-05'
+    from: john:wallet
+    to: anna
+    desc: Christmas Gifts
+    amount: 33.95 €
+
+  - entryDate: '2015-01-05 17:13'
+    valueDate: '2015-01-07'
+    from: anna
+    to: grocery-shop
+    desc: Food
+    amount: 11.97 €
+
+  - entryDate: '2015-01-07'
+    valueDate: '2015-01-07'
+    from: ben
+    to: john:giro
+    desc: Financial support
+    amount: 100 €
