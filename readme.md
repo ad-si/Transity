@@ -4,6 +4,48 @@ The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 
+## Why another plain text accounting tool?
+
+Existing accounting tools are historically based on the notion of an account.
+You add money, you remove money.
+Simple, but also incomplete.
+Where did the money come from, where did it go?
+
+This led to double entry bookkeeping.
+Whenever you add some money to an account you have to remove the same
+amount from another.
+But you *must never forget it*,
+because otherwise your calculations won't work.
+
+And now comes the big "aha moment":
+Removing something on one account and adding it to another
+is exactly a transaction.
+
+**So why don't we use transactions to model our financial flows?**
+
+Transity does! … and together with other changes to bring accounting
+to the 21. century it yields a more robust,
+understandable and complete representation of accounting!
+
+List of features:
+
+- No more incomplete ledgers
+- Clear separation between
+  - physical account (spatial, e.g. wallet),
+  - owner (relational, e.g. my mum)
+  - purpose of account (functional, savings for food)
+- High precision timestamps
+- Support for all states of transaction lifecycle
+  1. Request - Request to exchange a commodity
+  1. Offer - Specification of commodity & expected trade item
+  1. Acceptance - Affirmation of interest in offered exchange
+  1. Fulfillments
+  1. Certification - Acknowledgement that exchange was performed
+- Support for any type of commodity (e.g. even time and messages)
+- Differentiation between transfers, transactions and exchanges
+- Meta data for all entities (transactions, accounts, owners, …)
+
+
 ## Import from Ledger CLI
 
 ```sh
@@ -177,3 +219,4 @@ transactions:
 - [ ] List all used transaction keys (to easily spot typos)
 - [ ] Verify transaction keys and values
 - [ ] CSV import
+- [ ] http://www.principlesofaccounting.com
