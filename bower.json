@@ -15,7 +15,9 @@
     "purescript-debug": "^3.0.0",
     "purescript-js-date": "^5.1.0",
     "purescript-node-fs": "^4.0.0",
-    "purescript-node-buffer": "^4.1.0"
+    "purescript-node-buffer": "^4.1.0",
+    "purescript-formatters": "^3.0.1",
+    "purescript-format": "^3.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0"

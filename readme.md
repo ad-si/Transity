@@ -34,6 +34,8 @@ List of features:
   - physical account (spatial, e.g. wallet),
   - owner (relational, e.g. my mum)
   - purpose of account (functional, savings for food)
+- No hardcoded debit/credit connotation as it is viewpoint dependent
+  => Changeable viewpoint for printing
 - High precision timestamps
 - Support for all states of transaction lifecycle
   1. Request - Request to exchange a commodity

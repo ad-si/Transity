@@ -6,12 +6,13 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Control.Monad.Except (runExcept)
 -- import Control.Monad.Except.Trans (ExceptT)
+-- import Control.Plus (empty)
 import Data.Argonaut.Core (toObject, toString, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getField)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (take)
+import Data.Array (take, foldr)
 import Data.Bounded (bottom)
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
@@ -19,12 +20,14 @@ import Data.Either (Either(..))
 -- import Data.Foreign (ForeignError)
 -- import Data.Foreign.Class (class Encode, class Decode, encode, decode)
 -- import Data.Foreign.Generic (defaultOptions, genericDecodeJSON)
+import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 -- import Data.Int (floor)
 -- import Data.Identity (Identity)
 -- import Data.JSDate (JSDate, LOCALE, parse, isValid)
 -- import Data.List.Types (NonEmptyList)
+import Data.List (fromFoldable)
 import Data.Maybe (fromMaybe, maybe)
 import Data.String (split, Pattern(Pattern))
 import Data.StrMap (StrMap)
@@ -46,9 +49,26 @@ import Prelude
   , (#)
   , (<>)
   )
+import Text.Format (format, width, precision)
 
 
 foreign import parseToUnixTime :: String -> Number
+
+
+utcToIsoString :: DateTime -> String
+utcToIsoString utc =
+  let
+    formatter :: Fmt.Formatter
+    formatter = fromFoldable
+      [ Fmt.YearFull, (Fmt.Placeholder "-")
+      , Fmt.MonthTwoDigits, (Fmt.Placeholder "-")
+      , Fmt.DayOfMonthTwoDigits, (Fmt.Placeholder "T")
+      , Fmt.Hours24, (Fmt.Placeholder ":")
+      , Fmt.MinutesTwoDigits, (Fmt.Placeholder ":")
+      , Fmt.SecondsTwoDigits
+      ]
+  in
+    Fmt.format formatter utc
 
 
 getObjField
@@ -77,23 +97,11 @@ instance decodeAmount :: DecodeJson Amount where
       _ -> Left "Amount does not contain a value and a commodity"
 
 
-newtype Ledger = Ledger
-  { owner :: String
-  , transactions :: Array Transaction
-  }
-
-derive instance genericLedger :: Generic Ledger _
-
-instance showLedger :: Show Ledger where
-  show = genericShow
-
-instance decodeLedger :: DecodeJson Ledger where
-  decodeJson :: Json -> Either String Ledger
-  decodeJson json = do
-    object <- maybe (Left "Ledger is not an object") Right (toObject json)
-    owner <- getObjField object "owner"
-    transactions <- getObjField object "transactions"
-    pure $ Ledger {owner, transactions}
+prettyShowAmount :: Amount -> String
+prettyShowAmount (Amount value commodity) =
+  format (width 8 <> precision 3) value
+  <> " "
+  <> format (width 3) commodity
 
 
 newtype Transaction = Transaction
@@ -126,6 +134,42 @@ instance decodeTransaction :: DecodeJson Transaction where
       { entryDate: stringToDateTime entryDate
       , valueDate: stringToDateTime valueDate
       , from, to, amount, desc}
+
+
+prettyShowTransaction :: Transaction -> String
+prettyShowTransaction (Transaction t) =
+  (utcToIsoString t.valueDate) <> " | "
+    <> format (width 15) t.from <> " => " <> format (width 15) t.to <> " "
+    <> (prettyShowAmount t.amount) <> " | " <> t.desc <> "\n"
+
+
+newtype Ledger = Ledger
+  { owner :: String
+  , transactions :: Array Transaction
+  }
+
+derive instance genericLedger :: Generic Ledger _
+
+instance showLedger :: Show Ledger where
+  show = genericShow
+
+instance decodeLedger :: DecodeJson Ledger where
+  decodeJson :: Json -> Either String Ledger
+  decodeJson json = do
+    object <- maybe (Left "Ledger is not an object") Right (toObject json)
+    owner <- getObjField object "owner"
+    transactions <- getObjField object "transactions"
+    pure $ Ledger {owner, transactions}
+
+
+prettyShowLedger :: Ledger -> String
+prettyShowLedger (Ledger l) =
+  "Ledger by " <> l.owner <> "\n"
+  <> (foldr
+    (\trans out -> out <> (prettyShowTransaction trans))
+    ""
+    l.transactions
+  )
 
 
 stringToDateTime :: String -> DateTime
@@ -163,4 +207,6 @@ main
   . Eff (exception :: EXCEPTION, console :: CONSOLE, fs :: FS | e) Unit
 main = do
   ledgerFile <- Sync.readTextFile UTF8 $ Path.concat ["tests", "ledger.yaml"]
-  log $ show $ yamlStringToLedger ledgerFile
+  case yamlStringToLedger ledgerFile of
+    Left error -> log $ show error
+    Right ledger -> log $ prettyShowLedger ledger
