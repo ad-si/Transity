@@ -23,20 +23,35 @@ import Node.FS.Sync (readTextFile)
 import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd)
 import Prelude (Unit, bind, show, ($))
-import Transity.Data.Ledger (yamlStringToLedger, prettyShowLedger)
+import Transity.Data.Ledger
+  ( yamlStringToLedger
+  , prettyShowLedger
+  , showBalance
+  )
 
 
 printTransactions :: forall eff.
   String -> Eff
     ( exception :: EXCEPTION
     , console :: CONSOLE
-    , fs :: FS | eff
+    | eff
     ) Unit
-printTransactions filePathAbs = do
-  ledgerFile <- readTextFile UTF8 filePathAbs
-  case yamlStringToLedger ledgerFile of
+printTransactions ledgerFileContent = do
+  case yamlStringToLedger ledgerFileContent of
     Left error -> log $ show error
     Right ledger -> log $ prettyShowLedger ledger
+
+
+printBalance :: forall eff.
+  String -> Eff
+    ( exception :: EXCEPTION
+    , console :: CONSOLE
+    | eff
+    ) Unit
+printBalance ledgerFileContent = do
+  case yamlStringToLedger ledgerFileContent of
+    Left error -> log $ show error
+    Right ledger -> log $ showBalance ledger
 
 
 main :: forall eff . Eff
@@ -47,9 +62,17 @@ main :: forall eff . Eff
 main = do
   arguments <- argv
   currentDir <- cwd
-  let filePathArg = arguments !! 2
-  case filePathArg of
-    Nothing -> log "No path to a journal file was provided"
-    Just filePath -> do
-      let filePathAbs = Path.resolve [currentDir] filePath
-      printTransactions filePathAbs
+  let commandName = arguments !! 2
+  case commandName of
+    Nothing -> log "No command was provided"
+    Just command -> do
+      let filePathArg = arguments !! 3
+      case filePathArg of
+        Nothing -> log "No path to a journal file was provided"
+        Just filePath -> do
+          let filePathAbs = Path.resolve [currentDir] filePath
+          ledgerFileContent <- readTextFile UTF8 filePathAbs
+          case command of
+            "transactions" -> printTransactions ledgerFileContent
+            "balance" -> printBalance ledgerFileContent
+            _ -> printBalance ledgerFileContent
