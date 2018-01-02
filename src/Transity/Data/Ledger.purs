@@ -43,12 +43,12 @@ instance decodeLedger :: DecodeJson Ledger where
 
 prettyShowLedger :: Ledger -> String
 prettyShowLedger (Ledger l) =
-  "Ledger by " <> l.owner <> "\n"
-  <> (foldr
-    (\trans out -> out <> (prettyShowTransaction trans))
-    ""
-    l.transactions
-  )
+  let prettyTransactions = map prettyShowTransaction l.transactions
+  in
+    "Ledger by " <> l.owner <> "\n"
+    <> fold prettyTransactions
+
+
 
 
 jsonStringToLedger :: String -> Either String Ledger

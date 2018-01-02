@@ -32,9 +32,7 @@ import Prelude
   )
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount, prettyShowAmount)
-import Transity.Utils (getObjField)
-
-foreign import parseToUnixTime :: String -> Number
+import Transity.Utils (getObjField, parseToUnixTime, stringToDateTime)
 
 
 utcToIsoString :: DateTime -> String
@@ -67,23 +65,13 @@ yamlStringToTransaction yamlString =
     Right json -> decodeJson json
 
 
-stringToDateTime :: String -> DateTime
-stringToDateTime string = string
-  # parseToUnixTime
-  # Milliseconds
-  # instant
-  # fromMaybe bottom
-  # toDateTime
-  -- $ fromMaybe bottom (instant $ Milliseconds $ parseToUnixTime string)
-
-
 newtype Transaction = Transaction
   { entryDate :: DateTime
   , valueDate :: DateTime
   , from :: String
   , to :: String
   , amount :: Amount
-  , desc :: String
+  -- , desc :: String
   }
 
 derive instance genericTransaction :: Generic Transaction _
@@ -101,16 +89,27 @@ instance decodeTransaction :: DecodeJson Transaction where
     from      <- getObjField object "from"
     to        <- getObjField object "to"
     amount    <- getObjField object "amount"
-    desc      <- getObjField object "desc"
+    -- desc      <- getObjField object "desc"
 
     pure $ Transaction
       { entryDate: stringToDateTime entryDate
       , valueDate: stringToDateTime valueDate
-      , from, to, amount, desc}
+      , from
+      , to
+      , amount
+      -- , desc
+      }
 
 
 prettyShowTransaction :: Transaction -> String
 prettyShowTransaction (Transaction t) =
-  (utcToIsoString t.valueDate) <> " | "
-    <> format (width 15) t.from <> " => " <> format (width 15) t.to <> " "
-    <> (prettyShowAmount t.amount) <> " | " <> t.desc <> "\n"
+  (utcToIsoString t.valueDate)
+  <> " | "
+  <> format (width 15) t.from
+  <> " => "
+  <> format (width 15) t.to
+  <> " "
+  <> (prettyShowAmount t.amount)
+  <> " | "
+  -- <> t.desc
+  <> "\n"

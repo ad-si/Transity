@@ -1,5 +1,21 @@
 module Test.Fixtures where
 
+import Transity.Data.Amount (Amount(..))
+import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.Transaction (Transaction(..))
+import Transity.Utils (stringToDateTime)
+
+
+transaction :: Transaction
+transaction = Transaction
+  { entryDate: stringToDateTime "2014-12-24"
+  , valueDate: stringToDateTime "2015-01-05"
+  , from: "john:giro"
+  , to: "evil-corp"
+  , amount: Amount 15.0 "€"
+  }
+
+
 transactionJsonString :: String
 transactionJsonString = """
 {
@@ -40,6 +56,33 @@ transactionShowed = """
   ))
 """
 
+
+transactionPretty :: String
+transactionPretty = "\
+  \2015-01-05T00:00:00 |       john:giro =>       evil-corp   15.000   € | \n\
+  \" -- Fix syntax highlighting: "
+
+
+ledger :: Ledger
+ledger = Ledger
+  { owner: "John Doe"
+  , transactions:
+      [ Transaction
+        { entryDate: stringToDateTime "2014-12-24"
+        , valueDate: stringToDateTime "2015-01-05"
+        , from: "john:giro"
+        , to: "evil-corp"
+        , amount: Amount 15.0 "€"
+        }
+      , Transaction
+        { entryDate: stringToDateTime "2015-01-05"
+        , valueDate: stringToDateTime "2015-01-05"
+        , from: "good-inc"
+        , to: "john:wallet"
+        , amount: Amount 100.0 "€"
+        }
+      ]
+  }
 
 
 ledgerJsonString :: String
@@ -104,7 +147,8 @@ ledgerShowed = """
         , to: "evil-corp"
         , valueDate: (DateTime
           (Date (Year 2015) January (Day 5))
-          (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0))) })
+          (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0)))
+        })
       , (Transaction
         { amount: (Amount 100.0 "€")
         , entryDate: (DateTime
@@ -120,3 +164,11 @@ ledgerShowed = """
     }
   ))
 """
+
+
+ledgerPretty :: String
+ledgerPretty = "\
+  \Ledger by John Doe\n\
+  \2015-01-05T00:00:00 |       john:giro =>       evil-corp   15.000   € | \n\
+  \2015-01-05T00:00:00 |        good-inc =>     john:wallet  100.000   € | \n\
+  \" -- Fix syntax highlighting: "
