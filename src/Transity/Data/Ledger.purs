@@ -5,20 +5,22 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (foldr)
 import Data.Either (Either(..))
+import Data.Foldable (fold, foldr)
+import Data.Functor (map)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (maybe)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), maybe)
+import Data.Ring (negate, (-))
+import Data.Semiring ((+))
+import Data.Show (show)
+import Data.Tuple (Tuple, fst, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude
-  ( class Show
-  , bind
-  , pure
-  , ($)
-  , (<>)
-  )
-import Transity.Data.Transaction ( Transaction , prettyShowTransaction )
+import Prelude (class Show, bind, pure, show, ($), (<>), (#))
+import Text.Format (format, width, precision)
+import Transity.Data.Amount (Amount, prettyShowAmount, subtractAmount, negateAmount)
+import Transity.Data.Transaction (Transaction(Transaction), prettyShowTransaction)
 import Transity.Utils (getObjField)
 
 
@@ -49,6 +51,43 @@ prettyShowLedger (Ledger l) =
     <> fold prettyTransactions
 
 
+type BalanceMap = Map.Map String Amount
+
+
+addTransaction :: Transaction -> BalanceMap -> BalanceMap
+addTransaction (Transaction {to, from, amount}) balanceMap =
+  let
+    balanceMap' = Map.alter
+      (\maybeValue -> case maybeValue of
+        Nothing -> Just (negateAmount amount)
+        Just amountNow -> Just (amountNow `subtractAmount` amount)
+      )
+      from
+      balanceMap
+  in
+    -- TODO: How does alter exactly work??
+    Map.alter
+      (\maybeValue -> case maybeValue of
+        Nothing -> Just amount
+        Just amountNow -> Just (amountNow <> amount)
+      )
+      to
+      balanceMap'
+
+
+
+showBalance :: Ledger -> String
+showBalance (Ledger ledger) =
+  foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
+    # (Map.toUnfoldable :: BalanceMap -> Array (Tuple String Amount))
+    # map (\tuple -> format (width 60) (fst tuple)
+      <> prettyShowAmount (snd tuple)
+      <> "\n")
+    # fold
+
+-- format (width 10 <> precision 3) value
+--   <> " "
+--   <> format (width 3) commodity
 
 
 jsonStringToLedger :: String -> Either String Ledger

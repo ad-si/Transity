@@ -11,20 +11,16 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Bounded (bottom)
 import Data.DateTime (DateTime)
-import Data.DateTime.Instant (instant, toDateTime)
 import Data.Either (Either(..))
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.List (fromFoldable)
-import Data.Maybe (fromMaybe, maybe)
-import Data.Time.Duration (Milliseconds(Milliseconds))
+import Data.Maybe (maybe)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude
   ( ($)
-  , (#)
   , (<>)
   , bind
   , class Show
@@ -32,7 +28,7 @@ import Prelude
   )
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount, prettyShowAmount)
-import Transity.Utils (getObjField, parseToUnixTime, stringToDateTime)
+import Transity.Utils (getObjField, stringToDateTime)
 
 
 utcToIsoString :: DateTime -> String

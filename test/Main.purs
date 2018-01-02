@@ -11,16 +11,20 @@ import Test.Fixtures
   , transactionYamlString
   , transactionShowed
   , transactionPretty
+
   , ledger
   , ledgerJsonString
   , ledgerYamlString
   , ledgerShowed
   , ledgerPretty
+  , ledgerBalance
+
+  , ledgerMultiTrans
+  , ledgerBalanceMultiTrans
   )
 import Test.Spec
   ( describe
   , it
-  -- , pending
   )
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -30,6 +34,7 @@ import Transity.Data.Ledger
   ( jsonStringToLedger
   , yamlStringToLedger
   , prettyShowLedger
+  , showBalance
   )
 import Transity.Data.Transaction
   ( jsonStringToTransaction
@@ -54,7 +59,7 @@ main = run [consoleReporter] do
         it "pretty shows an amount" do
           let
             actual = prettyShowAmount (Amount 37.0 "€")
-          actual `shouldEqual` "  37.000   €"
+          actual `shouldEqual` "    37.000   €"
 
 
       describe "Transaction" do
@@ -102,3 +107,10 @@ main = run [consoleReporter] do
         it "pretty shows a ledger" do
           (prettyShowLedger ledger) `shouldEqual` ledgerPretty
 
+
+        it "pretty shows the balance of all accounts" do
+          (showBalance ledger) `shouldEqual` ledgerBalance
+
+
+        it "supports multiple transactions on one account" do
+          (showBalance ledgerMultiTrans) `shouldEqual` ledgerBalanceMultiTrans

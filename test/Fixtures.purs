@@ -59,7 +59,7 @@ transactionShowed = """
 
 transactionPretty :: String
 transactionPretty = "\
-  \2015-01-05T00:00:00 |       john:giro =>       evil-corp   15.000   € | \n\
+  \2015-01-05T00:00:00 |       john:giro =>       evil-corp     15.000   € | \n\
   \" -- Fix syntax highlighting: "
 
 
@@ -80,6 +80,28 @@ ledger = Ledger
         , from: "good-inc"
         , to: "john:wallet"
         , amount: Amount 100.0 "€"
+        }
+      ]
+  }
+
+
+ledgerMultiTrans :: Ledger
+ledgerMultiTrans = Ledger
+  { owner: "John Doe"
+  , transactions:
+      [ Transaction
+        { entryDate: stringToDateTime "2014-12-20"
+        , valueDate: stringToDateTime "2014-12-21"
+        , from: "john:giro"
+        , to: "john:wallet"
+        , amount: Amount 80.0 "€"
+        }
+      , Transaction
+        { entryDate: stringToDateTime "2015-01-01"
+        , valueDate: stringToDateTime "2015-01-02"
+        , from: "john:wallet"
+        , to: "john:giro"
+        , amount: Amount 60.0 "€"
         }
       ]
   }
@@ -169,6 +191,22 @@ ledgerShowed = """
 ledgerPretty :: String
 ledgerPretty = "\
   \Ledger by John Doe\n\
-  \2015-01-05T00:00:00 |       john:giro =>       evil-corp   15.000   € | \n\
-  \2015-01-05T00:00:00 |        good-inc =>     john:wallet  100.000   € | \n\
+  \2015-01-05T00:00:00 |       john:giro =>       evil-corp     15.000   € | \n\
+  \2015-01-05T00:00:00 |        good-inc =>     john:wallet    100.000   € | \n\
   \" -- Fix syntax highlighting: "
+
+
+ledgerBalance :: String
+ledgerBalance = "\
+  \                                                   john:giro   -15.000   €\n\
+  \                                                   evil-corp    15.000   €\n\
+  \                                                    good-inc  -100.000   €\n\
+  \                                                 john:wallet   100.000   €\n\
+  \" -- fix syntax highlighting: "
+
+
+ledgerBalanceMultiTrans :: String
+ledgerBalanceMultiTrans = "\
+  \                                                   john:giro   -20.000   €\n\
+  \                                                 john:wallet    20.000   €\n\
+  \" -- fix syntax highlighting: "
