@@ -13,10 +13,8 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Either (Either(..))
-import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.List (fromFoldable)
 import Data.Maybe (maybe)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude
@@ -28,23 +26,8 @@ import Prelude
   )
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount, prettyShowAmount)
-import Transity.Utils (getObjField, stringToDateTime)
-
-
-utcToIsoString :: DateTime -> String
-utcToIsoString utc =
-  let
-    formatter :: Fmt.Formatter
-    formatter = fromFoldable
-      [ Fmt.YearFull, (Fmt.Placeholder "-")
-      , Fmt.MonthTwoDigits, (Fmt.Placeholder "-")
-      , Fmt.DayOfMonthTwoDigits, (Fmt.Placeholder "T")
-      , Fmt.Hours24, (Fmt.Placeholder ":")
-      , Fmt.MinutesTwoDigits, (Fmt.Placeholder ":")
-      , Fmt.SecondsTwoDigits
-      ]
-  in
-    Fmt.format formatter utc
+import Transity.Data.Account (AccountId)
+import Transity.Utils (getObjField, stringToDateTime, utcToIsoString)
 
 
 jsonStringToTransaction :: String -> Either String Transaction
@@ -64,8 +47,8 @@ yamlStringToTransaction yamlString =
 newtype Transaction = Transaction
   { entryDate :: DateTime
   , valueDate :: DateTime
-  , from :: String
-  , to :: String
+  , from :: AccountId
+  , to :: AccountId
   , amount :: Amount
   -- , desc :: String
   }

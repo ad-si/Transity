@@ -1,9 +1,11 @@
 module Test.Main where
 
 import Control.Monad.Eff (Eff)
+import Data.Map as Map
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
+import Data.Tuple (Tuple(Tuple))
 import Prelude (Unit, discard, show, (#), ($))
 import Test.Fixtures
   ( transaction
@@ -11,6 +13,8 @@ import Test.Fixtures
   , transactionYamlString
   , transactionShowed
   , transactionPretty
+
+  , commodityMapPretty
 
   , ledger
   , ledgerJsonString
@@ -24,11 +28,14 @@ import Test.Fixtures
   )
 import Test.Spec
   ( describe
+  -- , describeOnly
   , it
+  -- , itOnly
   )
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
+import Transity.Data.Account as Account
 import Transity.Data.Amount
   ( Amount(Amount)
   , Commodity(Commodity)
@@ -64,6 +71,36 @@ main = run [consoleReporter] do
           let
             actual = prettyShowAmount (Amount 37.0 (Commodity "€"))
           actual `shouldEqual` "    37.000   €"
+
+
+      describe "Account" do
+        it "can add an amount to a commodity map" do
+          let
+            expectedMap = Map.fromFoldable
+              [(Tuple (Commodity "€") (Amount 37.0 (Commodity "€")))]
+            emptyMap = Map.empty :: Account.CommodityMap
+            amount = Amount 37.0 (Commodity "€")
+            actualMap = emptyMap `Account.addAmountToMap` amount
+          actualMap `shouldEqual` expectedMap
+
+        it "can subtract an amount from a commodity map" do
+          let
+            expectedMap = Map.fromFoldable
+              [(Tuple (Commodity "€") (Amount 37.0 (Commodity "€")))]
+            initialMap = Map.fromFoldable
+              [(Tuple (Commodity "€") (Amount 42.0 (Commodity "€")))]
+            amount = Amount 5.0 (Commodity "€")
+            actualMap = initialMap `Account.subtractAmountFromMap` amount
+          actualMap `shouldEqual` expectedMap
+
+        it "pretty shows a commodity map" do
+          let
+            commodityMap = Map.fromFoldable
+              [ (Tuple (Commodity "€") (Amount 42.0 (Commodity "€")))
+              , (Tuple (Commodity "$") (Amount 12.0 (Commodity "$")))
+              ]
+            actualPretty = Account.prettyShowCommodityMap commodityMap
+          actualPretty `shouldEqual` commodityMapPretty
 
 
       describe "Transaction" do

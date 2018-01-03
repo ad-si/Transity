@@ -34,3 +34,17 @@ transactions:
     to: john:giro
     desc: Financial support
     amount: 100 €
+
+  - entryDate: '2015-01-07'
+    valueDate: '2015-01-07'
+    from: ben
+    to: john:giro
+    desc: Financial support in Dollar
+    amount: 50 $
+
+  - entryDate: '2015-03-07'
+    valueDate: '2015-03-08'
+    from: ben
+    to: john:giro
+    desc: Financial support in Bitcoin
+    amount: 1.123 BTC

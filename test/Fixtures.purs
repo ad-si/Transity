@@ -63,6 +63,13 @@ transactionPretty = "\
   \" -- Fix syntax highlighting: "
 
 
+commodityMapPretty :: String
+commodityMapPretty = "\
+  \    12.000   $\n\
+  \    42.000   €\
+  \" -- Fix syntax highlighting: "
+
+
 ledger :: Ledger
 ledger = Ledger
   { owner: "John Doe"

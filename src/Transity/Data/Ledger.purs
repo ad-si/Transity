@@ -12,15 +12,33 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
-import Data.Tuple (Tuple, fst, snd)
+import Data.Tuple (Tuple(Tuple))
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#))
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount, prettyShowAmount, subtractAmount, negateAmount)
-import Transity.Data.Transaction (Transaction(Transaction), prettyShowTransaction)
-import Transity.Utils (getObjField)
+import Transity.Data.Account
+  ( Account(Account)
+  , AccountId
+  , CommodityMap
+  , addAmountToMap
+  , subtractAmountFromMap
+  , prettyShowCommodityMap
+  )
+import Transity.Data.Amount
+  ( Amount(Amount)
+  , Commodity(Commodity)
+  , prettyShowAmount
+  , subtractAmount
+  , negateAmount
+  )
+import Transity.Data.Transaction
+  ( Transaction(Transaction)
+  , prettyShowTransaction
+  )
+import Transity.Utils (getObjField, indentSubsequent)
 
 
+-- | List of all transactions
 newtype Ledger = Ledger
   { owner :: String
   , transactions :: Array Transaction
@@ -48,43 +66,54 @@ prettyShowLedger (Ledger l) =
     <> fold prettyTransactions
 
 
-type BalanceMap = Map.Map String Amount
+type BalanceMap = Map.Map AccountId Account
 
 
 addTransaction :: Transaction -> BalanceMap -> BalanceMap
 addTransaction (Transaction {to, from, amount}) balanceMap =
   let
-    balanceMap' = Map.alter
+    updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (negateAmount amount)
-        Just amountNow -> Just (amountNow `subtractAmount` amount)
+        Nothing -> Just (
+            Account from ((Map.empty :: CommodityMap)
+            `subtractAmountFromMap`
+            amount)
+          )
+        Just (Account _ comMapNow) -> Just (
+          Account from (comMapNow `subtractAmountFromMap` amount)
+        )
       )
       from
       balanceMap
   in
-    -- TODO: How does alter exactly work??
     Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just amount
-        Just amountNow -> Just (amountNow <> amount)
+        Nothing -> Just (
+            Account to ((Map.empty :: CommodityMap)
+            `addAmountToMap`
+             amount)
+          )
+        Just (Account _ comMapNow) -> Just (
+            Account to (comMapNow `addAmountToMap` amount)
+          )
       )
       to
-      balanceMap'
+      updatedFromAccount
 
 
 
 showBalance :: Ledger -> String
 showBalance (Ledger ledger) =
-  foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
-    # (Map.toUnfoldable :: BalanceMap -> Array (Tuple String Amount))
-    # map (\tuple -> format (width 60) (fst tuple)
-      <> prettyShowAmount (snd tuple)
-      <> "\n")
-    # fold
-
--- format (width 10 <> precision 3) value
---   <> " "
---   <> format (width 3) commodity
+  let
+    indentation = 60
+  in
+    foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
+      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple AccountId Account))
+      # map (\(Tuple accountId (Account _ commodityMap)) ->
+        format (width indentation) accountId
+        <> indentSubsequent indentation (prettyShowCommodityMap commodityMap)
+        <> "\n")
+      # fold
 
 
 jsonStringToLedger :: String -> Either String Ledger
