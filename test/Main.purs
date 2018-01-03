@@ -29,7 +29,11 @@ import Test.Spec
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-import Transity.Data.Amount (Amount(Amount), prettyShowAmount)
+import Transity.Data.Amount
+  ( Amount(Amount)
+  , Commodity(Commodity)
+  , prettyShowAmount
+  )
 import Transity.Data.Ledger
   ( jsonStringToLedger
   , yamlStringToLedger
@@ -58,7 +62,7 @@ main = run [consoleReporter] do
       describe "Amount" do
         it "pretty shows an amount" do
           let
-            actual = prettyShowAmount (Amount 37.0 "€")
+            actual = prettyShowAmount (Amount 37.0 (Commodity "€"))
           actual `shouldEqual` "    37.000   €"
 
 

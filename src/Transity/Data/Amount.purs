@@ -1,6 +1,6 @@
 module Transity.Data.Amount
   ( Amount(Amount)
-  , Commodity
+  , Commodity(Commodity)
   , negateAmount
   , prettyShowAmount
   , subtractAmount
@@ -30,16 +30,23 @@ import Data.String (split, Pattern(Pattern))
 import Text.Format (format, width, precision)
 
 
-type Commodity = String
+newtype Commodity = Commodity String
+
+derive instance genericCommodity :: Generic Commodity _
+
+instance showCommodity :: Show Commodity where
+  show = genericShow
+
+
 data Amount = Amount Number Commodity
 
 instance semigroupAmount :: Semigroup Amount where
-  append (Amount numA comA) (Amount numB comB)
-    | comA /= comB = Amount 0.0 "INVALID COMPUTATION"
-    | otherwise = Amount (numA + numB) comA
+  append (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
+    | comA /= comB = Amount 0.0 (Commodity "INVALID COMPUTATION")
+    | otherwise = Amount (numA + numB) (Commodity comA)
 
 instance monoidAmount :: Monoid Amount where
-  mempty = Amount 0.0 ""
+  mempty = Amount 0.0 (Commodity "")
 
 
 derive instance genericAmount :: Generic Amount _
@@ -53,14 +60,14 @@ instance decodeAmount :: DecodeJson Amount where
     amount <- maybe (Left "Amount is not a string") Right (toString json)
     let amountFrags = split (Pattern " ") amount
     case take 2 amountFrags of
-      [value, currency] -> Right $ Amount (readFloat value) currency
+      [value, currency] -> Right $ Amount (readFloat value) (Commodity currency)
       _ -> Left "Amount does not contain a value and a commodity"
 
 
 subtractAmount :: Amount -> Amount -> Amount
-subtractAmount (Amount numA comA) (Amount numB comB)
-  | comA /= comB = Amount 0.0 "INVALID COMPUTATION"
-  | otherwise = Amount (numA - numB) comA
+subtractAmount (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
+  | comA /= comB = Amount 0.0 (Commodity "INVALID COMPUTATION")
+  | otherwise = Amount (numA - numB) (Commodity comA)
 
 
 negateAmount :: Amount -> Amount
@@ -68,7 +75,7 @@ negateAmount (Amount num com) = Amount (negate num) com
 
 
 prettyShowAmount :: Amount -> String
-prettyShowAmount (Amount value commodity) =
+prettyShowAmount (Amount value (Commodity commodity)) =
   format (width 10 <> precision 3) value
   <> " "
   <> format (width 3) commodity
