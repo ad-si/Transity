@@ -72,7 +72,7 @@ Amount | From   | To
 - Intuitive - Just like you would talk about it
 - Safe - It's obvious if you forget to fill out a field
 
-Together with some furter changes it yields a
+Together with some further changes it yields a
 **easier understandable and more robust & complete**
 representation of accounting!
 
@@ -81,24 +81,26 @@ Let's introduce accounting to the 21. century! 😁
 
 ## List of Features
 
-- Modeled on transactions instead of debiting / crediting accounts
-- Easily editable & processable file format ([YAML](http://yaml.org))
+- [x] Modeled on transactions instead of debiting / crediting accounts
+- [x] Easily editable & processable file format ([YAML](http://yaml.org))
 - Clear separation between
-  - Physical account (e.g. wallet, bank account) => spatial
-  - Entities (e.g. my mum, a company) => relational
-  - Purpose of transaction (food, travel) => functional
-- No hardcoded asset / liability connotation as it is viewpoint dependent
+  - [x] Physical account (e.g. wallet, bank account) => spatial
+  - [ ] Entities (e.g. my mum, a company) => relational
+  - [ ] Purpose of transaction (food, travel) => functional
+- [ ] No hardcoded asset / liability connotation as it is viewpoint dependent
   => Choose viewpoint when printing the balance
-- High precision timestamps
-- Support for all states of transaction lifecycle
+- [ ] High precision timestamps (including nanoseconds)
+- [ ] Support for all states of transaction lifecycle
   1. Request - Request to exchange a commodity
   1. Offer - Specification of commodity & expected trade item
   1. Acceptance - Affirmation of interest in offered exchange
   1. Fulfillments
   1. Certification - Acknowledgement that exchange was performed
-- Support for any type of commodity (e.g. even time and messages)
-- Differentiation between transfers, transactions and exchanges
-- Meta data for all entities (transactions, accounts, entities, …)
+- [ ] Support for any type of commodity (e.g. even time and messages)
+- [ ] Differentiation between transfers, transactions and exchanges
+- [ ] Meta data for all entities (transactions, accounts, entities, …)
+- [ ] Verification of data consistency
+- [ ] CSV import
 
 
 ## Import from Ledger CLI
@@ -161,10 +163,8 @@ transactions:
 ```
 
 
-## TODO
+## Related
 
-- [ ] Nanoseconds
-- [ ] List all used transaction keys (to easily spot typos)
-- [ ] Verify transaction keys and values
-- [ ] CSV import
-- [ ] http://www.principlesofaccounting.com
+- http://plaintextaccounting.org - Best of plain text accounting.
+- https://cs007.blog - Personal finance for engineers.
+- http://principlesofaccounting.com - Online tutorial on accounting.
