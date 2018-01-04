@@ -24,13 +24,6 @@ import Transity.Data.Account
   , subtractAmountFromMap
   , prettyShowCommodityMap
   )
-import Transity.Data.Amount
-  ( Amount(Amount)
-  , Commodity(Commodity)
-  , prettyShowAmount
-  , subtractAmount
-  , negateAmount
-  )
 import Transity.Data.Transaction
   ( Transaction(Transaction)
   , prettyShowTransaction

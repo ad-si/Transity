@@ -1,5 +1,6 @@
 module Test.Fixtures where
 
+import Data.Rational (fromInt)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
 import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Transaction (Transaction(..))
@@ -12,7 +13,7 @@ transaction = Transaction
   , valueDate: stringToDateTime "2015-01-05"
   , from: "john:giro"
   , to: "evil-corp"
-  , amount: Amount 15.0 (Commodity "€")
+  , amount: Amount (fromInt 15) (Commodity "€")
   }
 
 
@@ -43,7 +44,7 @@ desc: 'Money for evil deal'
 transactionShowed :: String
 transactionShowed = """
   (Right (Transaction
-    { amount: (Amount 15.0 (Commodity "€"))
+    { amount: (Amount 15 % 1 (Commodity "€"))
     , entryDate: (DateTime
       (Date (Year 2014) December (Day 24))
       (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0)))
@@ -79,14 +80,14 @@ ledger = Ledger
         , valueDate: stringToDateTime "2015-01-05"
         , from: "john:giro"
         , to: "evil-corp"
-        , amount: Amount 15.0 (Commodity "€")
+        , amount: Amount (fromInt 15) (Commodity "€")
         }
       , Transaction
         { entryDate: stringToDateTime "2015-01-05"
         , valueDate: stringToDateTime "2015-01-05"
         , from: "good-inc"
         , to: "john:wallet"
-        , amount: Amount 100.0 (Commodity "€")
+        , amount: Amount (fromInt 100) (Commodity "€")
         }
       ]
   }
@@ -101,14 +102,14 @@ ledgerMultiTrans = Ledger
         , valueDate: stringToDateTime "2014-12-21"
         , from: "john:giro"
         , to: "john:wallet"
-        , amount: Amount 80.0 (Commodity "€")
+        , amount: Amount (fromInt 80) (Commodity "€")
         }
       , Transaction
         { entryDate: stringToDateTime "2015-01-01"
         , valueDate: stringToDateTime "2015-01-02"
         , from: "john:wallet"
         , to: "john:giro"
-        , amount: Amount 60.0 (Commodity "€")
+        , amount: Amount (fromInt 60) (Commodity "€")
         }
       ]
   }
@@ -168,7 +169,7 @@ ledgerShowed = """
     { owner: "John Doe"
     , transactions:
       [ (Transaction
-        { amount: (Amount 15.0 (Commodity "€"))
+        { amount: (Amount 15 % 1 (Commodity "€"))
         , entryDate: (DateTime
           (Date (Year 2014) December (Day 24))
           (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0)))
@@ -179,7 +180,7 @@ ledgerShowed = """
           (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0)))
         })
       , (Transaction
-        { amount: (Amount 100.0 (Commodity "€"))
+        { amount: (Amount 100 % 1 (Commodity "€"))
         , entryDate: (DateTime
           (Date (Year 2015) January (Day 5))
           (Time (Hour 0) (Minute 0) (Second 0) (Millisecond 0)))
