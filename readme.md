@@ -7,35 +7,88 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 ## Why another plain text accounting tool?
 
 Existing accounting tools are historically based on the notion of an account.
-You add money, you remove money.
+You add money (debit) and you remove money (credit).
+(If this sounds backwards read [this explanation])
+
+[this explanation]:
+  http://simplerestaurantaccounting.com/debit-and-credit-accounting-terminology-is-confusing
+
+For example you get 50 € from your Mum and buy some Food.
+
+```txt
+Account | Debit   | Credit
+--------|---------|--------
+Wallet  | 50.00 € |
+Wallet  |         | 20.00 €
+---------------------------
+```
+
 Simple, but also incomplete.
 Where did the money come from, where did it go?
-
 This led to double entry bookkeeping.
 Whenever you add some money to an account you have to remove the same
 amount from another.
-But you *must never forget it*,
-because otherwise your calculations won't work.
 
-And now comes the big "aha moment":
-Removing something on one account and adding it to another
-is exactly a transaction.
 
-**So why don't we use transactions to model our financial flows?**
+```txt
+Account | Debit   | Credit
+--------|---------|--------
+Wallet  | 50.00 € |
+Mum     |         | 50.00 €
+Wallet  |         | 20.00 €
+Food    | 20.00 € |
+---------------------------
+```
 
-Transity does! … and together with other changes to bring accounting
-to the 21. century it yields a more robust,
-understandable and complete representation of accounting!
+But you *must never forget an account*,
+because otherwise your account won't balance.
 
-List of features:
+```txt
+Account | Debit   | Credit
+--------|---------|--------
+Wallet  | 50.00 € |
+Mum     |         | 50.00 €
+Wallet  |         | 20.00 €
+---------------------------
+```
 
-- No more incomplete ledgers
+Oops, where did the money go? 🤷‍
+
+If this looks (and sounds) confusing or too complicated, you're not alone!
+
+So how can we simplify it?
+It's actually quite easy:
+We just have to model it in terms of transactions, and not accounts.
+
+```txt
+Amount | From   | To
+-------|--------|--------
+50 €   | Mum    | Wallet
+20 €   | Wallet | Food
+-------------------------
+```
+
+- Simple - No more confusing debit / credit / asset / liability mumbo jumbo
+- Intuitive - Just like you would talk about it
+- Safe - It's obvious if you forget to fill out a field
+
+Together with some furter changes it yields a
+**easier understandable and more robust & complete**
+representation of accounting!
+
+Let's introduce accounting to the 21. century! 😁
+
+
+## List of Features
+
+- Modeled on transactions instead of debiting / crediting accounts
+- Easily editable & processable file format ([YAML](http://yaml.org))
 - Clear separation between
-  - physical account (spatial, e.g. wallet),
-  - owner (relational, e.g. my mum)
-  - purpose of account (functional, savings for food)
-- No hardcoded debit/credit connotation as it is viewpoint dependent
-  => Changeable viewpoint for printing
+  - Physical account (e.g. wallet, bank account) => spatial
+  - Entities (e.g. my mum, a company) => relational
+  - Purpose of transaction (food, travel) => functional
+- No hardcoded asset / liability connotation as it is viewpoint dependent
+  => Choose viewpoint when printing the balance
 - High precision timestamps
 - Support for all states of transaction lifecycle
   1. Request - Request to exchange a commodity
@@ -45,7 +98,7 @@ List of features:
   1. Certification - Acknowledgement that exchange was performed
 - Support for any type of commodity (e.g. even time and messages)
 - Differentiation between transfers, transactions and exchanges
-- Meta data for all entities (transactions, accounts, owners, …)
+- Meta data for all entities (transactions, accounts, entities, …)
 
 
 ## Import from Ledger CLI
@@ -61,116 +114,9 @@ Convert `transactions.csv` to YAML with e.g. [browserling.com/tools/csv-to-yaml]
   https://www.browserling.com/tools/csv-to-yaml
 
 
-## Data structures
+## Ledger Format
 
-### Commodities
-
-A commodity can be anything with can be assigned a quantity or amount.
-E.g. money, time, pigs, cows, coordinates, messages.
-
-There are 4 special commodities to simplify the tracking of sales:
-
-1. Request
-1. Offer
-1. Acceptance
-1. Certification
-
-
-A table of commodities looks like this:
-
-| Id | Name          | Description                                 | Alias Of |
-|:--:|:--------------|:--------------------------------------------|:--------:|
-| 1  | Request       | Request to exchange a commodity             |          |
-| 2  | Offer         | Name commodity & expected trade item        |          |
-| 3  | Acceptance    | Affirmation of interest in offered exchange |          |
-| 3  | Certification | Acknowledgement that exchange was performed |          |
-| 4  | €             | Currency used in the European Union         |          |
-| 5  | EUR           |                                             |    4     |
-| 6  | Cow           | Most common type of domesticated ungulates  |          |
-| …  | …             | …                                           |    …     |
-
-
-### Transfers
-
-Movement of a commodity from one account to another at a specific point in time.
-End datetime is optional and matches the start datetime if missing.
-
-A table of transfers looks like this:
-
-| Id | Transaction Id |  Start Datetime  |   End Datetime   |
-|:--:|:--------------:|:----------------:|:----------------:|
-| 1  |       1        | 2017-02-26 09:16 | 2017-02-26 09:17 |
-| 2  |       1        | 2017-02-26 16:25 | 2017-02-26 16:28 |
-| …  |       …        |        …         |        …         |
-
-Continuation:
-
-| Giver | Receiver | Amount | Commodity |
-|:-----:|:--------:|:------:|:---------:|
-|   1   |    2     |  300   |     4     |
-|   2   |    1     |   1    |     6     |
-|   …   |    …     |   …    |     …     |
-
-
-
-### Transactions
-
-Several related transfers which balance each other.
-A transaction has following stages:
-
-1. Request ("Hi, I'd like to buy something")
-1. Offer ("Hi, I can sell you cow for 300 €")
-1. Acceptance ("Ok, sounds good")
-1. Fulfillment (Buyer gives seller the cow)
-1. Fulfillment (Seller gives buyer the money)
-1. Certification (Buyer gets receipt for successful transaction)
-
-A table of transactions looks like this:
-
-| Id | Titel                     |     Request      |
-|:--:|:--------------------------|:----------------:|
-| 1  | Buy cow at farmers market | 2017-02-25 09:16 |
-| …  | …                         |        …         |
-
-continuation …
-
-|      Offer       |    Acceptance    |
-|:----------------:|:----------------:|
-| 2017-02-27 18:35 | 2017-02-27 18:37 |
-|        …         |        …         |
-
-
-### Accounts
-
-An account is an entity which can store / contain / use commodities.
-
-A table of accounts looks like this:
-
-| Id |     Datetime     | Name      | Descriptions            |
-|:--:|:----------------:|:----------|:------------------------|
-| 1  | 2017-02-29 16:25 | Evil Corp | The Evil Corporation    |
-| 2  | 2017-02-29 16:25 | John Doe  | CEO of Evil Corporation |
-| …  |        …         | …         | …                       |
-
-
-### Tags
-
-A tag is a category / value which can be associated with an account or
-a transfer.
-The name can be namespaced with `:`.
-
-| Id | Name       |
-|:--:|:-----------|
-| 1  | Food:Apple |
-| 2  | Animal     |
-| 2  | Car        |
-| …  | …          |
-
-
-## Backends
-
-Transity can store the data in various backends as long as
-they can produce following data structure:
+A ledger must be a YAML file with following format:
 
 ```yaml
 commodities:
