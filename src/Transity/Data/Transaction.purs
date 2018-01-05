@@ -8,25 +8,20 @@ where
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
-import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude
-  ( ($)
-  , (<>)
-  , bind
-  , class Show
-  , pure
-  )
+import Prelude (($), (<>), bind, class Show, pure)
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount, prettyShowAmount)
 import Transity.Data.Account (AccountId)
+import Transity.Data.Amount (Amount, prettyShowAmount)
+import Transity.Data.Transfer (Transfer)
 import Transity.Utils (getObjField, stringToDateTime, utcToIsoString)
 
 
@@ -44,13 +39,14 @@ yamlStringToTransaction yamlString =
     Right json -> decodeJson json
 
 
+-- newtype FilePath = FilePath String
+
 newtype Transaction = Transaction
-  { entryDate :: DateTime
-  , valueDate :: DateTime
-  , from :: AccountId
-  , to :: AccountId
-  , amount :: Amount
-  -- , desc :: String
+  { id :: Maybe String
+  , date :: Maybe DateTime
+  , note :: Maybe String
+  , receipt :: Maybe String
+  , transfers :: Array Transfer
   }
 
 derive instance genericTransaction :: Generic Transaction _
@@ -63,32 +59,29 @@ instance decodeTransaction :: DecodeJson Transaction where
   decodeJson json = do
     object <- maybe (Left "Transaction is not an object") Right (toObject json)
 
-    entryDate <- (getObjField object "entryDate" :: Either String String)
-    valueDate <- (getObjField object "valueDate" :: Either String String)
-    from      <- getObjField object "from"
-    to        <- getObjField object "to"
-    amount    <- getObjField object "amount"
-    -- desc      <- getObjField object "desc"
+    id        <- getObjField object "id"
+    date      <- getObjField object "date"
+    note      <- getObjField object "note"
+    receipt   <- getObjField object "receipt"
+    transfers <- getObjField object "transfers"
 
     pure $ Transaction
-      { entryDate: stringToDateTime entryDate
-      , valueDate: stringToDateTime valueDate
-      , from
-      , to
-      , amount
-      -- , desc
+      { id
+      , date: case date of
+                Nothing -> Nothing
+                Just dateString -> Just (stringToDateTime dateString)
+      , note
+      , receipt
+      , transfers
       }
-
 
 prettyShowTransaction :: Transaction -> String
 prettyShowTransaction (Transaction t) =
-  (utcToIsoString t.valueDate)
-  <> " | "
-  <> format (width 15) t.from
-  <> " => "
-  <> format (width 15) t.to
+  -- utcToIsoString (fromMaybe "NO DATE" t.date)
+  -- <> " | " <>
+  format (width 30) (fromMaybe "NO ID" t.id)
   <> " "
-  <> (prettyShowAmount t.amount)
-  <> " | "
-  -- <> t.desc
+  <> format (width 30) (fromMaybe "NO NOTE" t.note)
+  <> " "
+  <> format (width 30) (fromMaybe "NO RECEIPT" t.receipt)
   <> "\n"
