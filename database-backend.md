@@ -62,10 +62,10 @@ Several related transfers which balance each other.
 A transaction has following stages:
 
 1. Request ("Hi, I'd like to buy something")
-1. Offer ("Hi, I can sell you cow for 300 €")
+1. Offer ("Hi, I can sell you a cow for 300 €")
 1. Acceptance ("Ok, sounds good")
-1. Fulfillment (Buyer gives seller the cow)
-1. Fulfillment (Seller gives buyer the money)
+1. Fulfillment (Buyer gives seller the money)
+1. Fulfillment (Seller gives buyer the cow)
 1. Certification (Buyer gets receipt for successful transaction)
 
 A table of transactions looks like this:
