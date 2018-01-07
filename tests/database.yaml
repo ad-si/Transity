@@ -3,14 +3,14 @@ commodities:
     name: Euro
     alias:
       - EUR
-    desc: Currency used in the European Union
+    note: Currency used in the European Union
     utc: 2017-04-02 19:33:53
   - id: $
     name: US Dollar
     alias:
       - USD
       - Dollar
-    desc: Currency used in the United States of America
+    note: Currency used in the United States of America
     utc: 2017-04-02 19:34:07
 
 accounts:
@@ -22,13 +22,13 @@ accounts:
     children:
       - id: wallet
         name: Wallet
-        desc: John's black wallet
+        note: John's black wallet
         utc: 2017-04-02 19:33:28
         tags:
           - wallet
       - id: visa
         name: VISA card
-        desc: John's VISA card
+        note: John's VISA card
         utc: 2017-04-02 19:36:57
         tags:
           - credit card
@@ -41,7 +41,7 @@ accounts:
   - id: evil-corp
     name: Evil Corporation
     utc: 2017-04-02 19:33:28
-    desc: The Evil Corporation in the United States of Evil
+    note: The Evil Corporation in the United States of Evil
     tags:
       - company
 

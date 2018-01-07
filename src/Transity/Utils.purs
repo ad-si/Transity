@@ -3,8 +3,11 @@ module Transity.Utils
   , parseToUnixTime
   , stringToDateTime
   , utcToIsoString
+  , dateShowPretty
   , indentSubsequent
   , digitsToRational
+  , padStart
+  , padEnd
   )
 where
 
@@ -27,11 +30,13 @@ import Data.String
   , length
   , replaceAll
   , toCharArray
+  , fromCharArray
   , Pattern(Pattern)
   , Replacement(Replacement)
   )
 import Data.StrMap (StrMap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
+import Data.Unfoldable (replicate)
 import Prelude
   ( ($)
   , (<>)
@@ -48,7 +53,7 @@ foreign import parseToUnixTime :: String -> Number
 getObjField
   :: forall a. DecodeJson a
   => StrMap Json -> String -> Either String a
-getObjField object name = case (getField object name) of
+getObjField object name = case (object `getField` name) of
   Left error -> Left $ "'" <> name <> "' could not be parsed: " <> error
   Right success -> Right success
 
@@ -76,6 +81,21 @@ utcToIsoString utc =
       ]
   in
     Fmt.format formatter utc
+
+
+dateShowPretty :: DateTime -> String
+dateShowPretty datetime =
+  let
+    formatter :: Fmt.Formatter
+    formatter = fromFoldable
+      [ Fmt.YearFull, (Fmt.Placeholder "-")
+      , Fmt.MonthTwoDigits, (Fmt.Placeholder "-")
+      , Fmt.DayOfMonthTwoDigits, (Fmt.Placeholder " ")
+      , Fmt.Hours24, (Fmt.Placeholder ":")
+      , Fmt.MinutesTwoDigits
+      ]
+  in
+    Fmt.format formatter datetime
 
 
 indentSubsequent :: Int -> String -> String
@@ -107,3 +127,17 @@ digitsToRational stringOfDigits =
       numerator <- fromString numeratorStr
       pure (numerator % denominator)
 
+
+getPadding :: Int -> String -> String
+getPadding targetLength string =
+  fromCharArray $ replicate (targetLength - length string) ' '
+
+
+padStart :: Int -> String -> String
+padStart targetLength string =
+  getPadding targetLength string <> string
+
+
+padEnd :: Int -> String -> String
+padEnd targetLength string =
+  string <> getPadding targetLength string

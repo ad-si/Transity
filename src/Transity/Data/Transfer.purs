@@ -1,21 +1,23 @@
 module Transity.Data.Transfer
   ( Transfer(Transfer)
-  , prettyShowTransfer
-  , jsonStringToTransfer
-  , yamlStringToTransfer
+  , showPretty
+  , fromJson
+  , fromYaml
   )
 where
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
-import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (maybe)
+import Data.Maybe (Maybe, maybe, fromMaybe)
+import Data.Monoid (power)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude
   ( ($)
@@ -23,34 +25,21 @@ import Prelude
   , bind
   , class Show
   , pure
+  , map
   )
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount, prettyShowAmount)
-import Transity.Data.Account (AccountId)
-import Transity.Utils (getObjField, stringToDateTime, utcToIsoString)
-
-
-jsonStringToTransfer :: String -> Either String Transfer
-jsonStringToTransfer string = do
-  json <- jsonParser string
-  transfer <- decodeJson json
-  pure transfer
-
-
-yamlStringToTransfer :: String -> Either String Transfer
-yamlStringToTransfer yamlString =
-  case runExcept $ parseYAMLToJson yamlString of
-    Left error -> Left "Could not parse YAML"
-    Right json -> decodeJson json
+import Transity.Data.Amount (Amount)
+import Transity.Data.Amount (showPretty) as Amount
+import Transity.Data.Account (Id) as Account
+import Transity.Utils (getObjField, stringToDateTime, dateShowPretty)
 
 
 newtype Transfer = Transfer
-  { entryDate :: DateTime
-  , valueDate :: DateTime
-  , from :: AccountId
-  , to :: AccountId
+  { utc :: Maybe DateTime
+  , from :: Account.Id
+  , to :: Account.Id
   , amount :: Amount
-  -- , desc :: String
+  , note :: Maybe String
   }
 
 derive instance genericTransfer :: Generic Transfer _
@@ -63,32 +52,48 @@ instance decodeTransfer :: DecodeJson Transfer where
   decodeJson json = do
     object <- maybe (Left "Transfer is not an object") Right (toObject json)
 
-    entryDate <- (getObjField object "entryDate" :: Either String String)
-    valueDate <- (getObjField object "valueDate" :: Either String String)
-    from      <- getObjField object "from"
-    to        <- getObjField object "to"
-    amount    <- getObjField object "amount"
-    -- desc      <- getObjField object "desc"
+    utc <- object `getFieldOptional` "utc"
+    from <- object `getObjField` "from"
+    to <- object `getObjField` "to"
+    amount <- object `getObjField` "amount"
+    note <- object `getFieldOptional` "note"
 
     pure $ Transfer
-      { entryDate: stringToDateTime entryDate
-      , valueDate: stringToDateTime valueDate
+      { utc: map stringToDateTime utc
       , from
       , to
       , amount
-      -- , desc
+      , note
       }
 
 
-prettyShowTransfer :: Transfer -> String
-prettyShowTransfer (Transfer t) =
-  (utcToIsoString t.valueDate)
-  <> " | "
-  <> format (width 15) t.from
-  <> " => "
-  <> format (width 15) t.to
-  <> " "
-  <> (prettyShowAmount t.amount)
-  <> " | "
-  -- <> t.desc
-  <> "\n"
+fromJson :: String -> Either String Transfer
+fromJson string = do
+  json <- jsonParser string
+  transfer <- decodeJson json
+  pure transfer
+
+
+fromYaml :: String -> Either String Transfer
+fromYaml yaml =
+  case runExcept $ parseYAMLToJson yaml of
+    Left error -> Left "Could not parse YAML"
+    Right json -> decodeJson json
+
+
+showPretty :: Transfer -> String
+showPretty (Transfer trans) =
+  let
+    datePretty = map dateShowPretty trans.utc
+    offsetDate = 16
+  in
+    fromMaybe (" " `power` offsetDate) datePretty
+    <> " | "
+    <> format (width 15) trans.from
+    <> " => "
+    <> format (width 15) trans.to
+    <> " "
+    <> Amount.showPretty trans.amount
+    <> " | "
+    <> fromMaybe "" trans.note
+    <> "\n"

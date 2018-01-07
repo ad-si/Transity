@@ -1,59 +1,39 @@
 module Test.Main where
 
+import Test.Fixtures
+
 import Control.Monad.Eff (Eff)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing))
+import Data.Rational (fromInt, (%))
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Data.Rational (fromInt, (%))
 import Data.Tuple (Tuple(Tuple))
-import Prelude (Unit, discard, show, (#))
-import Test.Fixtures
-  ( transaction
-  , transactionJsonString
-  , transactionYamlString
-  , transactionShowed
-  , transactionPretty
-
-  , commodityMapPretty
-
-  , ledger
-  , ledgerJsonString
-  , ledgerYamlString
-  , ledgerShowed
-  , ledgerPretty
-  , ledgerBalance
-
-  , ledgerMultiTrans
-  , ledgerBalanceMultiTrans
-  )
+import Prelude ((#), (<>), Unit, discard, show)
 import Test.Spec
   ( describe
-  -- , describeOnly
   , it
+  -- , describeOnly
   -- , itOnly
   )
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-import Transity.Data.Account as Account
-import Transity.Data.Amount
-  ( Amount(Amount)
-  , Commodity(Commodity)
-  , prettyShowAmount
-  )
-import Transity.Data.Ledger
-  ( jsonStringToLedger
-  , yamlStringToLedger
-  , prettyShowLedger
-  , showBalance
-  )
-import Transity.Data.Transaction
-  ( jsonStringToTransaction
-  , yamlStringToTransaction
-  , prettyShowTransaction
-  )
+import Transity.Data.Account (CommodityMap)
+import Transity.Data.Account
+  ( addAmountToMap
+  , subtractAmountFromMap
+  , commodityMapShowPretty
+  ) as Account
+import Transity.Data.Amount (Amount(..), Commodity(..))
+import Transity.Data.Amount (showPretty) as Amount
+import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.Ledger as Ledger
+import Transity.Data.Transaction (Transaction(..))
+import Transity.Data.Transaction as Transaction
+import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transfer (fromJson, showPretty) as Transfer
 import Transity.Utils (digitsToRational)
 
 
@@ -63,6 +43,11 @@ rmWhitespace string =
     whitespace = unsafeRegex "\\s+" global
   in
     replace whitespace "" string
+
+
+wrapRight :: String -> String
+wrapRight string =
+  "(Right " <> string <> ")"
 
 
 main :: Eff (RunnerEffects ()) Unit
@@ -102,13 +87,14 @@ main = run [consoleReporter] do
       it "converts abc to Nothing" do
         (digitsToRational "abc") `shouldEqual` Nothing
 
+
   describe "Transity" do
     describe "Data" do
       describe "Amount" do
         it "pretty shows an amount" do
           let
-            actual = prettyShowAmount (Amount (fromInt 37) (Commodity "€"))
-          actual `shouldEqual` "    37.000   €"
+            actual = Amount.showPretty (Amount (fromInt 37) (Commodity "€"))
+          actual `shouldEqual` "    37.000 €       "
 
 
       describe "Account" do
@@ -116,7 +102,7 @@ main = run [consoleReporter] do
           let
             expectedMap = Map.fromFoldable
               [(Tuple (Commodity "€") (Amount (fromInt 37) (Commodity "€")))]
-            emptyMap = Map.empty :: Account.CommodityMap
+            emptyMap = Map.empty :: CommodityMap
             amount = Amount (fromInt 37) (Commodity "€")
             actualMap = emptyMap `Account.addAmountToMap` amount
           actualMap `shouldEqual` expectedMap
@@ -137,59 +123,93 @@ main = run [consoleReporter] do
               [ (Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))
               , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
               ]
-            actualPretty = Account.prettyShowCommodityMap commodityMap
+            actualPretty = Account.commodityMapShowPretty commodityMap
           actualPretty `shouldEqual` commodityMapPretty
+
+
+      describe "Transfer" do
+        it "converts a simple JSON string to a Transfer" do
+          let
+            actual = transferSimpleJson
+              # Transfer.fromJson
+              # show
+              # rmWhitespace
+            expected = transferSimpleShowed
+              # wrapRight
+              # rmWhitespace
+          actual `shouldEqual` expected
+
+        it "pretty shows a transfer" do
+          let
+              actual = Transfer.showPretty transferSimple
+          actual `shouldEqual` transferSimplePretty
 
 
       describe "Transaction" do
         it "converts a JSON string to a Transaction" do
           let
-            actual = transactionJsonString
-              # jsonStringToTransaction
+            actual = transactionSimpleJson
+              # Transaction.fromJson
               # show
               # rmWhitespace
-          actual `shouldEqual` (rmWhitespace transactionShowed)
+            expected = transactionSimpleShowed
+              # wrapRight
+              # rmWhitespace
+          actual `shouldEqual` expected
 
 
         it "converts a YAML string to a Transaction" do
           let
-            actual = transactionYamlString
-              # yamlStringToTransaction
+            actual = transactionSimpleYaml
+              # Transaction.fromYaml
               # show
               # rmWhitespace
-          actual `shouldEqual` (rmWhitespace transactionShowed)
+            expected = transactionSimpleShowed
+              # wrapRight
+              # rmWhitespace
+          actual `shouldEqual` expected
 
 
         it "pretty shows a transaction" do
-          (prettyShowTransaction transaction) `shouldEqual` transactionPretty
+          let
+              actual = Transaction.showPretty transactionSimple
+          actual `shouldEqual` transactionSimplePretty
 
 
       describe "Ledger" do
         it "converts a JSON string to a Ledger" do
           let
-            actual = ledgerJsonString
-              # jsonStringToLedger
+            actual = ledgerJson
+              # Ledger.fromJson
               # show
               # rmWhitespace
-          actual `shouldEqual` (rmWhitespace ledgerShowed)
+            expected = ledgerShowed
+              # wrapRight
+              # rmWhitespace
+          actual `shouldEqual` expected
 
 
         it "converts a YAML string to a Ledger" do
           let
-            actual = ledgerYamlString
-              # yamlStringToLedger
+            actual = ledgerYaml
+              # Ledger.fromYaml
               # show
               # rmWhitespace
-          actual `shouldEqual` (rmWhitespace ledgerShowed)
+            expected = ledgerShowed
+              # wrapRight
+              # rmWhitespace
+          actual `shouldEqual` expected
 
 
         it "pretty shows a ledger" do
-          (prettyShowLedger ledger) `shouldEqual` ledgerPretty
+          (Ledger.showPretty ledger) `shouldEqual` ledgerPretty
 
 
         it "pretty shows the balance of all accounts" do
-          (showBalance ledger) `shouldEqual` ledgerBalance
+          (Ledger.showBalance ledger) `shouldEqual` ledgerBalance
 
 
         it "supports multiple transactions on one account" do
-          (showBalance ledgerMultiTrans) `shouldEqual` ledgerBalanceMultiTrans
+          let
+            actual = Ledger.showBalance ledgerMultiTrans
+          actual `shouldEqual` ledgerBalanceMultiTrans

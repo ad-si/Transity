@@ -1,4 +1,11 @@
-module Transity.Data.Ledger where
+module Transity.Data.Ledger
+  ( Ledger(Ledger)
+  , fromJson
+  , fromYaml
+  , showPretty
+  , showBalance
+  )
+where
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
@@ -18,16 +25,15 @@ import Prelude (class Show, bind, pure, ($), (<>), (#))
 import Text.Format (format, width)
 import Transity.Data.Account
   ( Account(Account)
-  , AccountId
   , CommodityMap
   , addAmountToMap
   , subtractAmountFromMap
-  , prettyShowCommodityMap
+  , commodityMapShowPretty
   )
-import Transity.Data.Transaction
-  ( Transaction(Transaction)
-  , prettyShowTransaction
-  )
+import Transity.Data.Account (Id) as Account
+import Transity.Data.Transaction (Transaction(..))
+import Transity.Data.Transaction (showPretty) as Transaction
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils (getObjField, indentSubsequent)
 
 
@@ -51,19 +57,38 @@ instance decodeLedger :: DecodeJson Ledger where
     pure $ Ledger {owner, transactions}
 
 
-prettyShowLedger :: Ledger -> String
-prettyShowLedger (Ledger l) =
-  let prettyTransactions = map prettyShowTransaction l.transactions
+fromJson :: String -> Either String Ledger
+fromJson json = do
+  jsonObj <- jsonParser json
+  ledger <- decodeJson jsonObj
+  pure ledger
+
+
+fromYaml :: String -> Either String Ledger
+fromYaml yaml =
+  case runExcept $ parseYAMLToJson yaml of
+    Left error -> Left "Could not parse YAML"
+    Right json -> decodeJson json
+
+
+showPretty :: Ledger -> String
+showPretty (Ledger l) =
+  let transactionsPretty = map Transaction.showPretty l.transactions
   in
     "Ledger by " <> l.owner <> "\n"
-    <> fold prettyTransactions
+    <> fold transactionsPretty
 
 
-type BalanceMap = Map.Map AccountId Account
+type BalanceMap = Map.Map Account.Id Account
 
 
 addTransaction :: Transaction -> BalanceMap -> BalanceMap
-addTransaction (Transaction {to, from, amount}) balanceMap =
+addTransaction (Transaction {transfers}) balanceMap =
+  foldr addTransfer balanceMap transfers
+
+
+addTransfer :: Transfer -> BalanceMap -> BalanceMap
+addTransfer (Transfer {to, from, amount}) balanceMap =
   let
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
@@ -101,23 +126,9 @@ showBalance (Ledger ledger) =
     indentation = 60
   in
     foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
-      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple AccountId Account))
+      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
       # map (\(Tuple accountId (Account _ commodityMap)) ->
         format (width indentation) accountId
-        <> indentSubsequent indentation (prettyShowCommodityMap commodityMap)
+        <> indentSubsequent indentation (commodityMapShowPretty commodityMap)
         <> "\n")
       # fold
-
-
-jsonStringToLedger :: String -> Either String Ledger
-jsonStringToLedger jsonString = do
-  json <- jsonParser jsonString
-  ledger <- decodeJson json
-  pure ledger
-
-
-yamlStringToLedger :: String -> Either String Ledger
-yamlStringToLedger yamlString =
-  case runExcept $ parseYAMLToJson yamlString of
-    Left error -> Left "Could not parse YAML"
-    Right json -> decodeJson json

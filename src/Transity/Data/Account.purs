@@ -1,13 +1,13 @@
 module Transity.Data.Account
   ( Account(Account)
-  , AccountId
+  , Id
   , addAmountToMap
   , subtractAmountFromMap
-  , addAmountToAccount
-  , subtractAmountFromAccount
+  , addAmount
+  , subtractAmount
 
   , CommodityMap
-  , prettyShowCommodityMap
+  , commodityMapShowPretty
   )
 where
 
@@ -18,16 +18,10 @@ import Data.Semigroup ((<>))
 import Data.String (joinWith)
 import Data.Tuple (Tuple(Tuple))
 import Prelude ((#))
-import Transity.Data.Amount as Amount
-import Transity.Data.Amount
-  ( Amount(Amount)
-  , Commodity(Commodity)
-  , negateAmount
-  , prettyShowAmount
-  )
+import Transity.Data.Amount (Amount(..), Commodity(..))
+import Transity.Data.Amount (subtract , negate , showPretty) as Amount
 
-
-type AccountId = String
+type Id = String
 type CommodityMap = Map.Map Commodity Amount
 
 
@@ -46,31 +40,31 @@ subtractAmountFromMap :: CommodityMap -> Amount -> CommodityMap
 subtractAmountFromMap commodityMap amount@(Amount value (Commodity commodity)) =
   Map.alter
     (\maybeValue -> case maybeValue of
-      Nothing -> Just (negateAmount amount)
-      Just amountNow -> Just (amountNow `Amount.subtractAmount` amount)
+      Nothing -> Just (Amount.negate amount)
+      Just amountNow -> Just (amountNow `Amount.subtract` amount)
     )
     (Commodity commodity)
     commodityMap
 
 
-prettyShowCommodityMap :: CommodityMap -> String
-prettyShowCommodityMap commodityMap =
+commodityMapShowPretty :: CommodityMap -> String
+commodityMapShowPretty commodityMap =
   commodityMap
     # (Map.toUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
-    # map (\(Tuple _ amount) -> prettyShowAmount amount)
+    # map (\(Tuple _ amount) -> Amount.showPretty amount)
     # joinWith "\n"
 
 
-data Account = Account AccountId CommodityMap
+data Account = Account Id CommodityMap
 
 
-addAmountToAccount :: Account -> Amount -> Account
-addAmountToAccount (Account id comMap) amount =
+addAmount :: Account -> Amount -> Account
+addAmount (Account id comMap) amount =
   let newMap = comMap `addAmountToMap` amount
   in Account id newMap
 
 
-subtractAmountFromAccount :: Account -> Amount -> Account
-subtractAmountFromAccount (Account id comMap) amount =
+subtractAmount :: Account -> Amount -> Account
+subtractAmount (Account id comMap) amount =
   let newMap = comMap `subtractAmountFromMap` amount
   in Account id newMap

@@ -1,9 +1,9 @@
 module Transity.Data.Amount
   ( Amount(Amount)
   , Commodity(Commodity)
-  , negateAmount
-  , prettyShowAmount
-  , subtractAmount
+  , negate
+  , showPretty
+  , subtract
   )
 where
 
@@ -19,7 +19,8 @@ import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
 import Data.Ord (class Ord)
 import Data.Rational (Rational, fromInt, toNumber, (%))
-import Data.Ring (negate, (-))
+import Data.Ring ((-))
+import Data.Ring (negate) as Ring
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Semiring ((+))
 import Data.String (split, Pattern(Pattern))
@@ -30,7 +31,7 @@ import Prelude
   , (/=)
   )
 import Text.Format (format, width, precision)
-import Transity.Utils (digitsToRational)
+import Transity.Utils (digitsToRational, padEnd)
 
 
 newtype Commodity = Commodity String
@@ -41,7 +42,6 @@ derive newtype instance ordCommodity :: Ord Commodity
 
 instance showCommodity :: Show Commodity where
   show = genericShow
-
 
 
 
@@ -74,18 +74,18 @@ instance decodeAmount :: DecodeJson Amount where
       _ -> Left "Amount does not contain a value and a commodity"
 
 
-subtractAmount :: Amount -> Amount -> Amount
-subtractAmount (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
+subtract :: Amount -> Amount -> Amount
+subtract (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
   | comA /= comB = Amount (0 % 1) (Commodity "INVALID COMPUTATION")
   | otherwise = Amount (numA - numB) (Commodity comA)
 
 
-negateAmount :: Amount -> Amount
-negateAmount (Amount num com) = Amount (negate num) com
+negate :: Amount -> Amount
+negate (Amount num com) = Amount (Ring.negate num) com
 
 
-prettyShowAmount :: Amount -> String
-prettyShowAmount (Amount value (Commodity commodity)) =
+showPretty :: Amount -> String
+showPretty (Amount value (Commodity commodity)) =
   format (width 10 <> precision 3) (toNumber value)
   <> " "
-  <> format (width 3) commodity
+  <> padEnd 8 commodity
