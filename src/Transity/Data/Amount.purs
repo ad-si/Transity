@@ -86,6 +86,6 @@ negate (Amount num com) = Amount (Ring.negate num) com
 
 showPretty :: Amount -> String
 showPretty (Amount value (Commodity commodity)) =
-  format (width 10 <> precision 3) (toNumber value)
+  format (width 10 <> precision 2) (toNumber value)
   <> " "
   <> padEnd 8 commodity

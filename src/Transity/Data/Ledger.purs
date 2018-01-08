@@ -132,7 +132,7 @@ showBalance (Ledger ledger) =
     indentation = 60
   in
     foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
-      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
+      # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
       # map (\(Tuple accountId (Account _ commodityMap)) ->
         format (width indentation) accountId
         <> indentSubsequent indentation (commodityMapShowPretty commodityMap)

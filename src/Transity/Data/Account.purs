@@ -50,7 +50,7 @@ subtractAmountFromMap commodityMap amount@(Amount value (Commodity commodity)) =
 commodityMapShowPretty :: CommodityMap -> String
 commodityMapShowPretty commodityMap =
   commodityMap
-    # (Map.toUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
+    # (Map.toAscUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
     # map (\(Tuple _ amount) -> Amount.showPretty amount)
     # joinWith "\n"
 
