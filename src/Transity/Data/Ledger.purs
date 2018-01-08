@@ -14,6 +14,7 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Either (Either(..))
 import Data.Foldable (fold, foldr)
+import Data.Foreign (renderForeignError)
 import Data.Functor (map)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -24,7 +25,7 @@ import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#))
 import Text.Format (format, width)
 import Transity.Data.Account
-  ( Account(Account)
+  ( Account(..)
   , CommodityMap
   , addAmountToMap
   , subtractAmountFromMap
@@ -67,7 +68,10 @@ fromJson json = do
 fromYaml :: String -> Either String Ledger
 fromYaml yaml =
   case runExcept $ parseYAMLToJson yaml of
-    Left error -> Left "Could not parse YAML"
+    Left error -> Left
+      ( "Could not parse YAML: "
+        <> fold (map renderForeignError error)
+      )
     Right json -> decodeJson json
 
 

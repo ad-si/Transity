@@ -14,6 +14,8 @@ import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Either (Either(..))
+import Data.Foreign (renderForeignError)
+import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe, maybe, fromMaybe)
@@ -77,7 +79,10 @@ fromJson string = do
 fromYaml :: String -> Either String Transfer
 fromYaml yaml =
   case runExcept $ parseYAMLToJson yaml of
-    Left error -> Left "Could not parse YAML"
+    Left error -> Left
+      ( "Could not parse YAML: "
+        <> fold (map renderForeignError error)
+      )
     Right json -> decodeJson json
 
 
