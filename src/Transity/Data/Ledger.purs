@@ -20,6 +20,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
+import Data.Monoid (power)
 import Data.Tuple (Tuple(Tuple))
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#))
@@ -78,8 +79,9 @@ fromYaml yaml =
 showPretty :: Ledger -> String
 showPretty (Ledger l) =
   let transactionsPretty = map Transaction.showPretty l.transactions
-  in
-    "Ledger by " <> l.owner <> "\n"
+  in ""
+    <> "Ledger for \"" <> l.owner <> "\"\n"
+    <> "=" `power` 80 <> "\n"
     <> fold transactionsPretty
 
 
