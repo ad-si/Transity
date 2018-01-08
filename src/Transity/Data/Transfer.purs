@@ -18,7 +18,7 @@ import Data.Foreign (renderForeignError)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe, maybe, fromMaybe)
+import Data.Maybe (Maybe(Just, Nothing), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude
@@ -90,12 +90,13 @@ showPretty :: Transfer -> String
 showPretty (Transfer trans) =
   let
     datePretty = map dateShowPretty trans.utc
-    offsetDate = 16
+    offsetDate = 19
   in
-    fromMaybe (" " `power` offsetDate) datePretty
-    <> " | "
+    case datePretty of
+      Nothing -> " " `power` offsetDate
+      Just aDate -> aDate <> " | "
     <> format (width 15) trans.from
-    <> " => "
+    <> " -> "
     <> format (width 15) trans.to
     <> " "
     <> Amount.showPretty trans.amount
