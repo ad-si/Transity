@@ -7,6 +7,8 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 ## List of Features
 
 - [x] Modeled on transactions instead of debiting / crediting accounts
+- [x] Dedicated payer (from) and payee (to) fields (ledger only supports payee)
+- [x] No misuse of accounts as categories / tags => direct support for them
 - [ ] No hardcoded asset / liability connotation as it is viewpoint dependent
   => Choose viewpoint when printing the balance
 - [x] Easily editable & processable file format based on [YAML](http://yaml.org)
@@ -34,11 +36,13 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - Export to various formats for postprocessing
   - [ ] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
-  - [ ] [JS-Sequence-Diagrams] (for UML sequence diagrams)
+  - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
 - Additional features for crypto currencies
   - TODO: Think about what features exactly
 - [ ] Multi file support
 - [ ] Cache-files to speed up processing of large data sets
+- [ ] Support for time limited commodities (e.g. subscription for a month)
+- [ ] Treat commodities as scientific units (e.g 1 k€ == 1000 €)
 
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
@@ -55,26 +59,27 @@ commodities:
     name: Euro
     alias:
       - EUR
-    desc: Currency used in the European Union
+    note: Currency used in the European Union
     utc: 2017-04-02 19:33:53
 
-accounts:
+entities:
   - id: anna
     name: Anna Smith
     utc: 2017-04-02 19:33:28
     tags:
       - person
-    children:
+    accounts:
       - id: wallet
         name: Wallet
-        desc: Anna's black wallet
+        note: Anna's black wallet
         utc: 2017-04-02 19:33:28
         tags:
           - wallet
+
   - id: evil-corp
     name: Evil Corporation
     utc: 2017-04-02 19:33:28
-    desc: The Evil Corporation in the United States of Evil
+    note: The Evil Corporation in the United States of Evil
     tags:
       - company
 
