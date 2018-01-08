@@ -93,9 +93,10 @@ showPretty (Transaction tact) =
     transfersPretty = map Transfer.showPretty tact.transfers
     offsetDate = 16
     offsetIndentation = 4
+    addId str = " | (id " <> str <> ")"
   in
     fromMaybe (" " `power` offsetDate) (map dateShowPretty tact.utc)
-    <> " - " <> format (width 30) (fromMaybe "NO NOTE" tact.note)
-    <> " (id " <> fromMaybe "NO ID" tact.id <> ")"
+    <> " | " <> format (width 30) (fromMaybe "NO NOTE" tact.note)
+    <> fromMaybe "" (map addId tact.id)
     <> indentSubsequent offsetIndentation ("\n" <> fold transfersPretty)
     <> "\n"
