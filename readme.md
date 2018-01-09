@@ -4,7 +4,7 @@ The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 
-## List of Features
+## List of Features / TODOs
 
 - [x] Modeled on transactions instead of debiting / crediting accounts
 - [x] Dedicated payer (from) and payee (to) fields (ledger only supports payee)
@@ -47,6 +47,32 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
 [JS-Sequence-Diagrams]: https://bramp.github.io/js-sequence-diagrams
+
+
+## Installation
+
+### From Source
+
+1. `git clone https://github.com/adius/transity`
+1. `cd transity`
+1. `pulp server` - Wait until it displays `Bundled.` and then stop the server
+1. And you are ready to go:
+  ```shell
+  $ node output/app.js balance tests/ledger.yaml
+              anna      1.00 evil-machine
+                   -49978.02 €
+               ben    -50.00 $
+                       -1.12 BTC
+                     -100.00 €
+         evil-corp     -1.00 evil-machine
+                    50015.00 €
+          good-inc   -100.00 €
+      grocery-shop     11.97 €
+         john:giro     50.00 $
+                        1.12 BTC
+                       85.00 €
+       john:wallet     66.05 €
+  ```
 
 
 ## Ledger File Format

@@ -1,50 +1,116 @@
 owner: John Doe
+commodities:
+  - id: €
+    name: Euro
+    alias:
+      - EUR
+    note: Currency used in the European Union
+    utc: 2017-04-02 19:33:53
+
+  - id: $
+    name: US Dollar
+    alias:
+      - USD
+      - Dollar
+    note: Currency used in the United States of America
+    utc: 2017-04-02 19:34:07
+
+
+entities:
+  - id: john
+    name: John Doe
+    utc: 2017-04-02 19:33:28
+    tags:
+      - person
+    accounts:
+      - id: wallet
+        name: Wallet
+        note: John's black wallet
+        utc: 2017-04-02 19:33:28
+        tags:
+          - wallet
+
+      - id: visa
+        name: VISA card
+        note: John's VISA card
+        utc: 2017-04-02 19:36:57
+        tags:
+          - credit card
+          - visa
+
+  - id: anna
+    name: Anna Smith
+    utc: 2017-04-02 20:11:45
+    tags:
+      - person
+
+  - id: evil-corp
+    name: Evil Corporation
+    utc: 2017-04-02 19:33:28
+    note: The Evil Corporation in the United States of Evil
+    tags:
+      - company
+
+
 transactions:
-  - entryDate: '2014-12-24'
-    valueDate: '2015-01-05'
-    from: john:giro
-    to: evil-corp
-    desc: Money for evil deal
-    amount: 15 €
+  - utc: '2014-04-22'
+    title: Purchase of evil machine
+    transfers:
+      - utc: '2017-02-17'
+        from: anna
+        to: evil-corp
+        amount: 50000 €
 
-  - entryDate: '2015-01-05'
-    valueDate: '2015-01-05'
-    from: good-inc
-    to: john:wallet
-    amount: 100 €
-    desc: ''
+      - utc: '2017-02-17'
+        from: evil-corp
+        to: anna
+        amount: 1 evil-machine
 
-  - entryDate: '2015-01-04 17:05'
-    valueDate: '2015-01-05'
-    from: john:wallet
-    to: anna
-    desc: Christmas Gifts
-    amount: 33.95 €
+  - utc: '2014-12-24'
+    note: Money for evil deal
+    transfers:
+      - from: john:giro
+        to: evil-corp
+        amount: 15 €
 
-  - entryDate: '2015-01-05 17:13'
-    valueDate: '2015-01-07'
-    from: anna
-    to: grocery-shop
-    desc: Food
-    amount: 11.97 €
+  - utc: '2015-01-05'
+    note: ''
+    transfers:
+      - from: good-inc
+        to: john:wallet
+        amount: 100 €
 
-  - entryDate: '2015-01-07'
-    valueDate: '2015-01-07'
-    from: ben
-    to: john:giro
-    desc: Financial support
-    amount: 100 €
+  - utc: '2015-01-04 17:05'
+    note: Christmas Gifts
+    transfers:
+      - from: john:wallet
+        to: anna
+        amount: 33.95 €
 
-  - entryDate: '2015-01-07'
-    valueDate: '2015-01-07'
-    from: ben
-    to: john:giro
-    desc: Financial support in Dollar
-    amount: 50 $
+  - utc: '2015-01-05 17:13'
+    note: Food
+    transfers:
+      - from: anna
+        to: grocery-shop
+        amount: 11.97 €
 
-  - entryDate: '2015-03-07'
-    valueDate: '2015-03-08'
-    from: ben
-    to: john:giro
-    desc: Financial support in Bitcoin
-    amount: 1.123 BTC
+  - utc: '2015-01-07'
+    note: Financial support
+    transfers:
+      - from: ben
+        to: john:giro
+        amount: 100 €
+
+  - utc: '2015-01-07'
+    note: Financial support in Dollar
+    transfers:
+      - from: ben
+        to: john:giro
+        amount: 50 $
+
+  - utc: '2015-03-07'
+    note: Financial support in Bitcoin
+    transfers:
+      - from: ben
+        to: john:giro
+        amount: 1.123 BTC
