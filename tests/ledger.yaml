@@ -5,7 +5,7 @@ commodities:
     alias:
       - EUR
     note: Currency used in the European Union
-    utc: 2017-04-02 19:33:53
+    utc: '2017-04-02 19:33:53'
 
   - id: $
     name: US Dollar
@@ -13,40 +13,40 @@ commodities:
       - USD
       - Dollar
     note: Currency used in the United States of America
-    utc: 2017-04-02 19:34:07
+    utc: '2017-04-02 19:34:07'
 
 
 entities:
   - id: john
     name: John Doe
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     tags:
       - person
     accounts:
       - id: wallet
         name: Wallet
         note: John's black wallet
-        utc: 2017-04-02 19:33:28
+        utc: '2017-04-02 19:33:28'
         tags:
           - wallet
 
       - id: visa
         name: VISA card
         note: John's VISA card
-        utc: 2017-04-02 19:36:57
+        utc: '2017-04-02 19:36:57'
         tags:
           - credit card
           - visa
 
   - id: anna
     name: Anna Smith
-    utc: 2017-04-02 20:11:45
+    utc: '2017-04-02 20:11:45'
     tags:
       - person
 
   - id: evil-corp
     name: Evil Corporation
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     note: The Evil Corporation in the United States of Evil
     tags:
       - company

@@ -7,6 +7,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 ## List of Features / TODOs
 
 - [x] Modeled on transactions instead of debiting / crediting accounts
+  => Support for complex transactions made up of several transfers
 - [x] Dedicated payer (from) and payee (to) fields (ledger only supports payee)
 - [x] No misuse of accounts as categories / tags => direct support for them
 - [ ] No hardcoded asset / liability connotation as it is viewpoint dependent
@@ -57,22 +58,22 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 1. `cd transity`
 1. `pulp server` - Wait until it displays `Bundled.` and then stop the server
 1. And you are ready to go:
-  ```shell
-  $ node output/app.js balance tests/ledger.yaml
-              anna      1.00 evil-machine
-                   -49978.02 €
-               ben    -50.00 $
-                       -1.12 BTC
-                     -100.00 €
-         evil-corp     -1.00 evil-machine
-                    50015.00 €
-          good-inc   -100.00 €
-      grocery-shop     11.97 €
-         john:giro     50.00 $
-                        1.12 BTC
-                       85.00 €
-       john:wallet     66.05 €
-  ```
+    ```shell
+    $ node output/app.js balance tests/ledger.yaml
+                anna      1.00 evil-machine
+                     -49978.02 €
+                 ben    -50.00 $
+                         -1.12 BTC
+                       -100.00 €
+           evil-corp     -1.00 evil-machine
+                      50015.00 €
+            good-inc   -100.00 €
+        grocery-shop     11.97 €
+           john:giro     50.00 $
+                          1.12 BTC
+                         85.00 €
+         john:wallet     66.05 €
+    ```
 
 
 ## Ledger File Format
@@ -211,7 +212,7 @@ Food    | 20.00 € |
 ---------------------------
 ```
 
-But you *must never forget an account*,
+But you *must never forget a posting*,
 because otherwise your account won't balance.
 
 ```txt

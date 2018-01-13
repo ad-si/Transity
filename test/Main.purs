@@ -1,29 +1,60 @@
 module Test.Main where
 
-import Test.Fixtures
-
+import Control.Applicative (when)
+import Control.Bind (discard)
+import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff)
+import Data.Array (zipWith)
+import Data.Eq ((/=))
+-- import Data.Foldable (and)
+import Data.Foldable (fold)
+import Data.Function ((#))
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Rational (fromInt, (%))
+import Data.Semigroup ((<>))
+import Data.Show (show)
+import Data.String (toCharArray, length)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(Tuple))
-import Prelude ((#), (<>), Unit, discard, show)
+import Data.Unit (Unit)
+import Test.Fixtures
+  ( accountPretty
+  , commodityMapPretty
+  , ledger
+  , ledgerBalance
+  , ledgerBalanceMultiTrans
+  , ledgerJson
+  , ledgerMultiTrans
+  , ledgerPretty
+  , ledgerShowed
+  , ledgerYaml
+  , transactionSimple
+  , transactionSimpleJson
+  , transactionSimplePretty
+  , transactionSimpleShowed
+  , transactionSimpleYaml
+  , transferSimple
+  , transferSimpleJson
+  , transferSimplePretty
+  , transferSimpleShowed
+  )
 import Test.Spec
   ( describe
   , it
   -- , describeOnly
   -- , itOnly
   )
-import Test.Spec.Assertions (shouldEqual)
+import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-import Transity.Data.Account (CommodityMap)
+import Transity.Data.Account (Account(..), CommodityMap)
 import Transity.Data.Account
   ( addAmountToMap
   , subtractAmountFromMap
+  , showPretty
   , commodityMapShowPretty
   ) as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -34,20 +65,41 @@ import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer (fromJson, showPretty) as Transfer
-import Transity.Utils (digitsToRational)
+import Transity.Utils (digitsToRational, indentSubsequent)
 
 
 rmWhitespace :: String -> String
-rmWhitespace string =
+rmWhitespace str =
   let
     whitespace = unsafeRegex "\\s+" global
   in
-    replace whitespace "" string
+    replace whitespace "" str
 
 
 wrapRight :: String -> String
 wrapRight string =
   "(Right " <> string <> ")"
+
+
+shouldEqualString :: forall r. String -> String -> Aff r Unit
+shouldEqualString v1 v2 =
+  v1 <> "\n" <> v2
+    # indentSubsequent 2
+    # fail
+    # when (v1 /= v2)
+
+
+compareChar :: forall r. String -> String -> Aff r Unit
+compareChar actual expected =
+  let
+    comparisonArray = zipWith
+      shouldEqual
+      (toCharArray actual)
+      (toCharArray expected)
+  in do
+    fold comparisonArray
+    (length actual) `shouldEqual` (length expected)
+
 
 
 main :: Eff (RunnerEffects ()) Unit
@@ -94,7 +146,7 @@ main = run [consoleReporter] do
         it "pretty shows an amount" do
           let
             actual = Amount.showPretty (Amount (fromInt 37) (Commodity "€"))
-          actual `shouldEqual` "    37.000 €       "
+          actual `shouldEqual` "     37.00 €       "
 
 
       describe "Account" do
@@ -126,6 +178,15 @@ main = run [consoleReporter] do
             actualPretty = Account.commodityMapShowPretty commodityMap
           actualPretty `shouldEqual` commodityMapPretty
 
+        it "pretty shows an account" do
+          let
+            commodityMap = Map.fromFoldable
+              [ (Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))
+              , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
+              ]
+            actualPretty = Account.showPretty (Account "test" commodityMap)
+          actualPretty `shouldEqual` accountPretty
+
 
       describe "Transfer" do
         it "converts a simple JSON string to a Transfer" do
@@ -141,8 +202,8 @@ main = run [consoleReporter] do
 
         it "pretty shows a transfer" do
           let
-              actual = Transfer.showPretty transferSimple
-          actual `shouldEqual` transferSimplePretty
+            actual = Transfer.showPretty transferSimple
+          actual `compareChar` transferSimplePretty
 
 
       describe "Transaction" do
@@ -202,14 +263,14 @@ main = run [consoleReporter] do
 
 
         it "pretty shows a ledger" do
-          (Ledger.showPretty ledger) `shouldEqual` ledgerPretty
+          (Ledger.showPretty ledger) `shouldEqualString` ledgerPretty
 
 
         it "pretty shows the balance of all accounts" do
-          (Ledger.showBalance ledger) `shouldEqual` ledgerBalance
+          (Ledger.showBalance ledger) `shouldEqualString` ledgerBalance
 
 
         it "supports multiple transactions on one account" do
           let
             actual = Ledger.showBalance ledgerMultiTrans
-          actual `shouldEqual` ledgerBalanceMultiTrans
+          actual `shouldEqualString` ledgerBalanceMultiTrans

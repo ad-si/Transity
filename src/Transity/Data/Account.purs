@@ -5,6 +5,7 @@ module Transity.Data.Account
   , subtractAmountFromMap
   , addAmount
   , subtractAmount
+  , showPretty
 
   , CommodityMap
   , commodityMapShowPretty
@@ -18,8 +19,11 @@ import Data.Semigroup ((<>))
 import Data.String (joinWith)
 import Data.Tuple (Tuple(Tuple))
 import Prelude ((#))
+import Text.Format (format, width)
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount (subtract , negate , showPretty) as Amount
+import Transity.Utils (indentSubsequent)
+
 
 type Id = String
 type CommodityMap = Map.Map Commodity Amount
@@ -68,3 +72,13 @@ subtractAmount :: Account -> Amount -> Account
 subtractAmount (Account id comMap) amount =
   let newMap = comMap `subtractAmountFromMap` amount
   in Account id newMap
+
+
+showPretty :: Account -> String
+showPretty (Account accountId commodityMap) =
+  let
+    indentation = 80
+  in
+    format (width indentation) accountId
+    <> indentSubsequent indentation (commodityMapShowPretty commodityMap)
+    <> "\n"

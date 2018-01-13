@@ -24,19 +24,17 @@ import Data.Monoid (power)
 import Data.Tuple (Tuple(Tuple))
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#))
-import Text.Format (format, width)
 import Transity.Data.Account
   ( Account(..)
   , CommodityMap
   , addAmountToMap
   , subtractAmountFromMap
-  , commodityMapShowPretty
   )
-import Transity.Data.Account (Id) as Account
+import Transity.Data.Account (Id, showPretty) as Account
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction (showPretty) as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils (getObjField, indentSubsequent)
+import Transity.Utils (getObjField)
 
 
 -- | List of all transactions
@@ -133,8 +131,5 @@ showBalance (Ledger ledger) =
   in
     foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
       # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
-      # map (\(Tuple accountId (Account _ commodityMap)) ->
-        format (width indentation) accountId
-        <> indentSubsequent indentation (commodityMapShowPretty commodityMap)
-        <> "\n")
+      # map (\(Tuple _ account) -> Account.showPretty account)
       # fold

@@ -76,7 +76,7 @@ transferSimpleShowed = """
 transferSimplePretty :: String
 transferSimplePretty = "\
   \2014-12-24 00:00 \
-  \|       john:giro =>       evil-corp     15.000 €        \
+  \|       john:giro ->       evil-corp      15.00 €        \
   \| A little note\n\
   \" -- Fix syntax highlighting: "
 
@@ -164,9 +164,9 @@ transactionSimpleShowed = """
 
 transactionSimplePretty :: String
 transactionSimplePretty = "\
-  \2014-12-24 00:00 - A short note about this transaction (id abcxyz)\n\
+  \2014-12-24 00:00 | A short note about this transaction | (id abcxyz)\n\
   \    2014-12-24 00:00 \
-    \|       john:giro =>       evil-corp     15.000 €        \
+    \|       john:giro ->       evil-corp      15.00 €        \
     \| A little note\n\
   \    \n\
   \" -- Fix syntax highlighting: "
@@ -197,10 +197,17 @@ transactionSimpleBShowed = """
   )
 """
 
+
+accountPretty :: String
+accountPretty = ""
+  <> " " `power` 76 <> "test     12.00 $       \n"
+  <> " " `power` 76 <> "         42.00 €       \n"
+
+
 commodityMapPretty :: String
 commodityMapPretty = "\
-  \    12.000 $       \n\
-  \    42.000 €       \
+  \     12.00 $       \n\
+  \     42.00 €       \
   \" -- Fix syntax highlighting: "
 
 
@@ -257,24 +264,20 @@ ledgerShowed = """
 
 
 ledgerPretty :: String
-ledgerPretty = "\
-  \Ledger by John Doe\n\
-  \2014-12-24 00:00 - A short note about this transaction (id abcxyz)\n\
-  \    2014-12-24 00:00 \
-    \|       john:giro =>       evil-corp     15.000 €        \
-    \| A little note\n\
-  \    \n\
-  \" -- Fix syntax highlighting: "
+ledgerPretty = """Ledger for "John Doe"
+================================================================================
+2014-12-24 00:00 | A short note about this transaction | (id abcxyz)
+    """ <> transferSimplePretty <> "    \n"
 
 
 ledgerBalance :: String
 ledgerBalance = ""
-  <> " " `power` 51 <> "evil-corp    15.000 €       \n"
-  <> " " `power` 51 <> "john:giro   -15.000 €       \n"
+  <> " " `power` 71 <> "evil-corp     15.00 €       \n"
+  <> " " `power` 71 <> "john:giro    -15.00 €       \n"
 
 
 ledgerBalanceMultiTrans :: String
 ledgerBalanceMultiTrans = ""
-  <> " " `power` 48 <> "flower-power     7.000 €       \n"
-  <> " " `power` 48 <> "   evil-corp     8.000 €       \n"
-  <> " " `power` 48 <> "   john:giro   -15.000 €       \n"
+  <> " " `power` 68 <> "   evil-corp      8.00 €       \n"
+  <> " " `power` 68 <> "flower-power      7.00 €       \n"
+  <> " " `power` 68 <> "   john:giro    -15.00 €       \n"
