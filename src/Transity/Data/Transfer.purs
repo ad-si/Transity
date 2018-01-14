@@ -14,12 +14,16 @@ import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Either (Either(..))
+import Data.Eq ((==))
 import Data.Foreign (renderForeignError)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Just, Nothing), maybe, fromMaybe)
 import Data.Monoid (power)
+import Data.Rational (fromInt)
+import Data.Show (show)
+import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude
   ( ($)
@@ -30,10 +34,14 @@ import Prelude
   , map
   )
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount)
+import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount (showPretty) as Amount
 import Transity.Data.Account (Id) as Account
-import Transity.Utils (getObjField, stringToDateTime, dateShowPretty)
+import Transity.Utils
+  ( getFieldVerbose
+  , stringToDateTime
+  , dateShowPretty
+  )
 
 
 newtype Transfer = Transfer
@@ -54,19 +62,37 @@ instance decodeTransfer :: DecodeJson Transfer where
   decodeJson json = do
     object <- maybe (Left "Transfer is not an object") Right (toObject json)
 
+    from <- object `getFieldVerbose` "from"
+    to <- object `getFieldVerbose` "to"
+    amount <- object `getFieldVerbose` "amount"
+
     utc <- object `getFieldOptional` "utc"
-    from <- object `getObjField` "from"
-    to <- object `getObjField` "to"
-    amount <- object `getObjField` "amount"
     note <- object `getFieldOptional` "note"
 
-    pure $ Transfer
-      { utc: map stringToDateTime utc
-      , from
-      , to
-      , amount
-      , note
-      }
+    transfer <- verifyTransfer (show json) (Transfer
+        { utc: map stringToDateTime utc
+        , from
+        , to
+        , amount
+        , note
+        }
+      )
+
+    pure transfer
+
+
+verifyTransfer :: String -> Transfer -> Either String Transfer
+verifyTransfer json transfer@(Transfer transRec) =
+  let
+    (Amount quantity _) = transRec.amount
+  in
+    if (length transRec.from == 0)
+      then Left $ "Field 'from' in " <> json <>  " must not be empty" else
+    if (length transRec.to == 0)
+      then Left $ "Field 'to' in " <> json <>  " must not be empty" else
+    if (quantity == (fromInt 0))
+      then Left $ "Field 'amount' in " <> json <>  " must not be 0"
+    else Right transfer
 
 
 fromJson :: String -> Either String Transfer

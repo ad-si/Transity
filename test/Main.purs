@@ -1,16 +1,18 @@
 module Test.Main where
 
-import Control.Applicative (when)
-import Control.Bind (discard)
+import Control.Applicative (pure)
+import Control.Bind (discard, bind)
 import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
--- import Data.Foldable (and)
+import Data.Either (Either(Left, Right))
 import Data.Foldable (fold)
-import Data.Function ((#))
+import Data.Function ((#), ($))
+import Data.Functor (map)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing))
+import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
 import Data.Semigroup ((<>))
 import Data.Show (show)
@@ -18,8 +20,8 @@ import Data.String (toCharArray, length)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Data.Tuple (Tuple(Tuple))
-import Data.Unit (Unit)
+import Data.Tuple (Tuple(..))
+import Data.Unit (Unit, unit)
 import Test.Fixtures
   ( accountPretty
   , commodityMapPretty
@@ -31,6 +33,8 @@ import Test.Fixtures
   , ledgerPretty
   , ledgerShowed
   , ledgerYaml
+  , transactionNoAccount
+  , transactionNoAccountPretty
   , transactionSimple
   , transactionSimpleJson
   , transactionSimplePretty
@@ -41,13 +45,10 @@ import Test.Fixtures
   , transferSimplePretty
   , transferSimpleShowed
   )
-import Test.Spec
-  ( describe
-  , it
-  -- , describeOnly
-  -- , itOnly
-  )
+import Test.Spec (describe, it)
+-- import Test.Spec as Test
 import Test.Spec.Assertions (fail, shouldEqual)
+import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
 import Transity.Data.Account (Account(..), CommodityMap)
@@ -59,11 +60,8 @@ import Transity.Data.Account
   ) as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount (showPretty) as Amount
-import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Ledger as Ledger
-import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer (fromJson, showPretty) as Transfer
 import Transity.Utils (digitsToRational, indentSubsequent)
 
@@ -81,12 +79,29 @@ wrapRight string =
   "(Right " <> string <> ")"
 
 
+testEqualityTo :: String -> String -> Either String String
+testEqualityTo actual expected =
+  if (actual /= expected)
+  then Left
+    $ indentSubsequent 2
+    $ "=========== Actual ===========\n" <>
+      actual <>
+      "\n========== Expected ==========\n" <>
+      expected <> "\n=============================="
+  else Right ""
+
+
+shouldBeOk :: forall r. Either String String -> Aff r Unit
+shouldBeOk value = case value of
+  Left error -> fail error
+  Right _ -> (pure unit)
+
+
 shouldEqualString :: forall r. String -> String -> Aff r Unit
 shouldEqualString v1 v2 =
-  v1 <> "\n" <> v2
-    # indentSubsequent 2
-    # fail
-    # when (v1 /= v2)
+  case v1 `testEqualityTo` v2 of
+    Left error -> fail error
+    Right _ -> (pure unit)
 
 
 compareChar :: forall r. String -> String -> Aff r Unit
@@ -138,6 +153,12 @@ main = run [consoleReporter] do
 
       it "converts abc to Nothing" do
         (digitsToRational "abc") `shouldEqual` Nothing
+
+      let
+        digits = "1." <> ("5" `power` 10)
+
+      it ("converts " <> digits <> " to Nothing (Int range overflow)") do
+        (digitsToRational digits) `shouldEqual` Nothing
 
 
   describe "Transity" do
@@ -233,7 +254,7 @@ main = run [consoleReporter] do
 
         it "pretty shows a transaction" do
           let
-              actual = Transaction.showPretty transactionSimple
+            actual = Transaction.showPretty transactionSimple
           actual `shouldEqual` transactionSimplePretty
 
 
@@ -260,6 +281,17 @@ main = run [consoleReporter] do
               # wrapRight
               # rmWhitespace
           actual `shouldEqual` expected
+
+
+        it "fails if a transfer contains an empty field" do
+          expectError
+            (shouldBeOk do
+              actual <- transactionNoAccount
+                # Ledger.fromYaml
+                # map Ledger.showBalance
+              expected <- Right transactionNoAccountPretty
+              actual `testEqualityTo` expected
+            )
 
 
         it "pretty shows a ledger" do

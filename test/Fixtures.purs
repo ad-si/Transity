@@ -115,6 +115,23 @@ transactionZero = Transaction
   , transfers: []
   }
 
+
+transactionNoAccount :: String
+transactionNoAccount = """
+owner: John
+transactions:
+  - transfers:
+    - from: John
+      to: ""
+      amount: 7 €
+"""
+
+transactionNoAccountPretty :: String
+transactionNoAccountPretty = ""
+  <> " " `power` 86 <> "7.00 €       \n"
+  <> " " `power` 76 <> "John     -7.00 €       \n"
+
+
 transactionSimple :: Transaction
 transactionSimple = Transaction
   { id: Just "abcxyz"

@@ -54,7 +54,7 @@ instance decodeTransaction :: DecodeJson Transaction where
     object <- maybe (Left "Transaction is not an object") Right (toObject json)
 
     id        <- object `getFieldOptional` "id"
-    utc      <- object `getFieldOptional` "utc"
+    utc       <- object `getFieldOptional` "utc"
     note      <- object `getFieldOptional` "note"
     receipt   <- object `getFieldOptional` "receipt"
     transfers <- object `getObjField` "transfers"

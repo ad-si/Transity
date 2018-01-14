@@ -1,5 +1,6 @@
 module Transity.Utils
   ( getObjField
+  , getFieldVerbose
   , parseToUnixTime
   , stringToDateTime
   , utcToIsoString
@@ -25,6 +26,7 @@ import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Nothing), fromMaybe)
 import Data.Monoid (power)
 import Data.Rational (Rational, (%))
+import Data.Show (show)
 import Data.String
   ( indexOf
   , length
@@ -54,7 +56,16 @@ getObjField
   :: forall a. DecodeJson a
   => StrMap Json -> String -> Either String a
 getObjField object name = case (object `getField` name) of
-  Left error -> Left $ "'" <> name <> "' could not be parsed: " <> error
+  Left error -> Left $ "'" <> name <> "' could not be parsed: \n  " <> error
+  Right success -> Right success
+
+
+getFieldVerbose
+  :: forall a. DecodeJson a
+  => StrMap Json -> String -> Either String a
+getFieldVerbose object name = case (object `getField` name) of
+  Left error -> Left $ "'" <> name <> "' could not be parsed in " <>
+    (show object) <> " because of following error: \n  " <> error
   Right success -> Right success
 
 
