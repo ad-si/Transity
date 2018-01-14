@@ -4,8 +4,8 @@ import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.Result (Result(..), fromEither)
 import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
@@ -27,8 +27,8 @@ printTransactions :: forall eff.
     ) Unit
 printTransactions ledgerFileContent = do
   case Ledger.fromYaml ledgerFileContent of
-    Left error -> log $ show error
-    Right ledger -> log $ Ledger.showPretty ledger
+    Ok ledger -> log $ Ledger.showPretty ledger
+    Error error -> log $ show error
 
 
 printBalance :: forall eff.
@@ -39,8 +39,8 @@ printBalance :: forall eff.
     ) Unit
 printBalance ledgerFileContent = do
   case Ledger.fromYaml ledgerFileContent of
-    Left error -> log $ show error
-    Right ledger -> log $ Ledger.showBalance ledger
+    Ok ledger -> log $ Ledger.showBalance ledger
+    Error error -> log $ show error
 
 
 main :: forall eff . Eff

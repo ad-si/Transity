@@ -6,7 +6,7 @@ import Control.Monad.Aff (Aff())
 import Control.Monad.Eff (Eff)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
-import Data.Either (Either(Left, Right))
+import Data.Result (Result(Error, Ok))
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -76,32 +76,32 @@ rmWhitespace str =
 
 wrapRight :: String -> String
 wrapRight string =
-  "(Right " <> string <> ")"
+  "(Ok " <> string <> ")"
 
 
-testEqualityTo :: String -> String -> Either String String
+testEqualityTo :: String -> String -> Result String String
 testEqualityTo actual expected =
   if (actual /= expected)
-  then Left
+  then Error
     $ indentSubsequent 2
     $ "=========== Actual ===========\n" <>
       actual <>
       "\n========== Expected ==========\n" <>
       expected <> "\n=============================="
-  else Right ""
+  else Ok ""
 
 
-shouldBeOk :: forall r. Either String String -> Aff r Unit
+shouldBeOk :: forall r. Result String String -> Aff r Unit
 shouldBeOk value = case value of
-  Left error -> fail error
-  Right _ -> (pure unit)
+  Error error -> fail error
+  Ok _ -> (pure unit)
 
 
 shouldEqualString :: forall r. String -> String -> Aff r Unit
 shouldEqualString v1 v2 =
   case v1 `testEqualityTo` v2 of
-    Left error -> fail error
-    Right _ -> (pure unit)
+    Error error -> fail error
+    Ok _ -> (pure unit)
 
 
 compareChar :: forall r. String -> String -> Aff r Unit
@@ -289,7 +289,7 @@ main = run [consoleReporter] do
               actual <- transactionNoAccount
                 # Ledger.fromYaml
                 # map Ledger.showBalance
-              expected <- Right transactionNoAccountPretty
+              expected <- Ok transactionNoAccountPretty
               actual `testEqualityTo` expected
             )
 

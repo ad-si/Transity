@@ -12,7 +12,6 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Either (Either(..))
 import Data.Foldable (fold, foldr)
 import Data.Foreign (renderForeignError)
 import Data.Functor (map)
@@ -21,6 +20,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (power)
+import Data.Result (Result(..), toEither, fromEither)
 import Data.Tuple (Tuple(Tuple))
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#))
@@ -49,29 +49,38 @@ instance showLedger :: Show Ledger where
   show = genericShow
 
 instance decodeLedger :: DecodeJson Ledger where
-  decodeJson :: Json -> Either String Ledger
-  decodeJson json = do
-    object <- maybe (Left "Ledger is not an object") Right (toObject json)
-    owner <- getObjField object "owner"
-    transactions <- getObjField object "transactions"
-    pure $ Ledger {owner, transactions}
+  decodeJson json = toEither $ decodeJsonLedger json
 
 
-fromJson :: String -> Either String Ledger
+decodeJsonLedger :: Json -> Result String Ledger
+decodeJsonLedger json = do
+  object <- maybe (Error "Ledger is not an object") Ok (toObject json)
+  owner <- getObjField object "owner"
+  transactions <- getObjField object "transactions"
+  pure $ Ledger {owner, transactions}
+
+
+fromJson :: String -> Result String Ledger
 fromJson json = do
-  jsonObj <- jsonParser json
-  ledger <- decodeJson jsonObj
+  jsonObj <- fromEither $ jsonParser json
+  ledger <- fromEither $ decodeJson jsonObj
   pure ledger
 
 
-fromYaml :: String -> Either String Ledger
+fromYaml :: String -> Result String Ledger
 fromYaml yaml =
-  case runExcept $ parseYAMLToJson yaml of
-    Left error -> Left
-      ( "Could not parse YAML: "
-        <> fold (map renderForeignError error)
-      )
-    Right json -> decodeJson json
+  let
+    result = yaml
+      # parseYAMLToJson
+      # runExcept
+      # fromEither
+  in
+    case result of
+      Error error -> Error
+        ( "Could not parse YAML: "
+          <> fold (map renderForeignError error)
+        )
+      Ok json -> fromEither $ decodeJson json
 
 
 showPretty :: Ledger -> String

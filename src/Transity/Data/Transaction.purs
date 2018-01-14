@@ -13,9 +13,10 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Either (Either(..))
+import Data.Result (Result(..), toEither, fromEither)
 import Data.Foldable (fold)
 import Data.Foreign (renderForeignError)
+import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
@@ -27,6 +28,7 @@ import Transity.Data.Transfer (Transfer)
 import Transity.Data.Transfer (showPretty) as Transfer
 import Transity.Utils
   ( getObjField
+  , getFieldMaybe
   , stringToDateTime
   , dateShowPretty
   , indentSubsequent
@@ -49,42 +51,51 @@ instance showTransaction :: Show Transaction where
   show = genericShow
 
 instance decodeTransaction :: DecodeJson Transaction where
-  decodeJson :: Json -> Either String Transaction
-  decodeJson json = do
-    object <- maybe (Left "Transaction is not an object") Right (toObject json)
-
-    id        <- object `getFieldOptional` "id"
-    utc       <- object `getFieldOptional` "utc"
-    note      <- object `getFieldOptional` "note"
-    receipt   <- object `getFieldOptional` "receipt"
-    transfers <- object `getObjField` "transfers"
-
-    pure $ Transaction
-      { id
-      , utc: case utc of
-          Nothing -> Nothing
-          Just dateString -> Just (stringToDateTime dateString)
-      , note
-      , receipt
-      , transfers
-      }
+  decodeJson json = toEither $ decodeJsonTransaction json
 
 
-fromJson :: String -> Either String Transaction
+decodeJsonTransaction :: Json -> Result String Transaction
+decodeJsonTransaction json = do
+  object <- maybe (Error "Transaction is not an object") Ok (toObject json)
+
+  id        <- object `getFieldMaybe` "id"
+  utc       <- object `getFieldMaybe` "utc"
+  note      <- object `getFieldMaybe` "note"
+  receipt   <- object `getFieldMaybe` "receipt"
+  transfers <- object `getObjField` "transfers"
+
+  pure $ Transaction
+    { id
+    , utc: case utc of
+        Nothing -> Nothing
+        Just dateString -> Just (stringToDateTime dateString)
+    , note
+    , receipt
+    , transfers
+    }
+
+
+fromJson :: String -> Result String Transaction
 fromJson string = do
-  json <- jsonParser string
-  transaction <- decodeJson json
+  json <- fromEither $ jsonParser string
+  transaction <- fromEither $ decodeJson json
   pure transaction
 
 
-fromYaml :: String -> Either String Transaction
+fromYaml :: String -> Result String Transaction
 fromYaml yaml =
-  case runExcept $ parseYAMLToJson yaml of
-    Left error -> Left
-      ( "Could not parse YAML: "
-        <> fold (map renderForeignError error)
-      )
-    Right json -> decodeJson json
+  let
+    result = yaml
+      # parseYAMLToJson
+      # runExcept
+      # fromEither
+  in
+    case result of
+      Error error -> Error
+        ( "Could not parse YAML: "
+          <> fold (map renderForeignError error)
+        )
+      Ok json -> fromEither $ decodeJson json
 
 
 showPretty :: Transaction -> String

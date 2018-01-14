@@ -20,7 +20,8 @@
     "purescript-format": "^3.0.0",
     "purescript-node-process": "^5.0.0",
     "purescript-rationals": "^4.0.0",
-    "purescript-yaml-next": "^0.2.0"
+    "purescript-yaml-next": "^0.2.0",
+    "purescript-result": "^0.1.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",

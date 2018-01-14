@@ -1,6 +1,7 @@
 module Transity.Utils
   ( getObjField
   , getFieldVerbose
+  , getFieldMaybe
   , parseToUnixTime
   , stringToDateTime
   , utcToIsoString
@@ -12,14 +13,15 @@ module Transity.Utils
   )
 where
 
-import Data.Argonaut.Core (Json)
+import Control.Semigroupoid ((<<<))
+import Data.Argonaut.Core (Json, JObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Decode.Combinators (getField)
+import Data.Argonaut.Decode.Combinators (getField, getFieldOptional)
 import Data.Array (elem, all)
 import Data.Bounded (bottom)
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
-import Data.Either (Either(..))
+import Data.Result (Result(..), fromEither)
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
 import Data.Int (fromString, pow)
 import Data.List (fromFoldable)
@@ -52,21 +54,35 @@ import Prelude
 foreign import parseToUnixTime :: String -> Number
 
 
-getObjField
-  :: forall a. DecodeJson a
-  => StrMap Json -> String -> Either String a
-getObjField object name = case (object `getField` name) of
-  Left error -> Left $ "'" <> name <> "' could not be parsed: \n  " <> error
-  Right success -> Right success
+getObjField :: forall a. DecodeJson a => JObject -> String -> Result String a
+getObjField object name =
+  let
+    value = fromEither $ object `getField` name
+  in
+    case value of
+      Error error ->
+        Error $ "'" <> name <> "' could not be parsed: \n  " <> error
+      Ok success -> Ok success
+
+
+getFieldMaybe :: forall a. DecodeJson a
+  => JObject -> String -> Result String (Maybe a)
+getFieldMaybe object name =
+  fromEither $ getFieldOptional object name
 
 
 getFieldVerbose
   :: forall a. DecodeJson a
-  => StrMap Json -> String -> Either String a
-getFieldVerbose object name = case (object `getField` name) of
-  Left error -> Left $ "'" <> name <> "' could not be parsed in " <>
-    (show object) <> " because of following error: \n  " <> error
-  Right success -> Right success
+  => StrMap Json -> String -> Result String a
+getFieldVerbose object name =
+  let
+    value = fromEither $ object `getField` name
+  in
+    case value of
+      Error error -> Error $
+        "'" <> name <> "' could not be parsed in " <>
+        (show object) <> " because of following error: \n  " <> error
+      Ok success -> Ok success
 
 
 stringToDateTime :: String -> DateTime
