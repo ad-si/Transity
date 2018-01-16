@@ -205,8 +205,8 @@ main = run [consoleReporter] do
               [ (Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))
               , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
               ]
-            actualPretty = Account.showPretty (Account "test" commodityMap)
-          actualPretty `shouldEqual` accountPretty
+            actualPretty = Account.showPretty 6 (Account "test" commodityMap)
+          actualPretty `shouldEqualString` accountPretty
 
 
       describe "Transfer" do

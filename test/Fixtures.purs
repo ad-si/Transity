@@ -217,8 +217,8 @@ transactionSimpleBShowed = """
 
 accountPretty :: String
 accountPretty = ""
-  <> " " `power` 76 <> "test     12.00 $       \n"
-  <> " " `power` 76 <> "         42.00 €       \n"
+  <> "  test     12.00 $       \n"
+  <> "           42.00 €       \n"
 
 
 commodityMapPretty :: String
@@ -289,12 +289,12 @@ ledgerPretty = """Ledger for "John Doe"
 
 ledgerBalance :: String
 ledgerBalance = ""
-  <> " " `power` 71 <> "evil-corp     15.00 €       \n"
-  <> " " `power` 71 <> "john:giro    -15.00 €       \n"
+  <> "  evil-corp     15.00 €       \n"
+  <> "  john:giro    -15.00 €       \n"
 
 
 ledgerBalanceMultiTrans :: String
 ledgerBalanceMultiTrans = ""
-  <> " " `power` 68 <> "   evil-corp      8.00 €       \n"
-  <> " " `power` 68 <> "flower-power      7.00 €       \n"
-  <> " " `power` 68 <> "   john:giro    -15.00 €       \n"
+  <> "     evil-corp      8.00 €       \n"
+  <> "  flower-power      7.00 €       \n"
+  <> "     john:giro    -15.00 €       \n"

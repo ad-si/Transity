@@ -20,10 +20,12 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (power)
+import Data.Ord (max)
 import Data.Result (Result(..), toEither, fromEither)
-import Data.Tuple (Tuple(Tuple))
+import Data.String (length)
+import Data.Tuple (Tuple(..), snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude (class Show, bind, pure, ($), (<>), (#))
+import Prelude (class Show, bind, pure, ($), (<>), (#), (>), (+))
 import Transity.Data.Account
   ( Account(..)
   , CommodityMap
@@ -132,13 +134,22 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
       updatedFromAccount
 
 
+getLonger :: forall a. Tuple String a -> Int -> Int
+getLonger (Tuple name _) =
+  max (length name)
+
 
 showBalance :: Ledger -> String
 showBalance (Ledger ledger) =
   let
-    indentation = 60
+    accountsArray =
+      foldr addTransaction Map.empty ledger.transactions
+        # (Map.toAscUnfoldable
+            :: BalanceMap -> Array (Tuple Account.Id Account))
+    marginLeft = 2
+    indentation = marginLeft + (foldr getLonger 0 accountsArray)
   in
-    foldr addTransaction (Map.empty :: BalanceMap) ledger.transactions
-      # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
-      # map (\(Tuple _ account) -> Account.showPretty account)
+    accountsArray
+      # map snd
+      # map (Account.showPretty indentation)
       # fold

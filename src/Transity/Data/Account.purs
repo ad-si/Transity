@@ -74,11 +74,8 @@ subtractAmount (Account id comMap) amount =
   in Account id newMap
 
 
-showPretty :: Account -> String
-showPretty (Account accountId commodityMap) =
-  let
-    indentation = 80
-  in
-    format (width indentation) accountId
-    <> indentSubsequent indentation (commodityMapShowPretty commodityMap)
-    <> "\n"
+showPretty :: Int -> Account -> String
+showPretty indentation (Account accountId commodityMap) =
+  format (width indentation) accountId
+  <> indentSubsequent indentation (commodityMapShowPretty commodityMap)
+  <> "\n"
