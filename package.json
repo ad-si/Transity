@@ -20,6 +20,10 @@
   ],
   "author": "Adrian Sieber",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adius/transity.git"
+  },
   "dependencies": {
     "bower": "1.8.2",
     "js-yaml": "^3.10.0",
