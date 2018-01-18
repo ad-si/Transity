@@ -1,7 +1,12 @@
 # Transity
 
+[![Build Status][]]([travis])
+
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
+
+[Build Status]: https://travis-ci.com/adius/transity.svg?token=o8saMqgg3F8qbjfsyJiu&branch=master
+[travis]: https://travis-ci.com/adius/transity
 
 
 ## List of Features / TODOs
@@ -43,7 +48,10 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Multi file support
 - [ ] Cache-files to speed up processing of large data sets
 - [ ] Support for time limited commodities (e.g. subscription for a month)
-- [ ] Treat commodities as scientific units (e.g 1 k€ == 1000 €)
+- Commodities
+  - [ ] Treat as scientific units (e.g 1 k€ == 1000 €)
+  - [ ] Hard vs Soft vs Fungible vs …
+  - [ ] Define which are allowed / prohibited for each account
 
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
