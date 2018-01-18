@@ -1,0 +1,28 @@
+language: node_js
+node_js: stable
+
+# Necessary to improve build time according to
+# https://github.com/purescript/purescript/issues/1880
+dist: trusty
+sudo: required
+
+script:
+  - npm test
+  - >-
+    pulp server 2>&1 >/dev/null
+    | while read -r line;
+      echo "$line"
+      && test "$line" == "* Bundled."
+      && pkill -9 -f "pulp server";
+    done
+  - node output/app.js balance tests/ledger.yaml
+
+after_success:
+  - >-
+    test $TRAVIS_TAG &&
+    echo $GITHUB_TOKEN | pulp login &&
+    yes | pulp publish --no-push
+
+cache:
+  directories:
+    - node_modules
