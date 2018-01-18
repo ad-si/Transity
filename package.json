@@ -4,11 +4,11 @@
   "version": "0.1.0",
   "main": "src/Main.purs",
   "bin": {
-    "transity": "output/app.js"
+    "transity": "cli/main.js"
   },
   "scripts": {
     "postinstall": "bower install",
-    "test": "pulp test && transity balance tests/ledger.yaml"
+    "test": "pulp test"
   },
   "directories": {
     "test": "tests"

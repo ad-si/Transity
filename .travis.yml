@@ -8,15 +8,8 @@ sudo: required
 
 script:
   - npm test
-  - >-
-    pulp server 2>&1 >/dev/null
-    | while read -r line;
-      do
-        echo "$line"
-        test "$line" == "* Bundled." &&
-          pkill -9 -f "pulp server";
-      done
-  - node output/app.js balance tests/ledger.yaml
+  - npm link
+  - transity balance tests/ledger.yaml
 
 after_success:
   - >-
