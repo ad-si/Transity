@@ -1,6 +1,6 @@
 # Transity
 
-[![Build Status][]]([travis])
+[![Build Status][]][travis]
 
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
