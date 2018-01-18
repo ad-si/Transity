@@ -11,10 +11,10 @@ script:
   - >-
     pulp server 2>&1 >/dev/null
     | while read -r line;
-      echo "$line"
-      && test "$line" == "* Bundled."
-      && pkill -9 -f "pulp server";
-    done
+        do echo "$line"
+        && test "$line" == "* Bundled."
+        && pkill -9 -f "pulp server";
+      done
   - node output/app.js balance tests/ledger.yaml
 
 after_success:
