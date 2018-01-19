@@ -5,7 +5,8 @@ import Control.Monad.Eff.Console (CONSOLE, log)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
 import Data.Maybe (Maybe(..))
-import Data.Result (Result(..), fromEither)
+import Data.Monoid ((<>))
+import Data.Result (Result(..))
 import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
@@ -51,17 +52,21 @@ main :: forall eff . Eff
 main = do
   arguments <- argv
   currentDir <- cwd
+
   let commandName = arguments !! 2
-  case commandName of
-    Nothing -> log "No command was provided"
-    Just command -> do
-      let filePathArg = arguments !! 3
-      case filePathArg of
-        Nothing -> log "No path to a journal file was provided"
-        Just filePath -> do
-          let filePathAbs = Path.resolve [currentDir] filePath
-          ledgerFileContent <- readTextFile UTF8 filePathAbs
-          case command of
-            "transactions" -> printTransactions ledgerFileContent
-            "balance" -> printBalance ledgerFileContent
-            _ -> printBalance ledgerFileContent
+  let filePathArg = arguments !! 3
+  let usageString = "Usage: transity <command> <path to ledger.yaml>"
+
+  case commandName, filePathArg of
+    Nothing, _ -> log usageString
+    _, Nothing -> log
+      ( "No path to a ledger file was provided\n\n" <> usageString)
+
+    Just command, Just filePath -> do
+      let filePathAbs = Path.resolve [currentDir] filePath
+      ledgerFileContent <- readTextFile UTF8 filePathAbs
+
+      case command of
+        "transactions" -> printTransactions ledgerFileContent
+        "balance" -> printBalance ledgerFileContent
+        other -> log $ "\"" <> other <> "\" is not a valid command"
