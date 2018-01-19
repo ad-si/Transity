@@ -52,6 +52,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [ ] Treat as scientific units (e.g 1 k€ == 1000 €)
   - [ ] Hard vs Soft vs Fungible vs …
   - [ ] Define which are allowed / prohibited for each account
+- [ ] Generate EPC QR Codes for transfers
 
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
@@ -65,7 +66,6 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 ```shell
 git clone https://github.com/adius/transity
 cd transity
-npm install
 npm link
 ```
 

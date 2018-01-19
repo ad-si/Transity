@@ -7,7 +7,7 @@
     "transity": "cli/main.js"
   },
   "scripts": {
-    "postinstall": "bower install",
+    "postinstall": "bower install && pulp build",
     "test": "pulp test"
   },
   "directories": {
