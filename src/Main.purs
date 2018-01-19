@@ -55,7 +55,13 @@ main = do
 
   let commandName = arguments !! 2
   let filePathArg = arguments !! 3
-  let usageString = "Usage: transity <command> <path to ledger.yaml>"
+  let usageString = """
+  Usage: transity <command> <path to ledger.yaml>
+
+  Commands:
+    balance       Show a simple balance of all accounts
+    transactions  Show all transcations and their transfers
+  """
 
   case commandName, filePathArg of
     Nothing, _ -> log usageString

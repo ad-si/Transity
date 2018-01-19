@@ -62,33 +62,53 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 ### From Source
 
-1. `git clone https://github.com/adius/transity`
-1. `cd transity`
-1. `pulp server` - Wait until it displays `Bundled.` and then stop the server
-1. And you are ready to go:
-    ```shell
-    $ node output/app.js balance tests/ledger.yaml
-                anna      1.00 evil-machine
-                     -49978.02 €
-                 ben    -50.00 $
-                         -1.12 BTC
-                       -100.00 €
-           evil-corp     -1.00 evil-machine
-                      50015.00 €
-            good-inc   -100.00 €
-        grocery-shop     11.97 €
-           john:giro     50.00 $
-                          1.12 BTC
-                         85.00 €
-         john:wallet     66.05 €
-    ```
+```shell
+git clone https://github.com/adius/transity
+cd transity
+npm install
+npm link
+```
+
+
+## Usage
+
+```shell
+$ transity balance tests/ledger.yaml
+          anna       1        evil-machine
+                -49978.02     €
+           ben     -50        $
+                    -1.432592 BTC
+                  -100        €
+     evil-corp      -1        evil-machine
+                 50015        €
+      good-inc    -100        €
+  grocery-shop      11.97     €
+     john:giro      50        $
+                     1.432592 BTC
+                    85        €
+   john:wallet      66.05     €
+```
+
+If linked modules aren't exposed in your path you can also run
+```
+cli/main.js balance tests/ledger.yaml
+```
+
+
+List complete usage manual by simply calling `transity` without any arguments.
+
+```shell
+$ transity
+Usage: transity <command> <path to ledger.yaml>
+```
 
 
 ## Ledger File Format
 
-A ledger must be a YAML file with following format:
+A ledger file is a YAML file with following format:
 
 ```yaml
+owner: anna
 commodities:
   - id: €
     name: Euro
@@ -130,6 +150,8 @@ transactions:
         to: anna
         amount: 1 evil-machine
 ```
+
+`owner` and `transactions` are mandatory, the rest is optional.
 
 
 ## Import from Ledger CLI
