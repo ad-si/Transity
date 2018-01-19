@@ -76,7 +76,7 @@ transferSimpleShowed = """
 transferSimplePretty :: String
 transferSimplePretty = "\
   \2014-12-24 00:00 \
-  \|       john:giro ->       evil-corp      15.00 €        \
+  \|       john:giro ->       evil-corp :    15    €          \
   \| A little note\n\
   \" -- Fix syntax highlighting: "
 
@@ -182,9 +182,7 @@ transactionSimpleShowed = """
 transactionSimplePretty :: String
 transactionSimplePretty = "\
   \2014-12-24 00:00 | A short note about this transaction | (id abcxyz)\n\
-  \    2014-12-24 00:00 \
-    \|       john:giro ->       evil-corp      15.00 €        \
-    \| A little note\n\
+  \    " <> transferSimplePretty <> "\
   \    \n\
   \" -- Fix syntax highlighting: "
 
@@ -217,16 +215,25 @@ transactionSimpleBShowed = """
 
 accountPretty :: String
 accountPretty = ""
-  <> "  test     12.00 $       \n"
-  <> "           42.00 €       \n"
+  <> "test  12.0 $\n"
+  <> "      2.0 EUR\n"
+
+accountPrettyAligned :: String
+accountPrettyAligned = ""
+  <> "  test       12         $        \n"
+  <> "              2         EUR      \n"
 
 
 commodityMapPretty :: String
-commodityMapPretty = "\
-  \     12.00 $       \n\
-  \     42.00 €       \
-  \" -- Fix syntax highlighting: "
+commodityMapPretty = ""
+  <> "12.0 $\n"
+  <> "2.0 EUR"
 
+
+commodityMapPrettyAligned :: String
+commodityMapPrettyAligned = ""
+  <> "     12         $        \n"
+  <> "      2         EUR      "
 
 -- | Ledger Examples
 
@@ -289,12 +296,12 @@ ledgerPretty = """Ledger for "John Doe"
 
 ledgerBalance :: String
 ledgerBalance = ""
-  <> "  evil-corp     15.00 €       \n"
-  <> "  john:giro    -15.00 €       \n"
+  <> "  evil-corp   15 €\n"
+  <> "  john:giro  -15 €\n"
 
 
 ledgerBalanceMultiTrans :: String
 ledgerBalanceMultiTrans = ""
-  <> "     evil-corp      8.00 €       \n"
-  <> "  flower-power      7.00 €       \n"
-  <> "     john:giro    -15.00 €       \n"
+  <> "     evil-corp    8 €\n"
+  <> "  flower-power    7 €\n"
+  <> "     john:giro  -15 €\n"

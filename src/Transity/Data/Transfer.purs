@@ -13,36 +13,25 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Result (Result(..), toEither, fromEither)
 import Data.Eq ((==))
-import Data.Foreign (renderForeignError)
 import Data.Foldable (fold)
+import Data.Foreign (renderForeignError)
 import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Just, Nothing), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Rational (fromInt)
+import Data.Result (Result(..), toEither, fromEither)
 import Data.Show (show)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude
-  ( ($)
-  , (<>)
-  , bind
-  , class Show
-  , pure
-  , map
-  )
+import Prelude (($), (<>), bind, class Show, pure, map)
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount(..))
-import Transity.Data.Amount (showPretty) as Amount
 import Transity.Data.Account (Id) as Account
-import Transity.Utils
-  ( getFieldVerbose
-  , stringToDateTime
-  , dateShowPretty
-  )
+import Transity.Data.Amount (Amount(..))
+import Transity.Data.Amount as Amount
+import Transity.Utils (getFieldVerbose, stringToDateTime, dateShowPretty)
 
 
 newtype Transfer = Transfer
@@ -123,19 +112,30 @@ fromYaml yaml =
 
 
 showPretty :: Transfer -> String
-showPretty (Transfer trans) =
+showPretty =
+  showPrettyAligned 15 15 5 3 10
+
+
+--| - From account name width
+--| - To account name width
+--| - Integer part width
+--| - Fraction part width
+--| - Commodity width
+
+showPrettyAligned :: Int -> Int -> Int -> Int -> Int -> Transfer -> String
+showPrettyAligned fromW toW intW fracW comW (Transfer trans) =
   let
     datePretty = map dateShowPretty trans.utc
     offsetDate = 19
   in
     case datePretty of
-      Nothing -> " " `power` offsetDate
       Just aDate -> aDate <> " | "
-    <> format (width 15) trans.from
+      _ -> " " `power` offsetDate
+    <> format (width fromW) trans.from
     <> " -> "
-    <> format (width 15) trans.to
-    <> " "
-    <> Amount.showPretty trans.amount
+    <> format (width toW) trans.to
+    <> " : "
+    <> Amount.showPrettyAligned intW fracW comW trans.amount
     <> " | "
     <> fromMaybe "" trans.note
     <> "\n"

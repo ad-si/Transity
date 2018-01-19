@@ -16,50 +16,26 @@ import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
 import Data.Semigroup ((<>))
 import Data.Show (show)
-import Data.String (toCharArray, length)
+import Data.String
+  (Pattern(..), Replacement(..), toCharArray, length, replaceAll)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Test.Fixtures
-  ( accountPretty
-  , commodityMapPretty
-  , ledger
-  , ledgerBalance
-  , ledgerBalanceMultiTrans
-  , ledgerJson
-  , ledgerMultiTrans
-  , ledgerPretty
-  , ledgerShowed
-  , ledgerYaml
-  , transactionNoAccount
-  , transactionNoAccountPretty
-  , transactionSimple
-  , transactionSimpleJson
-  , transactionSimplePretty
-  , transactionSimpleShowed
-  , transactionSimpleYaml
-  , transferSimple
-  , transferSimpleJson
-  , transferSimplePretty
-  , transferSimpleShowed
-  )
 import Test.Spec (describe, it)
 -- import Test.Spec as Test
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-import Transity.Data.Account (Account(..), CommodityMap)
-import Transity.Data.Account
-  ( addAmountToMap
-  , subtractAmountFromMap
-  , showPretty
-  , commodityMapShowPretty
-  ) as Account
+import Transity.Data.Account (Account(..))
+import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
-import Transity.Data.Amount (showPretty) as Amount
+import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
+import Transity.Data.CommodityMap (CommodityMap)
+import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (fromJson, showPretty) as Transfer
@@ -84,10 +60,12 @@ testEqualityTo actual expected =
   if (actual /= expected)
   then Error
     $ indentSubsequent 2
-    $ "=========== Actual ===========\n" <>
-      actual <>
-      "\n========== Expected ==========\n" <>
-      expected <> "\n=============================="
+    $    "=========== Actual ===========\n"
+      <> replaceAll (Pattern "\n") (Replacement "|\n") actual <> "|\n"
+      <> "========== Expected ==========\n"
+      <> replaceAll (Pattern "\n") (Replacement "|\n") expected <> "|\n"
+      <> "=============================="
+      <> "\n\n"
   else Ok ""
 
 
@@ -167,7 +145,19 @@ main = run [consoleReporter] do
         it "pretty shows an amount" do
           let
             actual = Amount.showPretty (Amount (fromInt 37) (Commodity "€"))
-          actual `shouldEqual` "     37.00 €       "
+          actual `shouldEqual` "37.0 €"
+
+        it "pretty shows and aligns an amount" do
+          let
+            actual = Amount.showPrettyAligned 8 5 7
+              (Amount (37237 % 1000) (Commodity "EUR"))
+          actual `shouldEqualString` "      37.237  EUR    "
+
+        it "pretty shows and aligns an amount and hides fractional part" do
+          let
+            actual = Amount.showPrettyAligned 8 5 7
+              (Amount (fromInt 37) (Commodity "EUR"))
+          actual `shouldEqualString` "      37      EUR    "
 
 
       describe "Account" do
@@ -177,7 +167,7 @@ main = run [consoleReporter] do
               [(Tuple (Commodity "€") (Amount (fromInt 37) (Commodity "€")))]
             emptyMap = Map.empty :: CommodityMap
             amount = Amount (fromInt 37) (Commodity "€")
-            actualMap = emptyMap `Account.addAmountToMap` amount
+            actualMap = emptyMap `CommodityMap.addAmountToMap` amount
           actualMap `shouldEqual` expectedMap
 
         it "can subtract an amount from a commodity map" do
@@ -187,26 +177,33 @@ main = run [consoleReporter] do
             initialMap = Map.fromFoldable
               [(Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))]
             amount = Amount (fromInt 5) (Commodity "€")
-            actualMap = initialMap `Account.subtractAmountFromMap` amount
+            actualMap = initialMap `CommodityMap.subtractAmountFromMap` amount
           actualMap `shouldEqual` expectedMap
 
-        it "pretty shows a commodity map" do
-          let
-            commodityMap = Map.fromFoldable
-              [ (Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))
+
+        let commodityMap = Map.fromFoldable
+              [ (Tuple (Commodity "€") (Amount (fromInt 2) (Commodity "EUR")))
               , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
               ]
-            actualPretty = Account.commodityMapShowPretty commodityMap
-          actualPretty `shouldEqual` commodityMapPretty
+
+        it "pretty shows a commodity map" do
+          let actualPretty = CommodityMap.showPretty commodityMap
+          actualPretty `shouldEqualString` commodityMapPretty
+
+        it "pretty shows and aligns a commodity map" do
+          let actualPretty =
+                CommodityMap.showPrettyAligned 7 8 9 commodityMap
+          actualPretty `shouldEqualString` commodityMapPrettyAligned
+
 
         it "pretty shows an account" do
-          let
-            commodityMap = Map.fromFoldable
-              [ (Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))
-              , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
-              ]
-            actualPretty = Account.showPretty 6 (Account "test" commodityMap)
+          let actualPretty = Account.showPretty (Account "test" commodityMap)
           actualPretty `shouldEqualString` accountPretty
+
+        it "pretty shows and aligns an account" do
+          let actualPretty =
+                Account.showPrettyAligned 6 7 8 9 (Account "test" commodityMap)
+          actualPretty `shouldEqualString` accountPrettyAligned
 
 
       describe "Transfer" do
@@ -224,7 +221,7 @@ main = run [consoleReporter] do
         it "pretty shows a transfer" do
           let
             actual = Transfer.showPretty transferSimple
-          actual `compareChar` transferSimplePretty
+          actual `shouldEqualString` transferSimplePretty
 
 
       describe "Transaction" do
@@ -255,7 +252,7 @@ main = run [consoleReporter] do
         it "pretty shows a transaction" do
           let
             actual = Transaction.showPretty transactionSimple
-          actual `shouldEqual` transactionSimplePretty
+          actual `shouldEqualString` transactionSimplePretty
 
 
       describe "Ledger" do

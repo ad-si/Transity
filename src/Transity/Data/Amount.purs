@@ -1,17 +1,13 @@
 module Transity.Data.Amount
-  ( Amount(Amount)
-  , Commodity(Commodity)
-  , negate
-  , showPretty
-  , subtract
-  )
 where
 
+import Control.Bind (bind)
 import Data.Argonaut.Core (toString, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Array (take)
 import Data.Boolean (otherwise)
-import Data.Eq (class Eq)
+import Data.Eq (class Eq, (/=))
+import Data.Function (($))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
@@ -23,15 +19,17 @@ import Data.Ring ((-))
 import Data.Ring (negate) as Ring
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Semiring ((+))
-import Data.String (split, Pattern(Pattern))
-import Prelude
-  ( class Show
-  , bind
-  , ($)
-  , (/=)
+import Data.Show (class Show, show)
+import Data.String (Pattern(..), length, split)
+import Data.Tuple (Tuple(..))
+import Transity.Utils
+  ( digitsToRational
+  , padEnd
+  , alignNumber
+  , lengthOfNumParts
+  , WidthRecord
+  , widthRecordZero
   )
-import Text.Format (format, width, precision)
-import Transity.Utils (digitsToRational, padEnd)
 
 
 newtype Commodity = Commodity String
@@ -87,8 +85,31 @@ negate :: Amount -> Amount
 negate (Amount num com) = Amount (Ring.negate num) com
 
 
+
+toWidthRecord :: Amount -> WidthRecord
+toWidthRecord (Amount quantity (Commodity commodity)) =
+  let
+    Tuple intPart fracPart = lengthOfNumParts (toNumber quantity)
+  in
+    widthRecordZero
+      { integer = intPart
+      , fraction = fracPart
+      , commodity = length commodity
+      }
+
+
 showPretty :: Amount -> String
 showPretty (Amount value (Commodity commodity)) =
-  format (width 10 <> precision 2) (toNumber value)
+  (show (toNumber value)) <> " " <> commodity
+
+
+--| Specify the width (in characters) of the integer part,
+--| the width of the fractional part (including decimal point),
+--| the width of commodity part
+--| and receive a pretty printed amount.
+
+showPrettyAligned :: Int -> Int -> Int -> Amount -> String
+showPrettyAligned intWidth fracWidth comWidth (Amount val (Commodity com)) =
+  alignNumber intWidth fracWidth (toNumber val)
   <> " "
-  <> padEnd 8 commodity
+  <> padEnd comWidth com

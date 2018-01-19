@@ -25,18 +25,17 @@ import Data.Result (Result(..), toEither, fromEither)
 import Data.String (length)
 import Data.Tuple (Tuple(..), snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude (class Show, bind, pure, ($), (<>), (#), (>), (+))
-import Transity.Data.Account
-  ( Account(..)
-  , CommodityMap
-  , addAmountToMap
-  , subtractAmountFromMap
-  )
-import Transity.Data.Account (Id, showPretty) as Account
+import Prelude (class Show, bind, pure, ($), (<>), (#), (+))
+import Transity.Data.Account (Account(..))
+import Transity.Data.Account as Account
+import Transity.Data.CommodityMap
+  (CommodityMap, addAmountToMap, subtractAmountFromMap)
+import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction (showPretty) as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils (getObjField)
+import Transity.Utils
+  (WidthRecord, widthRecordZero, mergeWidthRecords, getObjField)
 
 
 -- | List of all transactions
@@ -134,22 +133,23 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
       updatedFromAccount
 
 
-getLonger :: forall a. Tuple String a -> Int -> Int
-getLonger (Tuple name _) =
-  max (length name)
-
-
 showBalance :: Ledger -> String
 showBalance (Ledger ledger) =
   let
-    accountsArray =
-      foldr addTransaction Map.empty ledger.transactions
-        # (Map.toAscUnfoldable
-            :: BalanceMap -> Array (Tuple Account.Id Account))
+    balanceMap = foldr addTransaction Map.empty ledger.transactions
+    accountsArray = balanceMap
+      # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
+      # map snd
+    accWidthRecs = accountsArray
+      # map Account.toWidthRecord
+    widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
     marginLeft = 2
-    indentation = marginLeft + (foldr getLonger 0 accountsArray)
   in
     accountsArray
-      # map snd
-      # map (Account.showPretty indentation)
+      # map (Account.showPrettyAligned
+          (widthRecord.account + marginLeft)
+          widthRecord.integer
+          widthRecord.fraction
+          widthRecord.commodity
+        )
       # fold

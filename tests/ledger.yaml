@@ -113,4 +113,4 @@ transactions:
     transfers:
       - from: ben
         to: john:giro
-        amount: 1.123 BTC
+        amount: 1.432592 BTC

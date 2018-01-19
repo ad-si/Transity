@@ -1,54 +1,42 @@
 module Transity.Utils
-  ( getObjField
-  , getFieldVerbose
-  , getFieldMaybe
-  , parseToUnixTime
-  , stringToDateTime
-  , utcToIsoString
-  , dateShowPretty
-  , indentSubsequent
-  , digitsToRational
-  , padStart
-  , padEnd
-  )
 where
 
-import Control.Semigroupoid ((<<<))
+import Control.Bind (bind)
+import Control.Applicative (pure)
 import Data.Argonaut.Core (Json, JObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getField, getFieldOptional)
-import Data.Array (elem, all)
+import Data.Array (elem, all, (!!))
 import Data.Bounded (bottom)
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Result (Result(..), fromEither)
+import Data.Eq ((/=))
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
+import Data.Function(($), (#))
+import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (fromFoldable)
-import Data.Maybe (Maybe(Nothing), fromMaybe)
-import Data.Monoid (power)
+import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
+import Data.Monoid (power, (<>))
+import Data.Ord (max)
 import Data.Rational (Rational, (%))
+import Data.Ring ((-), (+))
 import Data.Show (show)
 import Data.String
   ( indexOf
   , length
+  , split
   , replaceAll
   , toCharArray
   , fromCharArray
-  , Pattern(Pattern)
-  , Replacement(Replacement)
+  , Pattern(..)
+  , Replacement(..)
   )
 import Data.StrMap (StrMap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
+import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
-import Prelude
-  ( ($)
-  , (<>)
-  , (#)
-  , (-)
-  , bind
-  , pure
-  )
 
 
 foreign import parseToUnixTime :: String -> Number
@@ -168,3 +156,59 @@ padStart targetLength string =
 padEnd :: Int -> String -> String
 padEnd targetLength string =
   string <> getPadding targetLength string
+
+
+alignNumber :: Int -> Int -> Number -> String
+alignNumber intWidth fracWidth number =
+  let
+    fragments = split (Pattern ".") (show number)
+    first = case fragments !! 0 of
+      Just intPart -> padStart intWidth intPart
+      _ -> " " `power` intWidth
+    emptyFrac = " " `power` fracWidth
+    second = case fragments !! 1 of
+      Just frac | frac /= "0" -> padEnd fracWidth ("." <> frac)
+      _ -> emptyFrac
+  in
+    first <> second
+
+
+--| Decimal point is included in fraction => +1
+
+lengthOfNumParts :: Number -> Tuple Int Int
+lengthOfNumParts number =
+  let
+    fragments = split (Pattern ".") (show number)
+    first = fromMaybe 0 (map length (fragments !! 0))
+    second = case fragments !! 1 of
+      Just frac | frac /= "0" -> (length frac) + 1
+      _ -> 0
+  in
+    Tuple first second
+
+
+type WidthRecord =
+  { account :: Int
+  , integer :: Int
+  , fraction :: Int
+  , commodity :: Int
+  }
+
+
+widthRecordZero :: WidthRecord
+widthRecordZero =
+  { account: 0
+  , integer: 0
+  , fraction: 0
+  , commodity: 0
+  }
+
+
+mergeWidthRecords :: WidthRecord -> WidthRecord -> WidthRecord
+mergeWidthRecords recA recB =
+  recA
+    { account   = max recA.account   recB.account
+    , integer   = max recA.integer   recB.integer
+    , fraction  = max recA.fraction  recB.fraction
+    , commodity = max recA.commodity recB.commodity
+    }
