@@ -99,8 +99,7 @@ toWidthRecord (Amount quantity (Commodity commodity)) =
 
 
 showPretty :: Amount -> String
-showPretty (Amount value (Commodity commodity)) =
-  (show (toNumber value)) <> " " <> commodity
+showPretty = showPrettyAligned false 0 0 0
 
 
 --| Specify the width (in characters) of the integer part,
@@ -108,8 +107,8 @@ showPretty (Amount value (Commodity commodity)) =
 --| the width of commodity part
 --| and receive a pretty printed amount.
 
-showPrettyAligned :: Int -> Int -> Int -> Amount -> String
-showPrettyAligned intWidth fracWidth comWidth (Amount val (Commodity com)) =
-  alignNumber intWidth fracWidth (toNumber val)
+showPrettyAligned :: Boolean -> Int -> Int -> Int -> Amount -> String
+showPrettyAligned colorize intWid fracWid comWid (Amount val (Commodity com)) =
+  alignNumber colorize intWid fracWid (toNumber val)
   <> " "
-  <> padEnd comWidth com
+  <> padEnd comWid com

@@ -1,28 +1,19 @@
 module Transity.Data.Account
 where
 
-import Data.Functor (map)
-import Data.Map as Map
-import Data.Maybe (Maybe(Nothing, Just))
+import Ansi.Codes (Color(..))
+import Ansi.Output (withGraphics, foreground)
 import Data.Monoid (power)
 import Data.Ord (max)
 import Data.Ring ((+))
 import Data.Semigroup ((<>))
-import Data.String (joinWith, length)
-import Data.Tuple (Tuple(Tuple))
-import Prelude ((#))
+import Data.String (length)
 import Text.Format (format, width)
-import Transity.Data.Amount (Amount(..), Commodity(..))
-import Transity.Data.Amount as Amount
+import Transity.Data.Amount (Amount)
 import Transity.Data.CommodityMap
   (CommodityMap, addAmountToMap, subtractAmountFromMap)
 import Transity.Data.CommodityMap as CommodityMap
-import Transity.Utils
-  ( indentSubsequent
-  , WidthRecord
-  , widthRecordZero
-  )
-
+import Transity.Utils (WidthRecord, widthRecordZero, indentSubsequent)
 
 --| A physical account which can contain one or several commodities.
 --| E.g. wallet, bank account, barn.
@@ -59,23 +50,29 @@ toWidthRecord (Account name commodityMap) =
 
 
 showPretty :: Account -> String
-showPretty (Account accountId commodityMap) =
-  let
-    accPretty = accountId <> "  "
-    accLength = length accPretty
-  in
-    accPretty
-    <> indentSubsequent accLength (CommodityMap.showPretty commodityMap)
-    <> "\n"
+showPretty = showPrettyAligned false widthRecordZero
 
 
-showPrettyAligned :: Int -> Int -> Int -> Int -> Account -> String
-showPrettyAligned accountW intW fracW comW (Account accountId commodityMap) =
+showPrettyAligned :: Boolean -> WidthRecord -> Account -> String
+showPrettyAligned colorize widthRec (Account accId comMap) =
   let
     gap = 2
+    accountWidth = max widthRec.account (length accId)
+    accName = format (width accountWidth) accId
+    accColor = if colorize
+      then foreground Blue
+      else []
   in
-    format (width accountW) accountId
+    -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
+    (if colorize
+        then withGraphics accColor accName
+        else accName)
     <> " " `power` gap
-    <> indentSubsequent (accountW + gap)
-        (CommodityMap.showPrettyAligned intW fracW comW commodityMap)
+    <> indentSubsequent (accountWidth + gap)
+        (CommodityMap.showPrettyAligned
+          colorize
+          widthRec.integer
+          widthRec.fraction
+          widthRec.commodity
+          comMap)
     <> "\n"

@@ -1,16 +1,10 @@
 module Transity.Data.Transaction
-  ( Transaction(Transaction)
-  , showPretty
-  , fromJson
-  , fromYaml
-  )
 where
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Result (Result(..), toEither, fromEither)
@@ -25,7 +19,7 @@ import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (($), (<>), bind, class Show, map, pure)
 import Text.Format (format, width)
 import Transity.Data.Transfer (Transfer)
-import Transity.Data.Transfer (showPretty) as Transfer
+import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( getObjField
   , getFieldMaybe
@@ -99,9 +93,15 @@ fromYaml yaml =
 
 
 showPretty :: Transaction -> String
-showPretty (Transaction tact) =
+showPretty = showPrettyAligned false
+
+
+showPrettyAligned :: Boolean -> Transaction -> String
+showPrettyAligned colorize (Transaction tact) =
   let
-    transfersPretty = map Transfer.showPretty tact.transfers
+    transfersPretty = map
+      (Transfer.showPrettyAligned colorize 15 15 5 3 10)
+      tact.transfers
     offsetDate = 16
     offsetIndentation = 4
     addId str = " | (id " <> str <> ")"

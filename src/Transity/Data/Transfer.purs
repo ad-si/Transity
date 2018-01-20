@@ -1,9 +1,4 @@
 module Transity.Data.Transfer
-  ( Transfer(Transfer)
-  , showPretty
-  , fromJson
-  , fromYaml
-  )
 where
 
 import Control.Monad.Except (runExcept)
@@ -19,7 +14,7 @@ import Data.Foreign (renderForeignError)
 import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Just, Nothing), maybe, fromMaybe)
+import Data.Maybe (Maybe(Just), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Rational (fromInt)
 import Data.Result (Result(..), toEither, fromEither)
@@ -112,8 +107,7 @@ fromYaml yaml =
 
 
 showPretty :: Transfer -> String
-showPretty =
-  showPrettyAligned 15 15 5 3 10
+showPretty = showPrettyAligned false 15 15 5 3 10
 
 
 --| - From account name width
@@ -122,8 +116,9 @@ showPretty =
 --| - Fraction part width
 --| - Commodity width
 
-showPrettyAligned :: Int -> Int -> Int -> Int -> Int -> Transfer -> String
-showPrettyAligned fromW toW intW fracW comW (Transfer trans) =
+showPrettyAligned
+  :: Boolean -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
+showPrettyAligned colorize fromW toW intW fracW comW (Transfer trans) =
   let
     datePretty = map dateShowPretty trans.utc
     offsetDate = 19
@@ -135,7 +130,7 @@ showPrettyAligned fromW toW intW fracW comW (Transfer trans) =
     <> " -> "
     <> format (width toW) trans.to
     <> " : "
-    <> Amount.showPrettyAligned intW fracW comW trans.amount
+    <> Amount.showPrettyAligned colorize intW fracW comW trans.amount
     <> " | "
     <> fromMaybe "" trans.note
     <> "\n"

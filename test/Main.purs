@@ -145,17 +145,17 @@ main = run [consoleReporter] do
         it "pretty shows an amount" do
           let
             actual = Amount.showPretty (Amount (fromInt 37) (Commodity "€"))
-          actual `shouldEqual` "37.0 €"
+          actual `shouldEqual` "37 €"
 
         it "pretty shows and aligns an amount" do
           let
-            actual = Amount.showPrettyAligned 8 5 7
+            actual = Amount.showPrettyAligned false 8 5 7
               (Amount (37237 % 1000) (Commodity "EUR"))
           actual `shouldEqualString` "      37.237  EUR    "
 
         it "pretty shows and aligns an amount and hides fractional part" do
           let
-            actual = Amount.showPrettyAligned 8 5 7
+            actual = Amount.showPrettyAligned false 8 5 7
               (Amount (fromInt 37) (Commodity "EUR"))
           actual `shouldEqualString` "      37      EUR    "
 
@@ -192,7 +192,7 @@ main = run [consoleReporter] do
 
         it "pretty shows and aligns a commodity map" do
           let actualPretty =
-                CommodityMap.showPrettyAligned 7 8 9 commodityMap
+                CommodityMap.showPrettyAligned false 7 8 9 commodityMap
           actualPretty `shouldEqualString` commodityMapPrettyAligned
 
 
@@ -201,8 +201,17 @@ main = run [consoleReporter] do
           actualPretty `shouldEqualString` accountPretty
 
         it "pretty shows and aligns an account" do
-          let actualPretty =
-                Account.showPrettyAligned 6 7 8 9 (Account "test" commodityMap)
+          let
+            widthRecord =
+              { account: 6
+              , integer: 7
+              , fraction: 8
+              , commodity: 9
+              }
+            actualPretty = Account.showPrettyAligned
+              false
+              widthRecord
+              (Account "test" commodityMap)
           actualPretty `shouldEqualString` accountPrettyAligned
 
 
@@ -285,7 +294,7 @@ main = run [consoleReporter] do
             (shouldBeOk do
               actual <- transactionNoAccount
                 # Ledger.fromYaml
-                # map Ledger.showBalance
+                # map (Ledger.showBalance false)
               expected <- Ok transactionNoAccountPretty
               actual `testEqualityTo` expected
             )
@@ -296,10 +305,10 @@ main = run [consoleReporter] do
 
 
         it "pretty shows the balance of all accounts" do
-          (Ledger.showBalance ledger) `shouldEqualString` ledgerBalance
+          (Ledger.showBalance false ledger) `shouldEqualString` ledgerBalance
 
 
         it "supports multiple transactions on one account" do
           let
-            actual = Ledger.showBalance ledgerMultiTrans
+            actual = Ledger.showBalance false ledgerMultiTrans
           actual `shouldEqualString` ledgerBalanceMultiTrans

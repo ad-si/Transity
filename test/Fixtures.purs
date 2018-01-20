@@ -215,8 +215,8 @@ transactionSimpleBShowed = """
 
 accountPretty :: String
 accountPretty = ""
-  <> "test  12.0 $\n"
-  <> "      2.0 EUR\n"
+  <> "test  12 $\n"
+  <> "      2 EUR\n"
 
 accountPrettyAligned :: String
 accountPrettyAligned = ""
@@ -226,8 +226,8 @@ accountPrettyAligned = ""
 
 commodityMapPretty :: String
 commodityMapPretty = ""
-  <> "12.0 $\n"
-  <> "2.0 EUR"
+  <> "12 $\n"
+  <> "2 EUR"
 
 
 commodityMapPrettyAligned :: String

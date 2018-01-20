@@ -1,10 +1,4 @@
 module Transity.Data.Ledger
-  ( Ledger(Ledger)
-  , fromJson
-  , fromYaml
-  , showPretty
-  , showBalance
-  )
 where
 
 import Control.Monad.Except (runExcept)
@@ -20,22 +14,18 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe)
 import Data.Monoid (power)
-import Data.Ord (max)
 import Data.Result (Result(..), toEither, fromEither)
-import Data.String (length)
-import Data.Tuple (Tuple(..), snd)
+import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (class Show, bind, pure, ($), (<>), (#), (+))
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.CommodityMap
   (CommodityMap, addAmountToMap, subtractAmountFromMap)
-import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Transaction (Transaction(..))
-import Transity.Data.Transaction (showPretty) as Transaction
+import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils
-  (WidthRecord, widthRecordZero, mergeWidthRecords, getObjField)
+import Transity.Utils (widthRecordZero, mergeWidthRecords, getObjField)
 
 
 -- | List of all transactions
@@ -85,8 +75,15 @@ fromYaml yaml =
 
 
 showPretty :: Ledger -> String
-showPretty (Ledger l) =
-  let transactionsPretty = map Transaction.showPretty l.transactions
+showPretty = showPrettyAligned false
+
+
+showPrettyAligned :: Boolean -> Ledger -> String
+showPrettyAligned colorize (Ledger l) =
+  let
+    transactionsPretty = map
+      (Transaction.showPrettyAligned colorize)
+      l.transactions
   in ""
     <> "Ledger for \"" <> l.owner <> "\"\n"
     <> "=" `power` 80 <> "\n"
@@ -133,8 +130,8 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
       updatedFromAccount
 
 
-showBalance :: Ledger -> String
-showBalance (Ledger ledger) =
+showBalance :: Boolean -> Ledger -> String
+showBalance colorize (Ledger ledger) =
   let
     balanceMap = foldr addTransaction Map.empty ledger.transactions
     accountsArray = balanceMap
@@ -147,9 +144,8 @@ showBalance (Ledger ledger) =
   in
     accountsArray
       # map (Account.showPrettyAligned
-          (widthRecord.account + marginLeft)
-          widthRecord.integer
-          widthRecord.fraction
-          widthRecord.commodity
+          colorize
+          widthRecord
+            { account = widthRecord.account + marginLeft }
         )
       # fold

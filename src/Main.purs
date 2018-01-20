@@ -13,11 +13,7 @@ import Node.FS.Sync (readTextFile)
 import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd)
 import Prelude (Unit, bind, show, ($))
-import Transity.Data.Ledger
-  ( fromYaml
-  , showPretty
-  , showBalance
-  ) as Ledger
+import Transity.Data.Ledger as Ledger
 
 
 printTransactions :: forall eff.
@@ -28,7 +24,7 @@ printTransactions :: forall eff.
     ) Unit
 printTransactions ledgerFileContent = do
   case Ledger.fromYaml ledgerFileContent of
-    Ok ledger -> log $ Ledger.showPretty ledger
+    Ok ledger -> log $ Ledger.showPrettyAligned true ledger
     Error error -> log $ show error
 
 
@@ -40,7 +36,7 @@ printBalance :: forall eff.
     ) Unit
 printBalance ledgerFileContent = do
   case Ledger.fromYaml ledgerFileContent of
-    Ok ledger -> log $ Ledger.showBalance ledger
+    Ok ledger -> log $ Ledger.showBalance true ledger
     Error error -> log $ show error
 
 

@@ -8,6 +8,13 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 [Build Status]: https://travis-ci.com/adius/transity.svg?token=o8saMqgg3F8qbjfsyJiu&branch=master
 [travis]: https://travis-ci.com/adius/transity
 
+<img
+  src='images/screenshot-balance.png'
+  alt='Screenshot Balance'
+  width='486'
+  height='290'
+/>
+
 
 ## List of Features / TODOs
 

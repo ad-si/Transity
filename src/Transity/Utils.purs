@@ -1,6 +1,8 @@
 module Transity.Utils
 where
 
+import Ansi.Codes (Color(..))
+import Ansi.Output (withGraphics, bold, foreground)
 import Control.Bind (bind)
 import Control.Applicative (pure)
 import Data.Argonaut.Core (Json, JObject)
@@ -15,11 +17,12 @@ import Data.Eq ((/=))
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
 import Data.Function(($), (#))
 import Data.Functor (map)
+import Data.HeytingAlgebra (not)
 import Data.Int (fromString, pow)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
 import Data.Monoid (power, (<>))
-import Data.Ord (max)
+import Data.Ord (max, (>=))
 import Data.Rational (Rational, (%))
 import Data.Ring ((-), (+))
 import Data.Show (show)
@@ -158,19 +161,34 @@ padEnd targetLength string =
   string <> getPadding targetLength string
 
 
-alignNumber :: Int -> Int -> Number -> String
-alignNumber intWidth fracWidth number =
+alignNumber :: Boolean -> Int -> Int -> Number -> String
+alignNumber colorize intWidth fracWidth number =
   let
+    color =
+      { positive: if colorize then foreground Green else []
+      , negative: if colorize then foreground Red else []
+      , neutral:  if colorize then foreground Grey else []
+      }
     fragments = split (Pattern ".") (show number)
-    first = case fragments !! 0 of
-      Just intPart -> padStart intWidth intPart
+    intPart = case fragments !! 0 of
+      Just int -> padStart intWidth int
       _ -> " " `power` intWidth
     emptyFrac = " " `power` fracWidth
-    second = case fragments !! 1 of
+    fracPart = case fragments !! 1 of
       Just frac | frac /= "0" -> padEnd fracWidth ("." <> frac)
       _ -> emptyFrac
   in
-    first <> second
+    -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
+    if not colorize
+    then intPart <> fracPart
+    else
+      if number >= 0.0
+      then
+        withGraphics color.positive intPart
+        <> withGraphics color.neutral fracPart
+      else
+        withGraphics color.negative intPart
+        <> withGraphics color.neutral fracPart
 
 
 --| Decimal point is included in fraction => +1
