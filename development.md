@@ -24,3 +24,32 @@ psc-publish --manifest bower.json --resolutions resolutions.json
 ```sh
 mv resolutions.json ../pursuit/data/verified/transity
 ```
+
+
+## Generate Screenshots
+
+Use [asciinema] to generate the terminal recording:
+
+```shell
+asciinema rec \
+  --title 'Transity' \
+  recording.json
+```
+
+Change the size of the terminal in the `recording.json` file to 80 x 20.
+
+Then use [svg-term] to generate the SVG image:
+
+```shell
+svg-term \
+  --no-cursor \
+  --at 99999 \
+  --window \
+  --term iterm2 \
+  --profile ../../dotfiles/terminal/adius.itermcolors \
+  < recording.json \
+  > recording.svg
+```
+
+[asciinema]: https://github.com/asciinema/asciinema
+[svg-term]: https://github.com/marionebl/svg-term-cli

@@ -9,10 +9,9 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 [travis]: https://travis-ci.com/adius/transity
 
 <img
-  src='images/screenshot-balance.png'
+  src='images/screenshot-balance.svg'
   alt='Screenshot Balance'
-  width='486'
-  height='290'
+  width='600'
 />
 
 
