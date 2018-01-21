@@ -58,5 +58,9 @@ svg-term \
   > recording.svg
 ```
 
+
+And lastly convert all CSS styles to inline styles
+because of issue https://github.com/marionebl/svg-term-cli/issues/5
+
 [asciinema]: https://github.com/asciinema/asciinema
 [svg-term]: https://github.com/marionebl/svg-term-cli
