@@ -36,7 +36,14 @@ asciinema rec \
   recording.json
 ```
 
-Change the size of the terminal in the `recording.json` file to 80 x 20.
+Change the size of the terminal in the `recording.json` file to
+approximately
+
+```json
+  "width": 80,
+  "height": 18,
+```
+
 
 Then use [svg-term] to generate the SVG image:
 
