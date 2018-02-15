@@ -1,43 +1,68 @@
 module Main where
 
+import Control.Applicative (pure)
 import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log)
+import Control.Monad.Eff.Console (CONSOLE, log, error)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
-import Data.Maybe (Maybe(..))
+import Data.Functor (map)
 import Data.Monoid ((<>))
-import Data.Result (Result(..))
+import Data.Result (Result(..), note)
+import Data.Tuple
 import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
 import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd)
-import Prelude (Unit, bind, show, ($))
+import Prelude (Unit, bind)
+import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 
 
-printTransactions :: forall eff.
-  String -> Eff
-    ( exception :: EXCEPTION
-    , console :: CONSOLE
-    | eff
-    ) Unit
-printTransactions ledgerFileContent = do
-  case Ledger.fromYaml ledgerFileContent of
-    Ok ledger -> log $ Ledger.showPrettyAligned true ledger
-    Error error -> log $ show error
+usageString :: String
+usageString = """
+Usage: transity <command> <path to ledger.yaml>
+
+Commands:
+  balance       Show a simple balance of all accounts
+  transactions  Show all transcations and their transfers
+  postings      Show all individual postings
+"""
 
 
-printBalance :: forall eff.
-  String -> Eff
-    ( exception :: EXCEPTION
-    , console :: CONSOLE
-    | eff
-    ) Unit
-printBalance ledgerFileContent = do
-  case Ledger.fromYaml ledgerFileContent of
-    Ok ledger -> log $ Ledger.showBalance true ledger
-    Error error -> log $ show error
+run :: String -> Ledger -> Result String String
+run command ledger =
+  case command of
+    "balance" -> Ok (Ledger.showBalance true ledger)
+    "transactions" -> Ok (Ledger.showPrettyAligned true ledger)
+    "postings" -> Ok (Ledger.showBalance true ledger)
+
+    other -> Error ("\"" <> other <> "\" is not a valid command")
+
+
+parseArguments :: Array String -> Result String (Tuple String String)
+parseArguments arguments = do
+  commandName <- note usageString (arguments !! 2)
+  filePathArg <- note
+    ("No path to a ledger file was provided\n\n" <> usageString)
+    (arguments !! 3)
+  pure (Tuple commandName filePathArg)
+
+
+loadAndExec
+  :: String
+  -> Tuple String String
+  -> forall e. Eff (exception :: EXCEPTION, fs :: FS | e) (Result String String)
+
+loadAndExec currentDir (Tuple command filePathRel) = do
+  let resolve = Path.resolve [currentDir]
+  let filePathAbs = resolve filePathRel
+  ledgerFileContent <- readTextFile UTF8 filePathAbs
+  let
+    result = do
+      ledger <- Ledger.fromYaml ledgerFileContent
+      run command ledger
+  pure result
 
 
 main :: forall eff . Eff
@@ -49,26 +74,26 @@ main = do
   arguments <- argv
   currentDir <- cwd
 
-  let commandName = arguments !! 2
-  let filePathArg = arguments !! 3
-  let usageString = """
-  Usage: transity <command> <path to ledger.yaml>
+  let
+    result = map
+      (loadAndExec currentDir)
+      (parseArguments arguments)
 
-  Commands:
-    balance       Show a simple balance of all accounts
-    transactions  Show all transcations and their transfers
-  """
+  execution <- case result of
+    Ok output -> output
+    Error message -> pure (Error message)
 
-  case commandName, filePathArg of
-    Nothing, _ -> log usageString
-    _, Nothing -> log
-      ( "No path to a ledger file was provided\n\n" <> usageString)
+  case execution of
+    Ok output -> log output
+    Error message -> error message
 
-    Just command, Just filePath -> do
-      let filePathAbs = Path.resolve [currentDir] filePath
-      ledgerFileContent <- readTextFile UTF8 filePathAbs
 
-      case command of
-        "transactions" -> printTransactions ledgerFileContent
-        "balance" -> printBalance ledgerFileContent
-        other -> log $ "\"" <> other <> "\" is not a valid command"
+-- TODO: Use Monad trasnformers
+-- resultT = ExceptT <<< toEither
+-- unResultT = unExceptT >>> either Error Ok
+-- main = do
+--   result <- runResultT $ join $ map resultT $
+--     loadAndExec <$> lift cwd <*> (resultT <<< parseArguments =<< lift argv)
+--   case result of
+--     Ok output -> log output
+--     Error message -> error message
