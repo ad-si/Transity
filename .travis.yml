@@ -7,7 +7,7 @@ dist: trusty
 sudo: required
 
 script:
-  - npm test
+  - make test
   - npm link
   - transity balance tests/ledger.yaml
 
