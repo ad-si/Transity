@@ -19,7 +19,7 @@ import Data.Ring ((-))
 import Data.Ring (negate) as Ring
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Semiring ((+))
-import Data.Show (class Show, show)
+import Data.Show (class Show)
 import Data.String (Pattern(..), length, split)
 import Data.Tuple (Tuple(..))
 import Transity.Utils

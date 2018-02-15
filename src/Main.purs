@@ -88,7 +88,7 @@ main = do
     Error message -> error message
 
 
--- TODO: Use Monad trasnformers
+-- TODO: Use Monad transformers
 -- resultT = ExceptT <<< toEither
 -- unResultT = unExceptT >>> either Error Ok
 -- main = do

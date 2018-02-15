@@ -2,7 +2,7 @@ module Transity.Utils
 where
 
 import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, bold, foreground)
+import Ansi.Output (withGraphics, foreground)
 import Control.Bind (bind)
 import Control.Applicative (pure)
 import Data.Argonaut.Core (Json, JObject)
