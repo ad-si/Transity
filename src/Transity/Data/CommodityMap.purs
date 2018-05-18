@@ -20,6 +20,10 @@ import Transity.Utils (WidthRecord, widthRecordZero, mergeWidthRecords)
 type CommodityMap = Map.Map Commodity Amount
 
 
+commodityMapZero :: CommodityMap
+commodityMapZero = Map.empty :: CommodityMap
+
+
 addAmountToMap :: CommodityMap -> Amount -> CommodityMap
 addAmountToMap commodityMap amount@(Amount value (Commodity commodity)) =
   Map.alter

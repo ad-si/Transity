@@ -40,7 +40,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Differentiation between transfers, transactions & exchanges
   - [ ] Special syntax for exchanges
 - [ ] Meta data for all entities (transactions, accounts, entities, …)
-- [ ] Verification of data consistency
+- [x] Verification of data consistency
 - [ ] CSV import
 - [ ] Link to receipt file
 - [ ] Dashboard
@@ -221,7 +221,7 @@ You add money (debit) and you remove money (credit).
 [this explanation]:
   http://simplerestaurantaccounting.com/debit-and-credit-accounting-terminology-is-confusing
 
-For example you get 50 € from your Mum and buy some Food.
+For example you get 50 € from your mum and buy some food for 20 €.
 
 ```txt
 Account | Debit   | Credit

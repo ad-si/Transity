@@ -32,6 +32,9 @@ import Transity.Utils
   )
 
 
+--| Economic good or service that has full or substantial fungibility
+--| E.g. €, cows, minutes, …
+
 newtype Commodity = Commodity String
 
 derive instance genericCommodity :: Generic Commodity _
@@ -41,7 +44,19 @@ derive newtype instance ordCommodity :: Ord Commodity
 instance showCommodity :: Show Commodity where
   show = genericShow
 
+instance decodeCommodity :: DecodeJson Commodity where
+  decodeJson json = toEither $ decodeJsonCommodity json
 
+decodeJsonCommodity :: Json -> Result String Commodity
+decodeJsonCommodity json =
+  maybe
+    (Error "Commodity is not a string")
+    (\x -> Ok (Commodity x))
+    (toString json)
+
+
+--| E.g. "20 €", "10 cows", or "20 minutes"
+--| `amount = Amount (fromInt 20) (Commodity "€")
 
 data Amount = Amount Rational Commodity
 

@@ -17,6 +17,25 @@ commodities:
 
 
 entities:
+  - id: anna
+    name: Anna Smith
+    utc: '2017-04-02 20:11:45'
+    tags:
+      - person
+
+  - id: ben
+
+  - id: evil-corp
+    name: Evil Corporation
+    utc: '2017-04-02 19:33:28'
+    note: The Evil Corporation in the United States of Evil
+    tags:
+      - company
+
+  - id: good-inc
+
+  - id: grocery-shop
+
   - id: john
     name: John Doe
     utc: '2017-04-02 19:33:28'
@@ -38,18 +57,7 @@ entities:
           - credit card
           - visa
 
-  - id: anna
-    name: Anna Smith
-    utc: '2017-04-02 20:11:45'
-    tags:
-      - person
-
-  - id: evil-corp
-    name: Evil Corporation
-    utc: '2017-04-02 19:33:28'
-    note: The Evil Corporation in the United States of Evil
-    tags:
-      - company
+      - id: giro
 
 
 transactions:

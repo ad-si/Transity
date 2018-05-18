@@ -240,6 +240,7 @@ commodityMapPrettyAligned = ""
 ledger :: Ledger
 ledger = Ledger
   { owner: "John Doe"
+  , entities: Nothing
   , transactions:
       [ transactionSimple ]
   }
@@ -248,6 +249,7 @@ ledger = Ledger
 ledgerMultiTrans :: Ledger
 ledgerMultiTrans = Ledger
   { owner: "John Doe"
+  , entities: Nothing
   , transactions:
       [ transactionSimple
       , transactionSimpleB
@@ -258,6 +260,11 @@ ledgerMultiTrans = Ledger
 ledgerJson :: String
 ledgerJson = """
 {
+  "entities": [
+    {"id": "abcxyz"},
+    {"id": "evil-corp"},
+    {"id": "john:giro"}
+  ],
   "owner": "John Doe",
   "transactions": [
     """ <> transactionSimpleJson <> """
@@ -268,6 +275,10 @@ ledgerJson = """
 
 ledgerYaml :: String
 ledgerYaml = """
+entities:
+  - id: abcxyz
+  - id: evil-corp
+  - id: john:giro
 owner: John Doe
 additional: Additional values are ignored
 transactions:
@@ -275,10 +286,28 @@ transactions:
 """
 
 
+entity :: String -> String
+entity id = """
+(Entity
+  { accounts:Nothing
+  , id: """ <> "\"" <> id <> "\"" <> """
+  , name: Nothing
+  , note: Nothing
+  , tags: Nothing
+  , utc: Nothing
+  })
+"""
+
+
 ledgerShowed :: String
 ledgerShowed = """
   (Ledger
-    { owner: "John Doe"
+    { entities: (Just
+      [ """ <> entity "abcxyz" <> """
+      , """ <> entity "evil-corp" <> """
+      , """ <> entity "john:giro" <> """
+      ])
+    , owner: "John Doe"
     , transactions:
       [ """ <> transactionSimpleShowed <> """
       ]

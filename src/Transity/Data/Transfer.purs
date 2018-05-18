@@ -1,6 +1,8 @@
 module Transity.Data.Transfer
 where
 
+import Prelude
+
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
@@ -38,6 +40,13 @@ newtype Transfer = Transfer
   }
 
 derive instance genericTransfer :: Generic Transfer _
+
+instance eqTransfer :: Eq Transfer where
+  eq (Transfer a) (Transfer b) = a.utc == b.utc
+
+instance ordTransfer :: Ord Transfer where
+  compare (Transfer a) (Transfer b) = compare a.utc b.utc
+
 
 instance showTransfer :: Show Transfer where
   show = genericShow

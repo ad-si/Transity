@@ -1,20 +1,18 @@
 module Main where
 
-import Control.Applicative (pure)
+import Prelude
+
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log, error)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
-import Data.Functor (map)
-import Data.Monoid ((<>))
 import Data.Result (Result(..), note)
-import Data.Tuple
+import Data.Tuple (Tuple(..))
 import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
 import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd)
-import Prelude (Unit, bind)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 
@@ -75,9 +73,7 @@ main = do
   currentDir <- cwd
 
   let
-    result = map
-      (loadAndExec currentDir)
-      (parseArguments arguments)
+    result = (parseArguments arguments) <#> (loadAndExec currentDir)
 
   execution <- case result of
     Ok output -> output

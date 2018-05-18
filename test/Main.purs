@@ -274,7 +274,7 @@ main = run [consoleReporter] do
             expected = ledgerShowed
               # wrapRight
               # rmWhitespace
-          actual `shouldEqual` expected
+          actual `shouldEqualString` expected
 
 
         it "converts a YAML string to a Ledger" do
@@ -286,7 +286,7 @@ main = run [consoleReporter] do
             expected = ledgerShowed
               # wrapRight
               # rmWhitespace
-          actual `shouldEqual` expected
+          actual `shouldEqualString` expected
 
 
         it "fails if a transfer contains an empty field" do
