@@ -15,6 +15,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
 import Data.Monoid (power)
+import Data.Newtype
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Prelude (($), (<>), bind, class Show, map, pure)
 import Text.Format (format, width)
@@ -41,6 +42,7 @@ newtype Transaction = Transaction
   }
 
 derive instance genericTransaction :: Generic Transaction _
+derive instance newtypeTransaction :: Newtype Transaction _
 
 instance showTransaction :: Show Transaction where
   show = genericShow

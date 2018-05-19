@@ -25,7 +25,7 @@ Usage: transity <command> <path to ledger.yaml>
 Commands:
   balance       Show a simple balance of all accounts
   transactions  Show all transcations and their transfers
-  entries       Show all individual entries
+  entries       Show all individual deposits and withdrawals
 """
 
 
@@ -34,7 +34,7 @@ run command ledger =
   case command of
     "balance" -> Ok (Ledger.showBalance ColorYes ledger)
     "transactions" -> Ok (Ledger.showPrettyAligned ColorYes ledger)
-    -- "entries" -> Ok (Ledger.showEntries ColorYes ledger)
+    "entries" -> Ok (Ledger.showEntries ColorYes ledger)
 
     other -> Error ("\"" <> other <> "\" is not a valid command")
 

@@ -18,12 +18,12 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Just), maybe, fromMaybe)
 import Data.Monoid (power)
+import Data.Newtype
 import Data.Rational (fromInt)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Show (show)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude (($), (<>), bind, class Show, pure, map)
 import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..))
@@ -45,6 +45,7 @@ newtype Transfer = Transfer
   }
 
 derive instance genericTransfer :: Generic Transfer _
+derive instance newtypeTransfer :: Newtype Transfer _
 
 instance eqTransfer :: Eq Transfer where
   eq (Transfer a) (Transfer b) = a.utc == b.utc

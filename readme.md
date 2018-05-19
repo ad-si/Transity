@@ -26,7 +26,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [x] Easily editable & processable file format based on [YAML](http://yaml.org)
 - Clear separation between
   - [x] Physical account (e.g. wallet, bank account) => spatial
-  - [ ] Entities (e.g. my mum, a company) => relational
+  - [x] Entities (e.g. my mum, a company) => relational
   - [ ] Purpose of transaction (food, travel) => functional
 - [x] High precision timestamps
   - [ ] Including nanoseconds
@@ -46,7 +46,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Dashboard
 - [ ] Budgets (including progress visualization)
 - Export to various formats for postprocessing
-  - [ ] [Gnuplot] (for trends)
+  - [x] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
   - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
 - Additional features for crypto currencies

@@ -2,12 +2,13 @@ module Transity.Data.Ledger where
 
 import Prelude
 
+import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat)
+import Data.Array (concat, sort)
 import Data.Foldable (fold, foldr)
 import Data.Foreign (renderForeignError)
 import Data.Generic.Rep (class Generic)
@@ -15,12 +16,14 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
+import Data.Newtype (unwrap)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
+import Transity.Data.Amount as Amount
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.CommodityMap
   (CommodityMap, addAmountToMap, subtractAmountFromMap)
@@ -29,10 +32,11 @@ import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils
-  ( widthRecordZero
-  , mergeWidthRecords
+  ( getFieldMaybe
   , getObjField
-  , getFieldMaybe
+  , mergeWidthRecords
+  , utcToIsoString
+  , widthRecordZero
   , ColorFlag(..)
   )
 
@@ -191,3 +195,23 @@ showBalance colorFlag (Ledger ledger) =
             { account = widthRecord.account + marginLeft }
         )
       # fold
+
+
+showEntries :: ColorFlag -> Ledger -> String
+showEntries colorFlag (Ledger {transactions}) =
+  let
+    getDateStr tfer = fromMaybe "" $ tfer.utc <#> utcToIsoString
+  in
+    transactions
+    <#> unwrap >>> (\tact -> tact.transfers
+          <#> unwrap >>> (\tfer -> tfer { utc = tfer.utc <|> tact.utc})
+        )
+    # concat
+    <#> (\tfer -> map (joinWith " ")
+          [ [getDateStr tfer, tfer.from,
+              (Amount.showPretty $ Amount.negate tfer.amount)]
+          , [getDateStr tfer, tfer.to, (Amount.showPretty tfer.amount)]
+          ])
+    # concat
+    # sort
+    # joinWith "\n"
