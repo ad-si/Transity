@@ -33,3 +33,48 @@ paypal    -> namecheap : 10.69 $
 paypal    -> icann     :  0.18 $
 namecheap -> john      :  1    Domain
 ```
+
+
+## Plotting
+
+All transactions from an account:
+
+```bash
+transity entries tests/ledger.yaml \
+| ag 'anna.*€' \
+| gnuplot -e "\
+    set terminal png; \
+    set style line 12 lc rgb'#808080' lt 0 lw 1; \
+    set grid back ls 12; \
+    set grid xtics ytics mxtics; \
+    set style fill solid; \
+    set xdata time; \
+    set timefmt '%Y-%m-%dT%H:%M:%S'; \
+    set format x '%Y-W%W'; \
+    set xtics rotate by 30 right; \
+    plot '-' using 1:3 with impulses; \
+  " \
+| imgcat
+```
+
+
+All transactions from an account cumulative:
+
+```bash
+transity entries tests/ledger.yaml \
+| ag 'anna.*€' \
+| gnuplot -e "\
+    set terminal png; \
+    set style line 12 lc rgb'#808080' lt 0 lw 1; \
+    set grid back ls 12; \
+    set grid xtics ytics mxtics; \
+    set style fill solid; \
+    set xdata time; \
+    set yrange [*<0:0<*]; \
+    set timefmt '%Y-%m-%dT%H:%M:%S'; \
+    set format x '%Y-W%W'; \
+    set xtics rotate by 30 right; \
+    plot '-' using 1:3 smooth cumulative with fillsteps; \
+  " \
+| imgcat
+```
