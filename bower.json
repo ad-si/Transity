@@ -23,7 +23,8 @@
     "purescript-rationals": "^4.0.0",
     "purescript-yaml-next": "^0.2.0",
     "purescript-ansi": "^4.0.0",
-    "purescript-result": "^0.1.0"
+    "purescript-result": "^0.1.0",
+    "purescript-sets": "^3.2.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
