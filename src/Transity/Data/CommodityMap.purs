@@ -14,7 +14,12 @@ import Data.Tuple (Tuple(..), snd)
 import Prelude ((#))
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
-import Transity.Utils (WidthRecord, widthRecordZero, mergeWidthRecords)
+import Transity.Utils
+  ( WidthRecord
+  , widthRecordZero
+  , mergeWidthRecords
+  , ColorFlag(..)
+  )
 
 
 type CommodityMap = Map.Map Commodity Amount
@@ -52,7 +57,7 @@ subtractAmountFromMap commodityMap amount@(Amount value (Commodity commodity)) =
 --| multi line string.
 
 showPretty :: CommodityMap -> String
-showPretty = showPrettyAligned false 0 0 0
+showPretty = showPrettyAligned ColorNo 0 0 0
 
 
 --| Specify the width (in characters) of the integer part,
@@ -60,12 +65,12 @@ showPretty = showPrettyAligned false 0 0 0
 --| (both exluding the decimal point) and receive a pretty printed
 --| multi line string.
 
-showPrettyAligned :: Boolean -> Int -> Int -> Int -> CommodityMap -> String
-showPrettyAligned colorize intWidth fracWidth comWidth commodityMap =
+showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> CommodityMap -> String
+showPrettyAligned colorFlag intWidth fracWidth comWidth commodityMap =
   commodityMap
     # (Map.toAscUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
     # map (\(Tuple _ amount) ->
-        Amount.showPrettyAligned colorize intWidth fracWidth comWidth amount)
+        Amount.showPrettyAligned colorFlag intWidth fracWidth comWidth amount)
     # joinWith "\n"
 
 

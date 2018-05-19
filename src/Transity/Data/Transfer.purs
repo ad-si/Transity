@@ -28,7 +28,12 @@ import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
-import Transity.Utils (getFieldVerbose, stringToDateTime, dateShowPretty)
+import Transity.Utils
+  ( getFieldVerbose
+  , stringToDateTime
+  , dateShowPretty
+  , ColorFlag(..)
+  )
 
 
 newtype Transfer = Transfer
@@ -116,7 +121,7 @@ fromYaml yaml =
 
 
 showPretty :: Transfer -> String
-showPretty = showPrettyAligned false 15 15 5 3 10
+showPretty = showPrettyAligned ColorNo 15 15 5 3 10
 
 
 --| - From account name width
@@ -126,8 +131,8 @@ showPretty = showPrettyAligned false 15 15 5 3 10
 --| - Commodity width
 
 showPrettyAligned
-  :: Boolean -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
-showPrettyAligned colorize fromW toW intW fracW comW (Transfer trans) =
+  :: ColorFlag -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
+showPrettyAligned colorFlag fromW toW intW fracW comW (Transfer trans) =
   let
     datePretty = map dateShowPretty trans.utc
     offsetDate = 19
@@ -139,7 +144,7 @@ showPrettyAligned colorize fromW toW intW fracW comW (Transfer trans) =
     <> " -> "
     <> format (width toW) trans.to
     <> " : "
-    <> Amount.showPrettyAligned colorize intW fracW comW trans.amount
+    <> Amount.showPrettyAligned colorFlag intW fracW comW trans.amount
     <> " | "
     <> fromMaybe "" trans.note
     <> "\n"

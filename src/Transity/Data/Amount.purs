@@ -29,6 +29,7 @@ import Transity.Utils
   , lengthOfNumParts
   , WidthRecord
   , widthRecordZero
+  , ColorFlag(..)
   )
 
 
@@ -114,7 +115,7 @@ toWidthRecord (Amount quantity (Commodity commodity)) =
 
 
 showPretty :: Amount -> String
-showPretty = showPrettyAligned false 0 0 0
+showPretty = showPrettyAligned ColorNo 0 0 0
 
 
 --| Specify the width (in characters) of the integer part,
@@ -122,8 +123,8 @@ showPretty = showPrettyAligned false 0 0 0
 --| the width of commodity part
 --| and receive a pretty printed amount.
 
-showPrettyAligned :: Boolean -> Int -> Int -> Int -> Amount -> String
-showPrettyAligned colorize intWid fracWid comWid (Amount val (Commodity com)) =
-  alignNumber colorize intWid fracWid (toNumber val)
+showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> Amount -> String
+showPrettyAligned colorFlag intWid fracWid comWid (Amount val (Commodity com)) =
+  alignNumber colorFlag intWid fracWid (toNumber val)
   <> " "
   <> padEnd comWid com

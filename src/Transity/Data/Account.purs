@@ -26,6 +26,7 @@ import Transity.Utils
   , indentSubsequent
   , getObjField
   , getFieldMaybe
+  , ColorFlag(..)
   )
 
 --| A physical account which can contain one or several commodities.
@@ -78,27 +79,27 @@ toWidthRecord (Account name commodityMap) =
 
 
 showPretty :: Account -> String
-showPretty = showPrettyAligned false widthRecordZero
+showPretty = showPrettyAligned ColorNo widthRecordZero
 
 
-showPrettyAligned :: Boolean -> WidthRecord -> Account -> String
-showPrettyAligned colorize widthRec (Account accId comMap) =
+showPrettyAligned :: ColorFlag -> WidthRecord -> Account -> String
+showPrettyAligned colorFlag widthRec (Account accId comMap) =
   let
     gap = 2
     accountWidth = max widthRec.account (length accId)
     accName = format (width accountWidth) accId
-    accColor = if colorize
+    accColor = if colorFlag == ColorYes
       then foreground Blue
       else []
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
-    (if colorize
+    (if colorFlag == ColorYes
         then withGraphics accColor accName
         else accName)
     <> " " `power` gap
     <> indentSubsequent (accountWidth + gap)
         (CommodityMap.showPrettyAligned
-          colorize
+          colorFlag
           widthRec.integer
           widthRec.fraction
           widthRec.commodity

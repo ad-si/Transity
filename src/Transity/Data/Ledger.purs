@@ -33,6 +33,7 @@ import Transity.Utils
   , mergeWidthRecords
   , getObjField
   , getFieldMaybe
+  , ColorFlag(..)
   )
 
 
@@ -116,14 +117,14 @@ fromYaml yaml =
 
 
 showPretty :: Ledger -> String
-showPretty = showPrettyAligned false
+showPretty = showPrettyAligned ColorNo
 
 
-showPrettyAligned :: Boolean -> Ledger -> String
-showPrettyAligned colorize (Ledger l) =
+showPrettyAligned :: ColorFlag -> Ledger -> String
+showPrettyAligned colorFlag (Ledger l) =
   let
     transactionsPretty = map
-      (Transaction.showPrettyAligned colorize)
+      (Transaction.showPrettyAligned colorFlag)
       l.transactions
   in ""
     <> "Ledger for \"" <> l.owner <> "\"\n"
@@ -171,8 +172,8 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
       updatedFromAccount
 
 
-showBalance :: Boolean -> Ledger -> String
-showBalance colorize (Ledger ledger) =
+showBalance :: ColorFlag -> Ledger -> String
+showBalance colorFlag (Ledger ledger) =
   let
     balanceMap = foldr addTransaction Map.empty ledger.transactions
     accountsArray = balanceMap
@@ -185,7 +186,7 @@ showBalance colorize (Ledger ledger) =
   in
     accountsArray
       # map (Account.showPrettyAligned
-          colorize
+          colorFlag
           widthRecord
             { account = widthRecord.account + marginLeft }
         )

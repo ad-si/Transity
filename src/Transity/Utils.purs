@@ -1,31 +1,22 @@
-module Transity.Utils
-where
+module Transity.Utils where
+
+import Prelude
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Control.Bind (bind)
-import Control.Applicative (pure)
 import Data.Argonaut.Core (Json, JObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getField, getFieldOptional)
 import Data.Array (elem, all, (!!))
-import Data.Bounded (bottom)
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Result (Result(..), fromEither)
-import Data.Eq ((/=))
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
-import Data.Function(($), (#))
-import Data.Functor (map)
-import Data.HeytingAlgebra (not)
 import Data.Int (fromString, pow)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
-import Data.Monoid (power, (<>))
-import Data.Ord (max, (>=))
+import Data.Monoid (power)
 import Data.Rational (Rational, (%))
-import Data.Ring ((-), (+))
-import Data.Show (show)
 import Data.String
   ( indexOf
   , length
@@ -40,6 +31,12 @@ import Data.StrMap (StrMap)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
+
+
+--| Flag to switch colorized output on or off
+data ColorFlag = ColorYes | ColorNo
+
+derive instance eqColorFlag :: Eq ColorFlag
 
 
 foreign import parseToUnixTime :: String -> Number
@@ -161,13 +158,14 @@ padEnd targetLength string =
   string <> getPadding targetLength string
 
 
-alignNumber :: Boolean -> Int -> Int -> Number -> String
-alignNumber colorize intWidth fracWidth number =
+alignNumber :: ColorFlag -> Int -> Int -> Number -> String
+alignNumber colorFlag intWidth fracWidth number =
   let
+    ifSet flag color = if flag == ColorYes then foreground color else []
     color =
-      { positive: if colorize then foreground Green else []
-      , negative: if colorize then foreground Red else []
-      , neutral:  if colorize then foreground Grey else []
+      { positive: ifSet colorFlag Green
+      , negative: ifSet colorFlag Red
+      , neutral:  ifSet colorFlag Grey
       }
     fragments = split (Pattern ".") (show number)
     intPart = case fragments !! 0 of
@@ -179,7 +177,7 @@ alignNumber colorize intWidth fracWidth number =
       _ -> emptyFrac
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
-    if not colorize
+    if colorFlag == ColorNo
     then intPart <> fracPart
     else
       if number >= 0.0

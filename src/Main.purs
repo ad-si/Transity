@@ -15,6 +15,7 @@ import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd, exit)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
+import Transity.Utils (ColorFlag(..))
 
 
 usageString :: String
@@ -24,16 +25,16 @@ Usage: transity <command> <path to ledger.yaml>
 Commands:
   balance       Show a simple balance of all accounts
   transactions  Show all transcations and their transfers
-  postings      Show all individual postings
+  entries       Show all individual entries
 """
 
 
 run :: String -> Ledger -> Result String String
 run command ledger =
   case command of
-    "balance" -> Ok (Ledger.showBalance true ledger)
-    "transactions" -> Ok (Ledger.showPrettyAligned true ledger)
-    "postings" -> Ok (Ledger.showBalance true ledger)
+    "balance" -> Ok (Ledger.showBalance ColorYes ledger)
+    "transactions" -> Ok (Ledger.showPrettyAligned ColorYes ledger)
+    -- "entries" -> Ok (Ledger.showEntries ColorYes ledger)
 
     other -> Error ("\"" <> other <> "\" is not a valid command")
 

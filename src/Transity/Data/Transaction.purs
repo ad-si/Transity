@@ -26,6 +26,7 @@ import Transity.Utils
   , stringToDateTime
   , dateShowPretty
   , indentSubsequent
+  , ColorFlag(..)
   )
 
 
@@ -93,14 +94,14 @@ fromYaml yaml =
 
 
 showPretty :: Transaction -> String
-showPretty = showPrettyAligned false
+showPretty = showPrettyAligned ColorNo
 
 
-showPrettyAligned :: Boolean -> Transaction -> String
-showPrettyAligned colorize (Transaction tact) =
+showPrettyAligned :: ColorFlag -> Transaction -> String
+showPrettyAligned colorFlag (Transaction tact) =
   let
     transfersPretty = map
-      (Transfer.showPrettyAligned colorize 15 15 5 3 10)
+      (Transfer.showPrettyAligned colorFlag 15 15 5 3 10)
       tact.transfers
     offsetDate = 16
     offsetIndentation = 4
