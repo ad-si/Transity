@@ -12,7 +12,7 @@ import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
 import Node.Path as Path
-import Node.Process (PROCESS, argv, cwd)
+import Node.Process (PROCESS, argv, cwd, exit)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 
@@ -81,7 +81,9 @@ main = do
 
   case execution of
     Ok output -> log output
-    Error message -> error message
+    Error message -> do
+      error message
+      exit 1
 
 
 -- TODO: Use Monad transformers
