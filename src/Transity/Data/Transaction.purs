@@ -63,9 +63,7 @@ decodeJsonTransaction json = do
 
   pure $ Transaction
     { id
-    , utc: case utc of
-        Nothing -> Nothing
-        Just dateString -> Just (stringToDateTime dateString)
+    , utc: map stringToDateTime utc
     , note
     , receipt
     , transfers

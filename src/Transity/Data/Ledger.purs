@@ -8,8 +8,9 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, sort)
-import Data.Foldable (fold, foldr)
+import Data.Array (concat, sort, sortBy, groupBy, (!!))
+import Data.Array as Array
+import Data.Foldable (fold, foldr, intercalate)
 import Data.Foreign (renderForeignError)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -17,12 +18,14 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
+import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
+import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.CommodityMap
@@ -197,21 +200,55 @@ showBalance colorFlag (Ledger ledger) =
       # fold
 
 
-showEntries :: ColorFlag -> Ledger -> String
-showEntries colorFlag (Ledger {transactions}) =
+getEntries :: Ledger -> Array (Array String)
+getEntries (Ledger {transactions}) =
   let
     getDateStr tfer = fromMaybe "" $ tfer.utc <#> utcToIsoString
+    getQunty (Amount quantity _ ) = show $ toNumber quantity
+    getCmdty (Amount _ commodity ) = unwrap commodity
+    getTransfers tfer =
+      let
+        fromAmnt =  Amount.negate tfer.amount
+        toAmnt = tfer.amount
+      in
+        [ [getDateStr tfer, tfer.from, getQunty fromAmnt, getCmdty fromAmnt]
+        , [getDateStr tfer, tfer.to, getQunty toAmnt, getCmdty toAmnt]
+        ]
   in
     transactions
     <#> unwrap >>> (\tact -> tact.transfers
           <#> unwrap >>> (\tfer -> tfer { utc = tfer.utc <|> tact.utc})
         )
     # concat
-    <#> (\tfer -> map (joinWith " ")
-          [ [getDateStr tfer, tfer.from,
-              (Amount.showPretty $ Amount.negate tfer.amount)]
-          , [getDateStr tfer, tfer.to, (Amount.showPretty tfer.amount)]
-          ])
+    <#> getTransfers
     # concat
+
+
+showEntries :: Ledger -> String
+showEntries ledger =
+  getEntries ledger
     # sort
+    <#> joinWith " "
     # joinWith "\n"
+
+
+showEntriesByAccount :: Ledger -> String
+showEntriesByAccount ledger =
+  let
+    accountCommodity array =
+      fromMaybe "" (array !! 1) <> " " <> fromMaybe "" (array !! 3)
+    compareAccComm a b = accountCommodity a `compare` accountCommodity b
+    isEqualAccComm a b = accountCommodity a == accountCommodity b
+    accCommOfGroup array = "\""
+      <> (accountCommodity $ fromMaybe [] (array !! 0))
+      <> "\""
+  in
+    getEntries ledger
+      # sortBy compareAccComm
+      # groupBy isEqualAccComm
+      <#> Array.fromFoldable  -- Convert each NonEmpty to Array
+      <#> sort  -- Sort each entry by date
+      <#> (\array -> [[accCommOfGroup array]] <> array)
+      # intercalate [["\n"]]  -- Add space between account entries
+      <#> joinWith " "  -- Join fields for each row
+      # joinWith "\n"

@@ -12,6 +12,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
+import Data.Newtype
 import Data.Ord (class Ord)
 import Data.Rational (Rational, fromInt, toNumber, (%))
 import Data.Result (Result(..), toEither)
@@ -38,6 +39,7 @@ import Transity.Utils
 
 newtype Commodity = Commodity String
 
+derive instance newtypeCommodity :: Newtype Commodity _
 derive instance genericCommodity :: Generic Commodity _
 derive newtype instance eqCommodity :: Eq Commodity
 derive newtype instance ordCommodity :: Ord Commodity

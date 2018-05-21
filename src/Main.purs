@@ -1,12 +1,13 @@
 module Main where
 
-import Prelude
+import Prelude (Unit, bind, discard, pure, (#), ($), (<#>), (<>))
 
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log, error)
 import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
 import Data.Result (Result(..), note)
+import Data.Newtype (over)
 import Data.Tuple (Tuple(..))
 import Node.Encoding (Encoding(UTF8))
 import Node.FS (FS)
@@ -15,26 +16,44 @@ import Node.Path as Path
 import Node.Process (PROCESS, argv, cwd, exit)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
+import Transity.Plot as Plot
 import Transity.Utils (ColorFlag(..))
 
 
 usageString :: String
 usageString = """
-Usage: transity <command> <path to ledger.yaml>
+Usage: transity <command> <path/to/ledger.yaml>
 
-Commands:
-  balance       Show a simple balance of all accounts
-  transactions  Show all transcations and their transfers
-  entries       Show all individual deposits and withdrawals
+Command             Description
+------------------  ------------------------------------------------------------
+balance             Simple balance of all accounts
+transactions        All transcations and their transfers
+entries             All individual deposits & withdrawals
+entries-by-account  All individual deposits & withdrawals grouped by account
+gplot               Code and data for gnuplot impulse diagram
+                    to visualize transfers of all accounts
+gplot-cumul         Code and data for cumuluative gnuplot step chart
+                    to visualize balance of all accounts
 """
 
 
-run :: String -> Ledger -> Result String String
-run command ledger =
+run :: String -> String -> Ledger -> Result String String
+run command filePathRel ledger =
   case command of
-    "balance" -> Ok (Ledger.showBalance ColorYes ledger)
-    "transactions" -> Ok (Ledger.showPrettyAligned ColorYes ledger)
-    "entries" -> Ok (Ledger.showEntries ColorYes ledger)
+    "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
+    "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
+    "entries"            -> Ok $ Ledger.showEntries ledger
+    "entries-by-account" -> Ok $ Ledger.showEntriesByAccount ledger
+    "gplot"              -> Ok $ Plot.gplotCode $ Plot.configDefault
+      # (Plot.GplotConfig `over` (_
+          { data = Ledger.showEntriesByAccount ledger
+          , title = filePathRel
+          }))
+    "gplot-cumul"  -> Ok $ Plot.gplotCodeCumul $ Plot.configDefault
+      # (Plot.GplotConfig `over` (_
+          { data = Ledger.showEntriesByAccount ledger
+          , title = filePathRel <> " - Cumulative"
+          }))
 
     other -> Error ("\"" <> other <> "\" is not a valid command")
 
@@ -60,7 +79,7 @@ loadAndExec currentDir (Tuple command filePathRel) = do
   let
     result = do
       ledger <- Ledger.fromYaml ledgerFileContent
-      run command ledger
+      run command filePathRel ledger
   pure result
 
 
