@@ -32,7 +32,7 @@ transferMinimal = Transfer
 
 transferSimple :: Transfer
 transferSimple = Transfer
-  { utc: Just (stringToDateTime "2014-12-24")
+  { utc: stringToDateTime "2014-12-24"
   , from: "john:giro"
   , to: "evil-corp"
   , amount: Amount (fromInt 15) (Commodity "€")
@@ -82,7 +82,7 @@ transferSimplePretty = "\
 
 transferSimpleB :: Transfer
 transferSimpleB = Transfer
-  { utc: Just (stringToDateTime "2007-03-29")
+  { utc: stringToDateTime "2007-03-29"
   , from: "evil-corp"
   , to: "flower-power"
   , amount: Amount (fromInt 7) (Commodity "€")
@@ -135,7 +135,7 @@ transactionNoAccountPretty = ""
 transactionSimple :: Transaction
 transactionSimple = Transaction
   { id: Just "abcxyz"
-  , utc: Just (stringToDateTime "2014-12-24")
+  , utc: stringToDateTime "2014-12-24"
   , note: Just "A short note about this transaction"
   , receipt: Just "filepath/to/receipt.pdf"
   , transfers: [ transferSimple ]
@@ -190,7 +190,7 @@ transactionSimplePretty = "\
 transactionSimpleB :: Transaction
 transactionSimpleB = Transaction
   { id: Just "defghi"
-  , utc: Just (stringToDateTime "2001-05-13")
+  , utc: stringToDateTime "2001-05-13"
   , note: Just "Another note"
   , receipt: Just "filepath/to/another-receipt.pdf"
   , transfers: [ transferSimpleB ]

@@ -3,16 +3,13 @@ module Transity.Data.Entity where
 import Prelude
 
 import Data.Argonaut.Core (toObject, Json)
-import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Functor ((<#>))
-import Data.Result (Result(..), toEither, fromEither)
+import Data.Result (Result(..), toEither)
 import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
+import Data.Maybe (Maybe(Nothing), maybe, fromMaybe)
 import Transity.Data.Account (Account)
 import Transity.Data.Account as Account
 import Transity.Utils
@@ -20,7 +17,6 @@ import Transity.Utils
   , getFieldMaybe
   , stringToDateTime
   , dateShowPretty
-  , indentSubsequent
   )
 
 
@@ -57,9 +53,7 @@ decodeJsonEntity json = do
     { id
     , name
     , note
-    , utc: case utc of
-        Nothing -> Nothing
-        Just dateString -> Just (stringToDateTime dateString)
+    , utc: utc >>= stringToDateTime
     , tags
     , accounts
     }

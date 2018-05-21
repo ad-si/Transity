@@ -1,5 +1,6 @@
-module Transity.Data.Transaction
-where
+module Transity.Data.Transaction where
+
+import Prelude
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
@@ -63,7 +64,7 @@ decodeJsonTransaction json = do
 
   pure $ Transaction
     { id
-    , utc: map stringToDateTime utc
+    , utc: utc >>= stringToDateTime
     , note
     , receipt
     , transfers

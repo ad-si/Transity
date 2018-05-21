@@ -63,6 +63,7 @@ gplotCode (GplotConfig conf) =
     "set format x '%Y-W%W'" :
     "set xlabel 'ISO Week'" :
     "set xtics rotate by 30 right" :
+    "set zeroaxis" :
     ("set ylabel '" <> conf.labelY <> "'") :
     "plot for [i=0:*] $data index i \
       \using 1:3 \
@@ -91,6 +92,7 @@ gplotCodeCumul (GplotConfig conf) =
     "set format x '%Y-W%W'" :
     "set xlabel 'ISO Week'" :
     "set xtics rotate by 30 right" :
+    "set zeroaxis" :
     "set yrange [*<0:0<*]" :
     ("set ylabel '" <> conf.labelY <> "'") :
     "plot for [i=0:*] $data index i \

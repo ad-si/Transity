@@ -37,23 +37,33 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 """
 
 
+-- TODO: Move validation to parsing
+utcError :: String
+utcError =
+  "All transfers or their parent transaction must have a valid utc field"
+
+
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
-    "entries"            -> Ok $ Ledger.showEntries ledger
-    "entries-by-account" -> Ok $ Ledger.showEntriesByAccount ledger
-    "gplot"              -> Ok $ Plot.gplotCode $ Plot.configDefault
-      # (Plot.GplotConfig `over` (_
-          { data = Ledger.showEntriesByAccount ledger
-          , title = filePathRel
-          }))
-    "gplot-cumul"  -> Ok $ Plot.gplotCodeCumul $ Plot.configDefault
-      # (Plot.GplotConfig `over` (_
-          { data = Ledger.showEntriesByAccount ledger
-          , title = filePathRel <> " - Cumulative"
-          }))
+    "entries"            -> note utcError $ Ledger.showEntries ledger
+    "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
+    "gplot" ->
+      (note utcError $ Ledger.showEntriesByAccount ledger)
+      <#> (\entries -> Plot.gplotCode $ Plot.configDefault
+        # (Plot.GplotConfig `over` (_
+            { data = entries
+            , title = filePathRel
+            })))
+    "gplot-cumul" ->
+      (note utcError $ Ledger.showEntriesByAccount ledger)
+      <#> (\entries -> Plot.gplotCodeCumul $ Plot.configDefault
+        # (Plot.GplotConfig `over` (_
+            { data = entries
+            , title = filePathRel <> " - Cumulative"
+            })))
 
     other -> Error ("\"" <> other <> "\" is not a valid command")
 

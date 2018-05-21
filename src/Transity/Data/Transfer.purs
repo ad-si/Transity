@@ -73,7 +73,7 @@ decodeJsonTransfer json = do
   note <- fromEither $ object `getFieldOptional` "note"
 
   transfer <- verifyTransfer (show json) (Transfer
-      { utc: map stringToDateTime utc
+      { utc: utc >>= stringToDateTime
       , from
       , to
       , amount

@@ -21,6 +21,7 @@ import Data.Newtype (unwrap)
 import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
+import Data.Traversable
 import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Transity.Data.Account (Account(..))
@@ -200,40 +201,46 @@ showBalance colorFlag (Ledger ledger) =
       # fold
 
 
-getEntries :: Ledger -> Array (Array String)
-getEntries (Ledger {transactions}) =
+getEntries :: Ledger -> Maybe (Array (Array String))
+getEntries (Ledger {transactions}) = do
   let
-    getDateStr tfer = fromMaybe "" $ tfer.utc <#> utcToIsoString
     getQunty (Amount quantity _ ) = show $ toNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
-    getTransfers tfer =
+
+    splitTransfer :: Transfer -> Maybe (Array (Array String))
+    splitTransfer (Transfer tfer) =
       let
-        fromAmnt =  Amount.negate tfer.amount
-        toAmnt = tfer.amount
+        fromAmnt = Amount.negate tfer.amount
+        getFromAndTo date =
+          [ [date, tfer.from, getQunty fromAmnt, getCmdty fromAmnt]
+          , [date, tfer.to, getQunty tfer.amount, getCmdty tfer.amount]
+          ]
       in
-        [ [getDateStr tfer, tfer.from, getQunty fromAmnt, getCmdty fromAmnt]
-        , [getDateStr tfer, tfer.to, getQunty toAmnt, getCmdty toAmnt]
-        ]
-  in
+        (tfer.utc <#> utcToIsoString) <#> getFromAndTo
+
+  splitted <- do
     transactions
-    <#> unwrap >>> (\tact -> tact.transfers
-          <#> unwrap >>> (\tfer -> tfer { utc = tfer.utc <|> tact.utc})
-        )
+    <#> (\(Transaction tact) -> tact.transfers
+      <#> (\(Transfer tfer) -> Transfer (tfer { utc = tfer.utc <|> tact.utc })))
     # concat
-    <#> getTransfers
-    # concat
+    <#> splitTransfer
+    # sequence
+
+  pure $ splitted # concat
 
 
-showEntries :: Ledger -> String
-showEntries ledger =
-  getEntries ledger
+showEntries :: Ledger -> Maybe String
+showEntries ledger = do
+  entries <- getEntries ledger
+
+  pure $ entries
     # sort
     <#> joinWith " "
     # joinWith "\n"
 
 
-showEntriesByAccount :: Ledger -> String
-showEntriesByAccount ledger =
+showEntriesByAccount :: Ledger -> Maybe String
+showEntriesByAccount ledger = do
   let
     accountCommodity array =
       fromMaybe "" (array !! 1) <> " " <> fromMaybe "" (array !! 3)
@@ -242,8 +249,10 @@ showEntriesByAccount ledger =
     accCommOfGroup array = "\""
       <> (accountCommodity $ fromMaybe [] (array !! 0))
       <> "\""
-  in
-    getEntries ledger
+
+  entries <- getEntries ledger
+
+  pure $ entries
       # sortBy compareAccComm
       # groupBy isEqualAccComm
       <#> Array.fromFoldable  -- Convert each NonEmpty to Array

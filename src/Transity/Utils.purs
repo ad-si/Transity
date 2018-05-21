@@ -16,6 +16,7 @@ import Data.Int (fromString, pow)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
 import Data.Monoid (power)
+import Data.Nullable
 import Data.Rational (Rational, (%))
 import Data.String
   ( indexOf
@@ -39,7 +40,10 @@ data ColorFlag = ColorYes | ColorNo
 derive instance eqColorFlag :: Eq ColorFlag
 
 
-foreign import parseToUnixTime :: String -> Number
+foreign import parseToUnixTimeImpl :: String -> Nullable Number
+
+parseToUnixTime :: String -> Maybe Number
+parseToUnixTime = parseToUnixTimeImpl >>> toMaybe
 
 
 getObjField :: forall a. DecodeJson a => JObject -> String -> Result String a
@@ -73,13 +77,12 @@ getFieldVerbose object name =
       Ok success -> Ok success
 
 
-stringToDateTime :: String -> DateTime
+stringToDateTime :: String -> Maybe DateTime
 stringToDateTime string = string
   # parseToUnixTime
-  # Milliseconds
-  # instant
-  # fromMaybe bottom
-  # toDateTime
+  <#> Milliseconds
+  >>= instant
+  <#> toDateTime
 
 
 utcToIsoString :: DateTime -> String
@@ -162,7 +165,7 @@ alignNumber :: ColorFlag -> Int -> Int -> Number -> String
 alignNumber colorFlag intWidth fracWidth number =
   let
     ifSet flag color = if flag == ColorYes then foreground color else []
-    color =
+    colorMap =
       { positive: ifSet colorFlag Green
       , negative: ifSet colorFlag Red
       , neutral:  ifSet colorFlag Grey
@@ -182,11 +185,11 @@ alignNumber colorFlag intWidth fracWidth number =
     else
       if number >= 0.0
       then
-        withGraphics color.positive intPart
-        <> withGraphics color.neutral fracPart
+        withGraphics colorMap.positive intPart
+        <> withGraphics colorMap.neutral fracPart
       else
-        withGraphics color.negative intPart
-        <> withGraphics color.neutral fracPart
+        withGraphics colorMap.negative intPart
+        <> withGraphics colorMap.neutral fracPart
 
 
 --| Decimal point is included in fraction => +1
