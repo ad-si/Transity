@@ -6,7 +6,7 @@ The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 [Build Status]: https://travis-ci.com/feramhq/transity.svg?token=ipYeEBNjb9wCxCwPq6aS&branch=master
-[travis]: https://travis-ci.com/adius/transity
+[travis]: https://travis-ci.com/feramhq/transity
 
 <img
   src='images/screenshot-balance.svg'
@@ -102,7 +102,7 @@ npm install --global transity
 ### From Source
 
 ```shell
-git clone https://github.com/adius/transity
+git clone https://github.com/feramhq/transity
 cd transity
 npm link
 ```
@@ -225,6 +225,8 @@ transity gplot-cumul examples/journal.yaml \
 | gnuplot \
 | imgcat
 ```
+
+![Screenshot of cumulative account balance plot](./images/screenshot-plot.png)
 
 
 ## Import from Ledger CLI
