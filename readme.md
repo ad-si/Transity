@@ -18,9 +18,10 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 - [List of Features / TODOs](#list-of-features--todos)
 - [Installation](#installation)
+  * [From npm](#from-npm)
   * [From Source](#from-source)
 - [Usage](#usage)
-- [Ledger File Format](#ledger-file-format)
+- [Journal File Format](#journal-file-format)
 - [Plotting](#plotting)
 - [Import from Ledger CLI](#import-from-ledger-cli)
 - [FAQ](#faq)
@@ -28,6 +29,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   * [Why is it written in PureScript?](#why-is-it-written-in-purescript)
   * [Why is it not written in Haskell?](#why-is-it-not-written-in-haskell)
 - [Comparison with Hledger](#comparison-with-hledger)
+  * [Reporting](#reporting)
   * [Missing features](#missing-features)
 - [Ideas](#ideas)
   * [Entry / Value Date](#entry--value-date)
@@ -90,6 +92,13 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 ## Installation
 
+### From npm
+
+```shell
+npm install --global transity
+```
+
+
 ### From Source
 
 ```shell
@@ -129,7 +138,7 @@ List complete usage manual by simply calling `transity` without any arguments.
 ```shell
 $ transity
 
-Usage: transity <command> <path/to/ledger.yaml>
+Usage: transity <command> <path/to/journal.yaml>
 
 Command             Description
 ------------------  ------------------------------------------------------------
@@ -144,9 +153,9 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 ```
 
 
-## Ledger File Format
+## Journal File Format
 
-A ledger file is a YAML file with following format:
+A minimal journal file is a YAML file with following format:
 
 ```yaml
 owner: anna
@@ -191,8 +200,6 @@ transactions:
         to: anna
         amount: 1 evil-machine
 ```
-
-`owner` and `transactions` are mandatory, the rest is optional.
 
 
 ## Plotting
@@ -356,11 +363,6 @@ than weakly typed or untyped languages (like JavaScript).
 You wouldn't want your money get lost in rounding errors or
 be turned to `undefined`, would you? 😉
 
-Also:
-Just like Haskell, it's a beautiful functional language!
-Once you you've seen the light you wouldn't want to write any other
-kind of language.
-
 
 ### Why is it not written in Haskell?
 
@@ -372,8 +374,13 @@ or quarrel with experimental stuff like GHCJS.
 
 ## Comparison with Hledger
 
-Checkout the files [examples/hledger.journal] and [examples/journal.yaml]
+Checkout the files [hledger.journal] and [journal.yaml]
 for similar transactions modeled in Hledger and in Transity.
+
+[hledger.journal]: ./examples/hledger.journal
+[journal.yaml]: ./examples/journal.yaml
+
+### Reporting
 
 ```shell
 hledger --file examples/hledger.journal balance

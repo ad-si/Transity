@@ -38,7 +38,7 @@
           <text x="24.048" y="3.841" fill="#c397d8">transity</text>
           <text x="33.066" y="3.841" fill="#7aa6da">balance</text>
           <text x="41.082" y="3.841" fill="#7aa6da"
-            text-decoration="underline">tests/ledger.yaml</text>
+            text-decoration="underline">examples/journal.yaml</text>
           <text x="10.02" y="6.012" fill="#96cbfe">anna</text>
           <text x="21.042" y="6.012" fill="#a8ff60">1</text>
           <text x="30.06" y="6.012" fill="#dfdfdf">evil-machine</text>

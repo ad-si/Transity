@@ -22,7 +22,7 @@ import Transity.Utils (ColorFlag(..))
 
 usageString :: String
 usageString = """
-Usage: transity <command> <path/to/ledger.yaml>
+Usage: transity <command> <path/to/journal.yaml>
 
 Command             Description
 ------------------  ------------------------------------------------------------

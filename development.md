@@ -11,6 +11,16 @@ python3 -m http.server 1222
 Then open [localhost:1222](http://localhost:1222).
 
 
+Install [markdown-toc] with npm and run following command
+to update the table of contents in the readme:
+
+```shell
+markdown-toc -i readme.md
+```
+
+[markdown-toc]: https://github.com/jonschlinkert/markdown-toc
+
+
 ## Add Documentation File to Local Pursuit
 
 **Not working. Format seems wrong,
