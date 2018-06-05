@@ -9,7 +9,7 @@ sudo: required
 script:
   - make test
   - npm link
-  - transity balance tests/ledger.yaml
+  - transity balance examples/journal.yaml
 
 after_success:
   - >-

@@ -44,7 +44,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   => Support for complex transactions made up of several transfers
 - [x] Dedicated payer (from) and payee (to) fields (ledger only supports payee)
 - [x] No misuse of accounts as categories / tags => direct support for them
-- [ ] No hardcoded asset / liability connotation as it is viewpoint dependent
+- [ ] No hard-coded asset / liability connotation as it is viewpoint dependent
   => Choose viewpoint when printing the balance
 - [x] Easily editable & processable file format based on [YAML](http://yaml.org)
 - Clear separation between
@@ -53,12 +53,12 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [ ] Purpose of transaction (food, travel)
 - [x] High precision timestamps
   - [ ] Including nanoseconds
-- [ ] Support for all states of transaction lifecycle
+- [ ] Support for all states of transaction life cycle
   1. Request - Request to exchange a commodity
   1. Offer - Specification of commodity & expected trade item
   1. Acceptance - Affirmation of interest in offered exchange
   1. Fulfillments
-  1. Certification - Acknowledgement that exchange was performed
+  1. Certification - Acknowledgment that exchange was performed
 - [ ] Support for any type of commodity (e.g. even time and messages)
 - [ ] Differentiation between transfers, transactions & exchanges
   - [ ] Special syntax for exchanges
@@ -68,7 +68,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Link to receipt file
 - [ ] Dashboard
 - [ ] Budgets (including progress visualization)
-- Export to various formats for postprocessing
+- Export to various formats for post-processing
   - [x] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
   - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
@@ -404,7 +404,7 @@ transity entries examples/journal.yaml
 
 ### Missing features
 
-- Hledger has no firts class support for Gnuplot
+- Hledger has no first class support for Gnuplot
   (Check out [Report Scripts for Ledger CLI with Gnuplot] for some scripts)
 
 [Report Scripts for Ledger CLI with Gnuplot]:
