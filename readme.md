@@ -14,6 +14,27 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   width='600'
 />
 
+<!-- toc -->
+
+- [List of Features / TODOs](#list-of-features--todos)
+- [Installation](#installation)
+  * [From Source](#from-source)
+- [Usage](#usage)
+- [Ledger File Format](#ledger-file-format)
+- [Plotting](#plotting)
+- [Import from Ledger CLI](#import-from-ledger-cli)
+- [FAQ](#faq)
+  * [Why another plain text accounting tool?](#why-another-plain-text-accounting-tool)
+  * [Why is it written in PureScript?](#why-is-it-written-in-purescript)
+  * [Why is it not written in Haskell?](#why-is-it-not-written-in-haskell)
+- [Comparison with Hledger](#comparison-with-hledger)
+  * [Missing features](#missing-features)
+- [Ideas](#ideas)
+  * [Entry / Value Date](#entry--value-date)
+  * [Syntax](#syntax)
+- [Related](#related)
+
+<!-- tocstop -->
 
 ## List of Features / TODOs
 
@@ -25,9 +46,9 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   => Choose viewpoint when printing the balance
 - [x] Easily editable & processable file format based on [YAML](http://yaml.org)
 - Clear separation between
-  - [x] Physical account (e.g. wallet, bank account) => spatial
-  - [x] Entities (e.g. my mum, a company) => relational
-  - [ ] Purpose of transaction (food, travel) => functional
+  - [x] Physical account (e.g. wallet, bank account)
+  - [x] Entities (e.g. my mum, a company)
+  - [ ] Purpose of transaction (food, travel)
 - [x] High precision timestamps
   - [ ] Including nanoseconds
 - [ ] Support for all states of transaction lifecycle
@@ -49,6 +70,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [x] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
   - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
+  - [ ] [(H)ledger Format] (for using (H)ledger exclusive features)
 - Additional features for crypto currencies
   - TODO: Think about what features exactly
 - [ ] Multi file support
@@ -63,6 +85,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
 [JS-Sequence-Diagrams]: https://bramp.github.io/js-sequence-diagrams
+[(H)ledger Format]: http://hledger.org/journal.html
 
 
 ## Installation
@@ -79,7 +102,7 @@ npm link
 ## Usage
 
 ```shell
-$ transity balance tests/ledger.yaml
+$ transity balance examples/journal.yaml
           anna       1        evil-machine
                 -49978.02     €
            ben     -50        $
@@ -97,7 +120,7 @@ $ transity balance tests/ledger.yaml
 
 If linked modules aren't exposed in your path you can also run
 ```
-cli/main.js balance tests/ledger.yaml
+cli/main.js balance examples/journal.yaml
 ```
 
 
@@ -105,7 +128,19 @@ List complete usage manual by simply calling `transity` without any arguments.
 
 ```shell
 $ transity
-Usage: transity <command> <path to ledger.yaml>
+
+Usage: transity <command> <path/to/ledger.yaml>
+
+Command             Description
+------------------  ------------------------------------------------------------
+balance             Simple balance of all accounts
+transactions        All transcations and their transfers
+entries             All individual deposits & withdrawals
+entries-by-account  All individual deposits & withdrawals grouped by account
+gplot               Code and data for gnuplot impulse diagram
+                    to visualize transfers of all accounts
+gplot-cumul         Code and data for cumuluative gnuplot step chart
+                    to visualize balance of all accounts
 ```
 
 
@@ -158,6 +193,31 @@ transactions:
 ```
 
 `owner` and `transactions` are mandatory, the rest is optional.
+
+
+## Plotting
+
+Per default all accounts are plotted.
+To limit it to only a subsection use `awk` to filter the output.
+
+For example all transactions of Euro accounts:
+
+```bash
+transity gplot examples/journal.yaml \
+| awk '/^$/ || /(EOD|^set terminal)/ || /€/' \
+| gnuplot \
+| imgcat
+```
+
+
+Or all account balances of Euro accounts over time:
+
+```bash
+transity gplot-cumul examples/journal.yaml \
+| awk '/^$/ || /(EOD|^set terminal)/ || /€/' \
+| gnuplot \
+| imgcat
+```
 
 
 ## Import from Ledger CLI
@@ -310,16 +370,92 @@ With Haskell you'd have to use another language for a web frontend
 or quarrel with experimental stuff like GHCJS.
 
 
+## Comparison with Hledger
+
+Checkout the files [examples/hledger.journal] and [examples/journal.yaml]
+for similar transactions modeled in Hledger and in Transity.
+
+```shell
+hledger --file examples/hledger.journal balance
+# vs
+transity balance examples/journal.yaml
+```
+
+```shell
+hledger --file examples/hledger.journal register
+# vs
+transity transactions examples/journal.yaml
+```
+
+```shell
+hledger --file examples/hledger.journal register --output-format=csv
+# vs
+transity entries examples/journal.yaml
+```
+
+### Missing features
+
+- Hledger has no firts class support for Gnuplot
+  (Check out [Report Scripts for Ledger CLI with Gnuplot] for some scripts)
+
+[Report Scripts for Ledger CLI with Gnuplot]:
+  https://www.sundialdreams.com/report-scripts-for-ledger-cli-with-gnuplot
+
+
+## Ideas
+
+### Entry / Value Date
+
+There are no separate fields for entry or value dates necessary.
+Simply use ISO 8601 [time intervals] to specify the duration of a transfer.
+
+[time intervals]: https://en.wikipedia.org/wiki/ISO_8601#Time_intervals
+
+```yaml
+transactions:
+  - id: '123456789'
+    note: Deposit of savings
+    transfers:
+      - utc: 2018-01-04T12:00--05T22:10
+        from: john
+        to: bank
+        amount: 100 €
+```
+
+
+### Syntax
+
+This is a first concept for an alternative syntax for the YAML journal file:
+
+```transity
+2016-04-16 18:50:28
+#20135604
+1 year registration of domain "example.org"
+john      -> paypal    :  9.95 €
+paypal    -> namecheap : 10.69 $
+paypal    -> icann     :  0.18 $
+namecheap -> john      :  1    Domain
+```
+
+
 ## Related
 
-- http://plaintextaccounting.org - Best of plain text accounting.
-- https://cs007.blog - Personal finance for engineers.
-- http://principlesofaccounting.com - Online tutorial on accounting.
-- https://npoacct.sfconservancy.org -
+- [plaintextaccounting.org] - Best of plain text accounting.
+- [cs007.blog] - Personal finance for engineers.
+- [principlesofaccounting.com] - Online tutorial on accounting.
+- [npoacct.sfconservancy.org] -
     Effort to create accounting software for non-profit organizations.
-- https://github.com/nuex/t - sh script for working with ledger timelog files.
-- https://github.com/bankscrap/bankscrap -
+- [github.com/nuex/t] - sh script for working with ledger timelog files.
+- [github.com/bankscrap/bankscrap] -
     Ruby gem to extract balance and transactions from multiple banks.
-- https://github.com/prashants/webzash -
+- [github.com/prashants/webzash] -
     Easy to use web based double entry accounting software.
+
+[plaintextaccounting.org]: http://plaintextaccounting.org
+[cs007.blog]: https://cs007.blog
+[principlesofaccounting.com]: http://principlesofaccounting.com
+[npoacct.sfconservancy.org]: https://npoacct.sfconservancy.org
+[github.com/nuex/t]: https://github.com/nuex/t
+[github.com/bankscrap/bankscrap]: https://github.com/bankscrap/bankscrap
+[github.com/prashants/webzash]: https://github.com/prashants/webzash
 
