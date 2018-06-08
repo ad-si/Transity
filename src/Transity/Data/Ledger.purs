@@ -230,7 +230,7 @@ getEntries (Ledger {transactions}) = do
 
 
 showEntries :: String -> Ledger -> Maybe String
-showEntries separator ledger  = do
+showEntries separator ledger = do
   entries <- getEntries ledger
 
   pure $ entries
