@@ -49,6 +49,7 @@ run command filePathRel ledger =
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries ledger
+    "export"             -> Ok $ Ledger.entriesToHLedger ledger
     "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
     "gplot" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)

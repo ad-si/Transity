@@ -240,7 +240,7 @@ entriesToHLedger (Ledger { transactions }) =
             note = maybe "" id maybeNote
         in date <> " " <> note <> "\n" <>
            "  " <> to <> "  " <> (Amount.showPretty amount) <> "\n" <>
-           "  " <> from
+           "  " <> from <> "\n"
 
 
     result = do
@@ -249,7 +249,7 @@ entriesToHLedger (Ledger { transactions }) =
         Transfer { to, from, amount } <- transfers
         pure $ print xutc note from to amount
 
-  in result # joinWith " "
+  in result # joinWith "\n"
 
 showEntries :: Ledger -> Maybe String
 showEntries ledger = do
