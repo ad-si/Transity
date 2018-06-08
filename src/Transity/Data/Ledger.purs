@@ -1,5 +1,7 @@
 module Transity.Data.Ledger where
 
+import Data.DateTime
+import Data.Traversable
 import Prelude
 
 import Control.Alt ((<|>))
@@ -20,29 +22,20 @@ import Data.Monoid (power)
 import Data.Newtype (unwrap)
 import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
+import Data.Set as Set
 import Data.String (joinWith)
-import Data.Traversable
 import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
+import Transity.Data.CommodityMap (CommodityMap, addAmountToMap, subtractAmountFromMap)
 import Transity.Data.Entity (Entity(..))
-import Transity.Data.CommodityMap
-  (CommodityMap, addAmountToMap, subtractAmountFromMap)
-import Data.Set as Set
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils
-  ( getFieldMaybe
-  , getObjField
-  , mergeWidthRecords
-  , utcToIsoString
-  , widthRecordZero
-  , ColorFlag(..)
-  )
+import Transity.Utils (getFieldMaybe, getObjField, mergeWidthRecords, utcToIsoString, utcToIsoDateString, widthRecordZero, ColorFlag(..))
 
 
 -- | List of all transactions
@@ -200,7 +193,9 @@ showBalance colorFlag (Ledger ledger) =
         )
       # fold
 
-
+{-
+  Serialises the journal to a command line printable version (lines of columns).
+-}
 getEntries :: Ledger -> Maybe (Array (Array String))
 getEntries (Ledger {transactions}) = do
   let
@@ -228,6 +223,33 @@ getEntries (Ledger {transactions}) = do
 
   pure $ splitted # concat
 
+
+maybeToArr :: forall a. Maybe a -> Array a
+maybeToArr m = case m of
+  (Just val) -> [val]
+  Nothing -> []
+{-
+  Serialise the journal to the HLedger format.
+-}
+entriesToHLedger :: Ledger -> String
+entriesToHLedger (Ledger { transactions }) =
+  let
+    print :: DateTime -> Maybe String -> Account.Id -> Account.Id -> Amount -> String
+    print dt maybeNote from to amount =
+        let date = dt # utcToIsoDateString
+            note = maybe "" id maybeNote
+        in date <> " " <> note <> "\n" <>
+           "  " <> to <> "  " <> (Amount.showPretty amount) <> "\n" <>
+           "  " <> from
+
+
+    result = do
+        Transaction { utc , note, transfers } <- transactions
+        xutc <- maybeToArr utc
+        Transfer { to, from, amount } <- transfers
+        pure $ print xutc note from to amount
+
+  in result # joinWith " "
 
 showEntries :: Ledger -> Maybe String
 showEntries ledger = do
