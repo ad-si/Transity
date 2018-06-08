@@ -1,5 +1,13 @@
 # Transity Development
 
+## Build
+
+```shell
+npx pulp --watch build
+```
+
+### Documentation
+
 Generate and serve the Pursuit documentation with:
 
 ```sh
