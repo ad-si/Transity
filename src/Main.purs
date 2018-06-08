@@ -28,7 +28,9 @@ Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
 transactions        All transcations and their transfers
-entries             All individual deposits & withdrawals
+entries             All individual deposits & withdrawals space separated
+csv                 Entries comma separated
+tsv                 Entries tab separated
 entries-by-account  All individual deposits & withdrawals grouped by account
 gplot               Code and data for gnuplot impulse diagram
                     to visualize transfers of all accounts
@@ -48,7 +50,9 @@ run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
-    "entries"            -> note utcError $ Ledger.showEntries ledger
+    "entries"            -> note utcError $ Ledger.showEntries  " " ledger
+    "csv"                -> note utcError $ Ledger.showEntries  "," ledger
+    "tsv"                -> note utcError $ Ledger.showEntries  "\t" ledger
     "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
     "gplot" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)

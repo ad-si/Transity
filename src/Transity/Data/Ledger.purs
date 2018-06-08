@@ -229,13 +229,13 @@ getEntries (Ledger {transactions}) = do
   pure $ splitted # concat
 
 
-showEntries :: Ledger -> Maybe String
-showEntries ledger = do
+showEntries :: String -> Ledger -> Maybe String
+showEntries separator ledger  = do
   entries <- getEntries ledger
 
   pure $ entries
     # sort
-    <#> joinWith " "
+    <#> joinWith separator
     # joinWith "\n"
 
 
