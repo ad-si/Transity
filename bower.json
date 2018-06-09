@@ -24,12 +24,12 @@
     "purescript-yaml-next": "^0.2.0",
     "purescript-ansi": "^4.0.0",
     "purescript-result": "^0.1.0",
-    "purescript-sets": "^3.2.0"
+    "purescript-sets": "^3.2.0",
+    "purescript-strings": "^3.4.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
-    "purescript-spec": "^2.0.0",
-    "purescript-strings": "^3.4.0"
+    "purescript-spec": "^2.0.0"
   },
   "resolutions": {
     "purescript-js-date": "^5.1.0",

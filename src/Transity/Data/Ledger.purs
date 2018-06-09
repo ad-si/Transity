@@ -248,13 +248,14 @@ entriesToLedger (Ledger { transactions }) =
 
   in result # joinWith "\n"
 
-showEntries :: Ledger -> Maybe String
-showEntries ledger = do
+
+showEntries :: String -> Ledger -> Maybe String
+showEntries separator ledger = do
   entries <- getEntries ledger
 
   pure $ entries
     # sort
-    <#> joinWith " "
+    <#> joinWith separator
     # joinWith "\n"
 
 
