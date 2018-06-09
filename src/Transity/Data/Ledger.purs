@@ -193,9 +193,7 @@ showBalance colorFlag (Ledger ledger) =
         )
       # fold
 
-{-
-  Serialises the journal to a command line printable version (lines of columns).
--}
+-- | Serializes the journal to a command line printable version (lines of columns).
 getEntries :: Ledger -> Maybe (Array (Array String))
 getEntries (Ledger {transactions}) = do
   let
@@ -226,13 +224,12 @@ getEntries (Ledger {transactions}) = do
 
 maybeToArr :: forall a. Maybe a -> Array a
 maybeToArr m = case m of
-  (Just val) -> [val]
+  Just val -> [val]
   Nothing -> []
-{-
-  Serialise the journal to the HLedger format.
--}
-entriesToHLedger :: Ledger -> String
-entriesToHLedger (Ledger { transactions }) =
+
+-- | Serialise the journal to the Ledger format.
+entriesToLedger :: Ledger -> String
+entriesToLedger (Ledger { transactions }) =
   let
     print :: DateTime -> Maybe String -> Account.Id -> Account.Id -> Amount -> String
     print dt maybeNote from to amount =

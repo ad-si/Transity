@@ -313,5 +313,5 @@ main = run [consoleReporter] do
             actual = Ledger.showBalance ColorNo ledgerMultiTrans
           actual `shouldEqualString` ledgerBalanceMultiTrans
 
-        it "serialises to HLedger format" do
-          (Ledger.entriesToHLedger ledger) `shouldEqualString` ledgerHLedger
+        it "serializes to HLedger format" do
+          (Ledger.entriesToLedger ledger) `shouldEqualString` ledgerLedger

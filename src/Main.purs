@@ -29,6 +29,7 @@ Command             Description
 balance             Simple balance of all accounts
 transactions        All transcations and their transfers
 entries             All individual deposits & withdrawals
+ledger-entries      All entries in Ledger format
 entries-by-account  All individual deposits & withdrawals grouped by account
 gplot               Code and data for gnuplot impulse diagram
                     to visualize transfers of all accounts
@@ -43,13 +44,14 @@ utcError =
   "All transfers or their parent transaction must have a valid utc field"
 
 
+
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries ledger
-    "export"             -> Ok $ Ledger.entriesToHLedger ledger
+    "ledger-entries"     -> Ok $ Ledger.entriesToLedger ledger
     "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
     "gplot" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)
