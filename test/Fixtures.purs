@@ -285,6 +285,11 @@ transactions:
   - """ <> indentSubsequent 4 transactionSimpleYaml <> """
 """
 
+ledgerLedger :: String
+ledgerLedger  = """2014-12-24 A short note about this transaction
+  evil-corp  15 €
+  john:giro
+"""
 
 entity :: String -> String
 entity id = """

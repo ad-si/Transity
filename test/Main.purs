@@ -312,3 +312,6 @@ main = run [consoleReporter] do
           let
             actual = Ledger.showBalance ColorNo ledgerMultiTrans
           actual `shouldEqualString` ledgerBalanceMultiTrans
+
+        it "serializes to HLedger format" do
+          (Ledger.entriesToLedger ledger) `shouldEqualString` ledgerLedger

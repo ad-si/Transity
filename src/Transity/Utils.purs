@@ -100,6 +100,17 @@ utcToIsoString utc =
   in
     Fmt.format formatter utc
 
+utcToIsoDateString :: DateTime -> String
+utcToIsoDateString utc =
+  let
+    formatter :: Fmt.Formatter
+    formatter = fromFoldable
+      [ Fmt.YearFull, (Fmt.Placeholder "-")
+      , Fmt.MonthTwoDigits, (Fmt.Placeholder "-")
+      , Fmt.DayOfMonthTwoDigits
+      ]
+  in
+    Fmt.format formatter utc
 
 dateShowPretty :: DateTime -> String
 dateShowPretty datetime =
