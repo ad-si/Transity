@@ -231,34 +231,11 @@ transity gplot-cumul examples/journal.yaml \
 
 ## Import from Ledger CLI
 
-Update the ledger filepath in following command,
-copy it into your CLI and execute it.
+Exeute the include ledger2transity script:
 
-```sh
-bash -c '{ \
-  echo date,id,from,to,amount,note,tags; \
-  ledger \
-    --file ledgers/main.ledger \
-    --csv-format \'%(
-        format_date(date,"%Y-%m-%d")),%(
-        quoted(code)),%(
-        quoted("")),%(
-        quoted(payee)),%(quoted(display_amount)),%(
-        quoted(join(trim(xact.note | "{{PLACEHOLDER}}")))),%(
-        quoted("- " + display_account + "\\\\n- " +
-          join(trim(note | "{{PLACEHOLDER}}")))
-        )\n\' \
-    --sort date \
-    csv; \
-} \
-| sed "s/{{PLACEHOLDER}}//g" \
-| sed \'s/\\\\"/""/g\' \
-> transactions.csv'
+```shell
+./ledger2transity.sh examples/hledger.journal > transactions.csv
 ```
-
-(The ugly `{{PLACEHOLDER}}` workaround is necessary to make it work
-if no note is specified for a transaction,
-the second `sed` command fixes escaping of `"` in CSV)
 
 Convert `transactions.csv` to YAML with e.g. [browserling.com/tools/csv-to-yaml]
 
