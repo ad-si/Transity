@@ -165,25 +165,25 @@ commodities:
     alias:
       - EUR
     note: Currency used in the European Union
-    utc: 2017-04-02 19:33:53
+    utc: '2017-04-02 19:33:53'
 
 entities:
   - id: anna
     name: Anna Smith
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     tags:
       - person
     accounts:
       - id: wallet
         name: Wallet
         note: Anna's black wallet
-        utc: 2017-04-02 19:33:28
+        utc: '2017-04-02 19:33:28'
         tags:
           - wallet
 
   - id: evil-corp
     name: Evil Corporation
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     note: The Evil Corporation in the United States of Evil
     tags:
       - company
@@ -191,11 +191,11 @@ entities:
 transactions:
   - title: Purchase of evil machine
     transfers:
-      - utc: 2017-02-17
+      - utc: '2017-02-17'
         from: anna
         to: evil-corp
         amount: 50000 €
-      - utc: 2017-02-17
+      - utc: '2017-02-17'
         from: evil-corp
         to: anna
         amount: 1 evil-machine
