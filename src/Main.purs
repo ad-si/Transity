@@ -27,12 +27,12 @@ Usage: transity <command> <path/to/journal.yaml>
 Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
-transactions        All transcations and their transfers
-entries             All individual deposits & withdrawals
+transactions        All transactions and their transfers
+entries             All individual deposits & withdrawals, space separated
 ledger-entries      All entries in Ledger format
-csv                 Entries comma separated
-tsv                 Entries tab separated
-entries-by-account  All individual deposits & withdrawals grouped by account
+csv                 Entries, comma separated
+tsv                 Entries, tab separated
+entries-by-account  All individual deposits & withdrawals, grouped by account
 gplot               Code and data for gnuplot impulse diagram
                     to visualize transfers of all accounts
 gplot-cumul         Code and data for cumuluative gnuplot step chart
@@ -43,7 +43,7 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 -- TODO: Move validation to parsing
 utcError :: String
 utcError =
-  "All transfers or their parent transaction must have a valid utc field"
+  "All transfers or their parent transaction must have a valid UTC field"
 
 
 
