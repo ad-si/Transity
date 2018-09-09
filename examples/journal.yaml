@@ -1,4 +1,4 @@
-owner: John Doe
+owner: john
 commodities:
   - id: €
     name: Euro
@@ -50,6 +50,9 @@ entities:
         utc: '2017-04-02 19:33:28'
         tags:
           - wallet
+        balance:
+          - 300 $
+          - 400 €
 
       - id: visa
         name: VISA card
@@ -81,7 +84,7 @@ transactions:
       - utc: '2014-03-05'
         from: evil-corp
         to: anna
-        amount: 1 evil-machine
+        amount: 1 evil_machine
 
   - utc: '2014-12-24'
     note: Money for evil deal
@@ -145,3 +148,10 @@ transactions:
       - from: anna
         to: bakery
         amount: 7.29 €
+
+  - utc: '2016-04-24 23:43'
+    note: Bicycle
+    transfers:
+      - from: anna
+        to: john
+        amount: 219.99 €

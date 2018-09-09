@@ -2,8 +2,6 @@ module Test.Main where
 
 import Control.Applicative (pure)
 import Control.Bind (discard, bind)
-import Control.Monad.Aff (Aff())
-import Control.Monad.Eff (Eff)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
 import Data.Result (Result(Error, Ok))
@@ -16,20 +14,22 @@ import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
 import Data.Semigroup ((<>))
 import Data.Show (show)
-import Data.String
-  (Pattern(..), Replacement(..), toCharArray, length, replaceAll)
+import Data.String (Pattern(..), Replacement(..), length, replaceAll)
+import Data.String.CodeUnits (toCharArray)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
+import Effect (Effect)
+import Effect.Aff (Aff)
 import Test.Fixtures
 import Test.Spec (describe, it)
 -- import Test.Spec as Test
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (RunnerEffects, run)
+import Test.Spec.Runner (run)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -69,20 +69,20 @@ testEqualityTo actual expected =
   else Ok ""
 
 
-shouldBeOk :: forall r. Result String String -> Aff r Unit
+shouldBeOk :: Result String String -> Aff Unit
 shouldBeOk value = case value of
   Error error -> fail error
   Ok _ -> (pure unit)
 
 
-shouldEqualString :: forall r. String -> String -> Aff r Unit
+shouldEqualString :: String -> String -> Aff Unit
 shouldEqualString v1 v2 =
   case v1 `testEqualityTo` v2 of
     Error error -> fail error
     Ok _ -> (pure unit)
 
 
-compareChar :: forall r. String -> String -> Aff r Unit
+compareChar :: String -> String -> Aff Unit
 compareChar actual expected =
   let
     comparisonArray = zipWith
@@ -95,7 +95,7 @@ compareChar actual expected =
 
 
 
-main :: Eff (RunnerEffects ()) Unit
+main :: Effect Unit
 main = run [consoleReporter] do
   describe "Utils" do
     describe "digitsToRational" do

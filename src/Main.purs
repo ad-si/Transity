@@ -2,18 +2,16 @@ module Main where
 
 import Prelude (Unit, bind, discard, pure, (#), ($), (<#>), (<>))
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, error)
-import Control.Monad.Eff.Exception (EXCEPTION)
 import Data.Array ((!!))
 import Data.Result (Result(..), note)
 import Data.Newtype (over)
 import Data.Tuple (Tuple(..))
+import Effect
+import Effect.Class.Console (log, error)
 import Node.Encoding (Encoding(UTF8))
-import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
 import Node.Path as Path
-import Node.Process (PROCESS, argv, cwd, exit)
+import Node.Process (argv, cwd, exit)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 import Transity.Plot as Plot
@@ -87,11 +85,11 @@ parseArguments arguments = do
 loadAndExec
   :: String
   -> Tuple String String
-  -> forall e. Eff (exception :: EXCEPTION, fs :: FS | e) (Result String String)
+  -> Effect (Result String String)
 
 loadAndExec currentDir (Tuple command filePathRel) = do
   let resolve = Path.resolve [currentDir]
-  let filePathAbs = resolve filePathRel
+  filePathAbs <- resolve filePathRel
   ledgerFileContent <- readTextFile UTF8 filePathAbs
   let
     result = do
@@ -100,11 +98,7 @@ loadAndExec currentDir (Tuple command filePathRel) = do
   pure result
 
 
-main :: forall eff . Eff
-  ( exception :: EXCEPTION
-  , console :: CONSOLE
-  , fs :: FS
-  , process :: PROCESS | eff) Unit
+main :: Effect Unit
 main = do
   arguments <- argv
   currentDir <- cwd

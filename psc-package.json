@@ -1,0 +1,25 @@
+{
+  "name": "transity",
+  "set": "psc-0.12.0-20180909t1546",
+  "source": "https://github.com/feramhq/package-sets.git",
+  "depends": [
+    "ansi",
+    "argonaut-codecs",
+    "console",
+    "debug",
+    "either",
+    "format",
+    "formatters",
+    "js-date",
+    "node-buffer",
+    "node-fs",
+    "node-process",
+    "ordered-collections",
+    "prelude",
+    "rationals",
+    "result",
+    "spec",
+    "strings",
+    "yaml"
+  ]
+}

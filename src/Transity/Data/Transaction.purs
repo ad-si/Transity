@@ -1,6 +1,6 @@
 module Transity.Data.Transaction where
 
-import Prelude
+import Prelude (class Show, bind, map, pure, (#), ($), (<>), (>>=))
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
@@ -10,15 +10,13 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Foldable (fold)
-import Data.Foreign (renderForeignError)
-import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
+import Data.Maybe (Maybe, fromMaybe, maybe)
 import Data.Monoid (power)
-import Data.Newtype
+import Data.Newtype (class Newtype)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude (($), (<>), bind, class Show, map, pure)
+import Foreign (renderForeignError)
 import Text.Format (format, width)
 import Transity.Data.Transfer (Transfer)
 import Transity.Data.Transfer as Transfer

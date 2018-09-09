@@ -2,28 +2,28 @@ module Transity.Data.Transfer
 where
 
 import Prelude
+  ( class Eq, class Ord, class Show, bind, compare, map, pure
+  , (#), ($), (<>), (==), (>>=)
+  )
 
 import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Core (toObject, Json, stringify)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Eq ((==))
 import Data.Foldable (fold)
-import Data.Foreign (renderForeignError)
-import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Just), maybe, fromMaybe)
 import Data.Monoid (power)
-import Data.Newtype
+import Data.Newtype (class Newtype)
 import Data.Rational (fromInt)
 import Data.Result (Result(..), toEither, fromEither)
-import Data.Show (show)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..))
@@ -72,7 +72,7 @@ decodeJsonTransfer json = do
   utc <- fromEither $ object `getFieldOptional` "utc"
   note <- fromEither $ object `getFieldOptional` "note"
 
-  transfer <- verifyTransfer (show json) (Transfer
+  transfer <- verifyTransfer (stringify json) (Transfer
       { utc: utc >>= stringToDateTime
       , from
       , to

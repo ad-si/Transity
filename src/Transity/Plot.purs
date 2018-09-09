@@ -1,8 +1,8 @@
 module Transity.Plot where
 
-import Prelude
-import Data.Array
-import Data.Newtype
+import Prelude (show, (#), (<>))
+import Data.Array ((:))
+import Data.Newtype (class Newtype)
 import Data.String (joinWith)
 
 

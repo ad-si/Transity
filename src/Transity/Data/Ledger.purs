@@ -1,8 +1,9 @@
 module Transity.Data.Ledger where
 
-import Data.DateTime
-import Data.Traversable
 import Prelude
+  ( class Show, bind, compare, identity, map, pure, show
+  , (#), ($), (+), (<#>), (<>), (==), (>>=)
+  )
 
 import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
@@ -12,8 +13,7 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, sort, sortBy, groupBy, (!!))
 import Data.Array as Array
-import Data.Foldable (fold, foldr, intercalate)
-import Data.Foreign (renderForeignError)
+import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Map as Map
@@ -24,18 +24,32 @@ import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
 import Data.String (joinWith)
+import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple, snd)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
-import Transity.Data.CommodityMap (CommodityMap, addAmountToMap, subtractAmountFromMap)
+import Transity.Data.CommodityMap
+  ( CommodityMap
+  , addAmountToMap
+  , subtractAmountFromMap
+  )
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils (getFieldMaybe, getObjField, mergeWidthRecords, utcToIsoString, utcToIsoDateString, widthRecordZero, ColorFlag(..))
+import Transity.Utils
+  ( getFieldMaybe
+  , getObjField
+  , mergeWidthRecords
+  , utcToIsoString
+  , utcToIsoDateString
+  , widthRecordZero
+  , ColorFlag(..)
+  )
 
 
 -- | List of all transactions
@@ -93,6 +107,10 @@ verifyAccounts wholeLedger@(Ledger ledger) =
         <> "to the entities section to fix this error"
 
 
+-- postParse
+--   verifyAccounts
+--   addInitalBalance
+
 fromJson :: String -> Result String Ledger
 fromJson json = do
   jsonObj <- fromEither $ jsonParser json
@@ -144,6 +162,11 @@ addTransaction (Transaction {transfers}) balanceMap =
 addTransfer :: Transfer -> BalanceMap -> BalanceMap
 addTransfer (Transfer {to, from, amount}) balanceMap =
   let
+    -- toArray = split (Pattern "") to
+    -- toDefault = case toArray of
+    --   [] -> toArray <> "_default_"
+    --   []
+    -- fromArray = split (Pattern "") from
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
         Nothing -> Just (
@@ -178,7 +201,7 @@ showBalance colorFlag (Ledger ledger) =
   let
     balanceMap = foldr addTransaction Map.empty ledger.transactions
     accountsArray = balanceMap
-      # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
+      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
       # map snd
     accWidthRecs = accountsArray
       # map Account.toWidthRecord
@@ -193,7 +216,8 @@ showBalance colorFlag (Ledger ledger) =
         )
       # fold
 
--- | Serializes the journal to a command line printable version (lines of columns).
+-- | Serializes the journal to a command line printable version
+-- | (lines of columns).
 getEntries :: Ledger -> Maybe (Array (Array String))
 getEntries (Ledger {transactions}) = do
   let
@@ -231,10 +255,11 @@ maybeToArr m = case m of
 entriesToLedger :: Ledger -> String
 entriesToLedger (Ledger { transactions }) =
   let
-    print :: DateTime -> Maybe String -> Account.Id -> Account.Id -> Amount -> String
+    print :: DateTime -> Maybe String -> Account.Id
+      -> Account.Id -> Amount -> String
     print dt maybeNote from to amount =
         let date = dt # utcToIsoDateString
-            note = maybe "" id maybeNote
+            note = maybe "" identity maybeNote
         in date <> " " <> note <> "\n" <>
            "  " <> to <> "  " <> (Amount.showPretty amount) <> "\n" <>
            "  " <> from <> "\n"

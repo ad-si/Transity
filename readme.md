@@ -121,10 +121,14 @@ $ transity balance examples/journal.yaml
                  50015        €
       good-inc    -100        €
   grocery-shop      11.97     €
-     john:giro      50        $
+  john             371.04     €
+                    50        $
+                     1.432592 BTC
+      :default     219.99     €
+          giro      50        $
                      1.432592 BTC
                     85        €
-   john:wallet      66.05     €
+        wallet      66.05     €
 ```
 
 If linked modules aren't exposed in your path you can also run

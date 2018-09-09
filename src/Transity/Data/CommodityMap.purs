@@ -68,7 +68,7 @@ showPretty = showPrettyAligned ColorNo 0 0 0
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> CommodityMap -> String
 showPrettyAligned colorFlag intWidth fracWidth comWidth commodityMap =
   commodityMap
-    # (Map.toAscUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
+    # (Map.toUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
     # map (\(Tuple _ amount) ->
         Amount.showPrettyAligned colorFlag intWidth fracWidth comWidth amount)
     # joinWith "\n"
@@ -77,7 +77,7 @@ showPrettyAligned colorFlag intWidth fracWidth comWidth commodityMap =
 toWidthRecord :: CommodityMap -> WidthRecord
 toWidthRecord commodityMap =
   commodityMap
-    # (Map.toAscUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
+    # (Map.toUnfoldable :: CommodityMap -> Array (Tuple Commodity Amount))
     # map snd
     # map Amount.toWidthRecord
     # foldr mergeWidthRecords widthRecordZero

@@ -90,7 +90,7 @@ showPrettyAligned colorFlag widthRec (Account accId comMap) =
     accName = format (width accountWidth) accId
     accColor = if colorFlag == ColorYes
       then foreground Blue
-      else []
+      else foreground White
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
     (if colorFlag == ColorYes
