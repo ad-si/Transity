@@ -148,6 +148,7 @@ Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
 transactions        All transcations and their transfers
+transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals
 entries-by-account  All individual deposits & withdrawals grouped by account
 gplot               Code and data for gnuplot impulse diagram
@@ -155,6 +156,12 @@ gplot               Code and data for gnuplot impulse diagram
 gplot-cumul         Code and data for cumuluative gnuplot step chart
                     to visualize balance of all accounts
 ```
+
+<img
+  src='images/screenshot-transfers.svg'
+  alt='Screenshot Transfers'
+  width='600'
+/>
 
 
 ## Journal File Format

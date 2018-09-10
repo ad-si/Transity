@@ -1,11 +1,6 @@
 module Transity.Data.Transfer
 where
 
-import Prelude
-  ( class Eq, class Ord, class Show, bind, compare, map, pure
-  , (#), ($), (<>), (==), (>>=)
-  )
-
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json, stringify)
 import Data.Argonaut.Decode (decodeJson)
@@ -24,16 +19,12 @@ import Data.Result (Result(..), toEither, fromEither)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
+import Prelude (class Eq, class Ord, class Show, bind, compare, map, pure, (#), ($), (<>), (==), (>>=))
 import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
-import Transity.Utils
-  ( getFieldVerbose
-  , stringToDateTime
-  , dateShowPretty
-  , ColorFlag(..)
-  )
+import Transity.Utils (ColorFlag(..), dateShowPretty, getFieldVerbose, stringToDateTime)
 
 
 newtype Transfer = Transfer
@@ -123,6 +114,10 @@ fromYaml yaml =
 
 showPretty :: Transfer -> String
 showPretty = showPrettyAligned ColorNo 15 15 5 3 10
+
+
+showPrettyColorized :: Transfer -> String
+showPrettyColorized = showPrettyAligned ColorYes 15 15 5 3 10
 
 
 --| - From account name width

@@ -26,6 +26,7 @@ Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
 transactions        All transactions and their transfers
+transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals, space separated
 ledger-entries      All entries in Ledger format
 csv                 Entries, comma separated
@@ -50,6 +51,7 @@ run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
+    "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries  " " ledger
     "ledger-entries"     -> Ok $ Ledger.entriesToLedger ledger
     "csv"                -> note utcError $ Ledger.showEntries  "," ledger

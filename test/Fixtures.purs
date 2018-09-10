@@ -322,7 +322,7 @@ ledgerShowed = """
 
 
 ledgerPretty :: String
-ledgerPretty = """Ledger for "John Doe"
+ledgerPretty = """Journal for "John Doe"
 ================================================================================
 2014-12-24 00:00 | A short note about this transaction | (id abcxyz)
     """ <> transferSimplePretty <> "    \n"

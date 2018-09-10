@@ -6,7 +6,15 @@
 npx pulp --watch build
 ```
 
-### Documentation
+
+## Test
+
+```shell
+npx pulp --watch test
+```
+
+
+## Documentation
 
 Generate and serve the Pursuit documentation with:
 
@@ -29,7 +37,7 @@ markdown-toc -i readme.md
 [markdown-toc]: https://github.com/jonschlinkert/markdown-toc
 
 
-## Add Documentation File to Local Pursuit
+### Add Documentation File to Local Pursuit
 
 **Not working. Format seems wrong,
 but can't find code in pulp where it gets changed**

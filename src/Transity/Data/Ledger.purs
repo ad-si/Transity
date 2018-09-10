@@ -41,6 +41,7 @@ import Transity.Data.Entity (Entity(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( getFieldMaybe
   , getObjField
@@ -146,9 +147,21 @@ showPrettyAligned colorFlag (Ledger l) =
       (Transaction.showPrettyAligned colorFlag)
       l.transactions
   in ""
-    <> "Ledger for \"" <> l.owner <> "\"\n"
+    <> "Journal for \"" <> l.owner <> "\"\n"
     <> "=" `power` 80 <> "\n"
     <> fold transactionsPretty
+
+
+showTransfers :: ColorFlag -> Ledger -> String
+showTransfers colorFlag (Ledger l) =
+  let
+    transactionsPretty = l.transactions
+      <#> Transaction.showTransfersWithDate colorFlag
+      # fold
+  in ""
+    <> "Journal for \"" <> l.owner <> "\"\n"
+    <> "=" `power` 80 <> "\n"
+    <> transactionsPretty
 
 
 type BalanceMap = Map.Map Account.Id Account
@@ -251,7 +264,8 @@ maybeToArr m = case m of
   Just val -> [val]
   Nothing -> []
 
--- | Serialise the journal to the Ledger format.
+
+-- | Serialize the journal to the Ledger format.
 entriesToLedger :: Ledger -> String
 entriesToLedger (Ledger { transactions }) =
   let
