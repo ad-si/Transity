@@ -1,7 +1,7 @@
 {
   "name": "transity",
   "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "main": "src/Main.purs",
   "bin": {
     "transity": "cli/main.js"
