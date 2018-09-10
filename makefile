@@ -16,7 +16,7 @@ test:
 
 .PHONY: install
 install:
-	npx bower install
+	npx psc-package install
 
 
 .PHONY: clean

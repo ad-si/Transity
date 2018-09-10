@@ -7,7 +7,7 @@
     "transity": "cli/main.js"
   },
   "scripts": {
-    "postinstall": "bower install && pulp build",
+    "postinstall": "psc-package install && pulp build",
     "test": "pulp test"
   },
   "directories": {
@@ -28,5 +28,8 @@
     "js-yaml": "^3.12.0",
     "pulp": "12.3.0",
     "purescript": "0.12.0"
+  },
+  "devDependencies": {
+    "psc-package-bin-simple": "^1.0.1"
   }
 }
