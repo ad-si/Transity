@@ -18,8 +18,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 - [List of Features / TODOs](#list-of-features--todos)
 - [Installation](#installation)
-  * [From npm](#from-npm)
-  * [From Source](#from-source)
+- [License](#license)
 - [Usage](#usage)
 - [Journal File Format](#journal-file-format)
 - [Plotting](#plotting)
@@ -92,20 +91,19 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 ## Installation
 
-### From npm
-
-```shell
-npm install --global transity
-```
+Go to [cliapp.store/apps/transity] to receive Transity.
 
 
-### From Source
+## License
 
-```shell
-git clone https://github.com/feramhq/transity
-cd transity
-npm link
-```
+Transity is licensed under GPL-3.0-or-later and
+can be used free of charge at non-profits and for evaluation.
+For long-term usage, however, please make sure to purchase a license
+at [cliapp.store/apps/transity].
+
+For including Transity in proprietary closed source products, please contact me.
+
+[cliapp.store/apps/transity]: https://cliapp.store/apps/transity
 
 
 ## Usage
