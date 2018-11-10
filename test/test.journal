@@ -1,0 +1,52 @@
+2013-12-31 Salary
+  anna  500 €
+  good-inc
+
+2014-04-22 
+  evil-corp  300 €
+  anna
+
+2014-04-22 
+  anna  1 evil_machine
+  evil-corp
+
+2014-12-24 Money for evil deal
+  evil-corp  15 €
+  john:giro
+
+2015-01-04 Christmas Gifts
+  anna  33.95 €
+  john:wallet
+
+2015-01-05 
+  john:wallet  100 €
+  good-inc
+
+2015-01-07 Financial support
+  john:giro  100 €
+  ben
+
+2015-01-07 Financial support in Dollar
+  john:giro  50 $
+  ben
+
+2015-03-07 Financial support in Bitcoin
+  john:giro  1.432592 BTC
+  ben
+
+2015-07-05 Food
+  grocery-shop  11.97 €
+  anna
+
+2015-12-30 End of year bonus
+  anna  220 €
+  good-inc
+
+2016-03-14 Yummy bread
+  bakery  7.29 €
+  anna
+
+2016-04-24 Bicycle
+  john  219.99 €
+  anna
+
