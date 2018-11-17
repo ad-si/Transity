@@ -27,9 +27,7 @@
   "dependencies": {
     "js-yaml": "^3.12.0",
     "pulp": "12.3.0",
-    "purescript": "0.12.0"
-  },
-  "devDependencies": {
+    "purescript": "0.12.0",
     "psc-package-bin-simple": "^1.0.1"
   }
 }
