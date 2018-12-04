@@ -130,7 +130,8 @@ $ transity balance examples/journal.yaml
 ```
 
 If linked modules aren't exposed in your path you can also run
-```
+
+```shell
 cli/main.js balance examples/journal.yaml
 ```
 

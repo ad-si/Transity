@@ -3,9 +3,11 @@ module Transity.Data.Entity where
 import Prelude
 
 import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Result (Result(..), toEither)
+import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -57,6 +59,12 @@ decodeJsonEntity json = do
     , tags
     , accounts
     }
+
+
+fromJson :: String -> Result String Entity
+fromJson json = do
+  jsonObj <- fromEither $ jsonParser json
+  fromEither $ decodeJson jsonObj
 
 
 zero :: Entity

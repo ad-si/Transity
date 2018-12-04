@@ -41,7 +41,6 @@ import Transity.Data.Entity (Entity(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( getFieldMaybe
   , getObjField
@@ -84,7 +83,8 @@ verifyAccounts wholeLedger@(Ledger ledger) =
     definedAccounts = Set.fromFoldable $ concat
       $ (fromMaybe [] ledger.entities) <#>
         (\(Entity {id, accounts}) -> [id] <>
-          ((fromMaybe [] accounts) <#> (\(Account aId _) -> id <> ":" <> aId))
+          ((fromMaybe [] accounts) <#>
+            (\(Account account) -> id <> ":" <> account.id))
         )
     usedAccounts =
       (ledger.transactions <#> \(Transaction {transfers}) -> transfers)
@@ -108,15 +108,19 @@ verifyAccounts wholeLedger@(Ledger ledger) =
         <> "to the entities section to fix this error"
 
 
--- postParse
---   verifyAccounts
---   addInitalBalance
+validateBalances :: Ledger -> Result String Ledger
+validateBalances wholeLedger@(Ledger ledger) =
+  Ok wholeLedger
+
 
 fromJson :: String -> Result String Ledger
 fromJson json = do
   jsonObj <- fromEither $ jsonParser json
   ledger <- fromEither $ decodeJson jsonObj
-  pure ledger >>= verifyAccounts
+  pure ledger
+    >>= verifyAccounts
+    >>= validateBalances
+    -- >>= addInitalBalance
 
 
 fromYaml :: String -> Result String Ledger
@@ -182,28 +186,33 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
     -- fromArray = split (Pattern "") from
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (
-            Account from ((Map.empty :: CommodityMap)
-            `subtractAmountFromMap`
-            amount)
-          )
-        Just (Account _ comMapNow) -> Just (
-          Account from (comMapNow `subtractAmountFromMap` amount)
-        )
+        Nothing -> Just ( Account
+          { id: from
+          , commodityMap: (Map.empty :: CommodityMap)
+              `subtractAmountFromMap` amount
+          , balances: Nothing
+          })
+        Just (Account account) -> Just ( Account
+          { id: from
+          , commodityMap: account.commodityMap `subtractAmountFromMap` amount
+          , balances: Nothing
+          })
       )
       from
       balanceMap
   in
     Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (
-            Account to ((Map.empty :: CommodityMap)
-            `addAmountToMap`
-             amount)
-          )
-        Just (Account _ comMapNow) -> Just (
-            Account to (comMapNow `addAmountToMap` amount)
-          )
+        Nothing -> Just (Account
+          { id: to
+          , commodityMap: (Map.empty :: CommodityMap) `addAmountToMap` amount
+          , balances: Nothing
+          })
+        Just (Account account) -> Just (Account
+          { id: to
+          , commodityMap: (account.commodityMap `addAmountToMap` amount)
+          , balances: Nothing
+          })
       )
       to
       updatedFromAccount

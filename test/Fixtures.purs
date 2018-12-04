@@ -273,6 +273,113 @@ ledgerJson = """
 """
 
 
+balanceJson :: String
+balanceJson = """
+{
+  "utc": "2017-04-02 20:11:45",
+  "amounts": ["100 €"]
+}
+"""
+
+balanceShowed :: String
+balanceShowed = """
+(Balance
+  (DateTime
+    (Date (Year 2017) April (Day 2))
+    (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+  (fromFoldable
+    [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+"""
+
+
+accountJson :: String
+accountJson = """
+{ "id": "_default_",
+  "balances": [
+    { "utc": "2017-04-02 20:11:45",
+      "amounts": ["100 €"]
+    },
+    { "utc": "2014-05-01 12:00",
+      "amounts": ["200 €", "1 evil_machine"]
+    }]}
+"""
+
+
+accountShowed :: String
+accountShowed = """
+(Account
+  { balances: (Just
+      [ (Balance
+          (DateTime
+            (Date (Year 2017) April (Day 2))
+            (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+          (fromFoldable
+            [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+      , (Balance
+          (DateTime
+            (Date (Year 2014) May (Day 1))
+            (Time (Hour 12) (Minute 0) (Second 0) (Millisecond 0)))
+          (fromFoldable
+            [ (Tuple
+                (Commodity "evil_machine")
+                (Amount 1 % 1 (Commodity "evil_machine")))
+            , (Tuple (Commodity "€") (Amount 200 % 1 (Commodity "€")))
+            ]))
+      ])
+  , commodityMap: (fromFoldable [])
+  , id: "_default_"
+  })
+"""
+
+
+entityJson :: String
+entityJson = """
+{ "id": "john",
+  "accounts": [
+    { "id": "_default_",
+      "balances": [
+        { "utc": "2017-04-02 20:11:45",
+          "amounts": ["100 €"]
+        },
+        { "utc": "2014-05-01 12:00",
+          "amounts": ["200 €", "1 evil_machine"] } ] } ] }
+"""
+
+entityShowed :: String
+entityShowed = """
+(Entity
+  {accounts: (Just
+    [ (Account
+        { balances: (Just
+            [ (Balance
+                (DateTime
+                  (Date (Year 2017) April (Day 2))
+                  (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+                (fromFoldable
+                  [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+            , (Balance
+                (DateTime
+                  (Date (Year 2014) May (Day 1))
+                  (Time (Hour 12) (Minute 0) (Second 0) (Millisecond 0)))
+                (fromFoldable
+                  [ (Tuple
+                      (Commodity "evil_machine")
+                      (Amount 1 % 1 (Commodity "evil_machine")))
+                  , (Tuple (Commodity "€") (Amount 200 % 1 (Commodity "€")))
+                  ]))
+            ])
+        , commodityMap: (fromFoldable [])
+        , id: "_default_"
+        })
+    ])
+  , id: "john"
+  , name: Nothing
+  , note: Nothing
+  , tags: Nothing
+  , utc: Nothing
+  })
+"""
+
 ledgerYaml :: String
 ledgerYaml = """
 entities:
@@ -294,7 +401,7 @@ ledgerLedger  = """2014-12-24 A short note about this transaction
 entity :: String -> String
 entity id = """
 (Entity
-  { accounts:Nothing
+  { accounts: Nothing
   , id: """ <> "\"" <> id <> "\"" <> """
   , name: Nothing
   , note: Nothing

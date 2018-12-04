@@ -1,10 +1,14 @@
 module Test.Main where
 
+import Effect.Console
+
 import Control.Applicative (pure)
 import Control.Bind (discard, bind)
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
-import Data.Result (Result(Error, Ok))
+import Data.Result (Result(Error, Ok), toEither, fromEither)
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -30,12 +34,13 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (run)
-import Transity.Data.Account (Account(..))
+import Transity.Data.Account (Account(..), Balance)
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
 import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.CommodityMap as CommodityMap
+import Transity.Data.Entity as Entity
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (fromJson, showPretty) as Transfer
@@ -50,8 +55,8 @@ rmWhitespace str =
     replace whitespace "" str
 
 
-wrapRight :: String -> String
-wrapRight string =
+wrapWithOk :: String -> String
+wrapWithOk string =
   "(Ok " <> string <> ")"
 
 
@@ -161,6 +166,19 @@ main = run [consoleReporter] do
 
 
       describe "Account" do
+        it "converts a JSON string to an Account" do
+          let
+            (result :: Result String Account) = do
+              jsonObj <- fromEither $ jsonParser accountJson
+              fromEither $ decodeJson jsonObj
+            actual = result
+              # show
+              # rmWhitespace
+            expected = accountShowed
+              # wrapWithOk
+              # rmWhitespace
+          actual `shouldEqualString` expected
+
         it "can add an amount to a commodity map" do
           let
             expectedMap = Map.fromFoldable
@@ -197,7 +215,8 @@ main = run [consoleReporter] do
 
 
         it "pretty shows an account" do
-          let actualPretty = Account.showPretty (Account "test" commodityMap)
+          let actualPretty = Account.showPretty
+                (Account {id: "test", commodityMap, balances: Nothing})
           actualPretty `shouldEqualString` accountPretty
 
         it "pretty shows and aligns an account" do
@@ -211,7 +230,7 @@ main = run [consoleReporter] do
             actualPretty = Account.showPrettyAligned
               ColorNo
               widthRecord
-              (Account "test" commodityMap)
+              (Account {id: "test", commodityMap, balances: Nothing})
           actualPretty `shouldEqualString` accountPrettyAligned
 
 
@@ -223,7 +242,7 @@ main = run [consoleReporter] do
               # show
               # rmWhitespace
             expected = transferSimpleShowed
-              # wrapRight
+              # wrapWithOk
               # rmWhitespace
           actual `shouldEqual` expected
 
@@ -241,7 +260,7 @@ main = run [consoleReporter] do
               # show
               # rmWhitespace
             expected = transactionSimpleShowed
-              # wrapRight
+              # wrapWithOk
               # rmWhitespace
           actual `shouldEqual` expected
 
@@ -253,7 +272,7 @@ main = run [consoleReporter] do
               # show
               # rmWhitespace
             expected = transactionSimpleShowed
-              # wrapRight
+              # wrapWithOk
               # rmWhitespace
           actual `shouldEqual` expected
 
@@ -264,6 +283,35 @@ main = run [consoleReporter] do
           actual `shouldEqualString` transactionSimplePretty
 
 
+      describe "Balance" do
+        it "converts a JSON string to a Balance" do
+          let
+            result = do
+              jsonObj <- fromEither $ jsonParser balanceJson
+              fromEither $ decodeJson jsonObj
+
+            actual = (result :: Result String Balance)
+              # show
+              # rmWhitespace
+            expected = balanceShowed
+              # wrapWithOk
+              # rmWhitespace
+          actual `shouldEqualString` expected
+
+
+      describe "Entity" do
+        it "converts a JSON string to an Entity" do
+          let
+            actual = entityJson
+              # Entity.fromJson
+              # show
+              # rmWhitespace
+            expected = entityShowed
+              # wrapWithOk
+              # rmWhitespace
+          actual `shouldEqualString` expected
+
+
       describe "Ledger" do
         it "converts a JSON string to a Ledger" do
           let
@@ -272,7 +320,7 @@ main = run [consoleReporter] do
               # show
               # rmWhitespace
             expected = ledgerShowed
-              # wrapRight
+              # wrapWithOk
               # rmWhitespace
           actual `shouldEqualString` expected
 
@@ -284,7 +332,7 @@ main = run [consoleReporter] do
               # show
               # rmWhitespace
             expected = ledgerShowed
-              # wrapRight
+              # wrapWithOk
               # rmWhitespace
           actual `shouldEqualString` expected
 

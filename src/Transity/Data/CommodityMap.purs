@@ -4,6 +4,7 @@ where
 -- import Data.Array ((!!))
 import Data.Foldable (foldr)
 import Data.Functor (map)
+import Data.Function (flip)
 import Data.Map as Map
 import Data.Maybe (Maybe(Nothing, Just))
 import Data.Semigroup ((<>))
@@ -27,6 +28,11 @@ type CommodityMap = Map.Map Commodity Amount
 
 commodityMapZero :: CommodityMap
 commodityMapZero = Map.empty :: CommodityMap
+
+
+fromAmounts :: Array Amount -> CommodityMap
+fromAmounts =
+  foldr (flip addAmountToMap) commodityMapZero
 
 
 addAmountToMap :: CommodityMap -> Amount -> CommodityMap

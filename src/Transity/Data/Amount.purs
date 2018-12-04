@@ -82,15 +82,20 @@ instance decodeAmount :: DecodeJson Amount where
   decodeJson json = toEither $ decodeJsonAmount json
 
 
-decodeJsonAmount :: Json -> Result String Amount
-decodeJsonAmount json = do
-  amount <- maybe (Error "Amount is not a string") Ok (toString json)
-  let amountFrags = split (Pattern " ") amount
+parseAmount :: String -> Result String Amount
+parseAmount string = do
+  let amountFrags = split (Pattern " ") string
   case take 2 amountFrags of
     [value, currency] -> case digitsToRational value of
       Nothing -> Error "Amount does not contain a valid value"
       Just quantity -> Ok $ Amount quantity (Commodity currency)
     _ -> Error "Amount does not contain a value and a commodity"
+
+
+decodeJsonAmount :: Json -> Result String Amount
+decodeJsonAmount json = do
+  amount <- maybe (Error "Amount is not a string") Ok (toString json)
+  parseAmount amount
 
 
 subtract :: Amount -> Amount -> Amount
