@@ -1,14 +1,12 @@
 module Test.Main where
 
-import Effect.Console
-
 import Control.Applicative (pure)
 import Control.Bind (discard, bind)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
-import Data.Result (Result(Error, Ok), toEither, fromEither)
+import Data.Result (Result(Error, Ok), fromEither)
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -16,6 +14,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing))
 import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
+import Data.Ring (negate)
 import Data.Semigroup ((<>))
 import Data.Show (show)
 import Data.String (Pattern(..), Replacement(..), length, replaceAll)
@@ -28,8 +27,11 @@ import Data.Unit (Unit, unit)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Test.Fixtures
-import Test.Spec (describe, it)
--- import Test.Spec as Test
+import Test.Spec
+  ( describe
+  , it
+  -- , itOnly
+  )
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -133,6 +135,9 @@ main = run [consoleReporter] do
 
       it "converts 12.3456 to 123456/10000" do
         (digitsToRational "12.3456") `shouldEqual` (Just (123456 % 10000))
+
+      it "converts -0.3 to -3/10" do
+        (digitsToRational "-0.3") `shouldEqual` (Just (-3 % 10))
 
       it "converts abc to Nothing" do
         (digitsToRational "abc") `shouldEqual` Nothing
