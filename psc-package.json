@@ -16,6 +16,7 @@
     "node-process",
     "ordered-collections",
     "prelude",
+    "psci-support",
     "rationals",
     "result",
     "spec",

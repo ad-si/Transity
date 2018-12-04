@@ -277,7 +277,7 @@ balanceJson :: String
 balanceJson = """
 {
   "utc": "2017-04-02 20:11:45",
-  "amounts": ["100 €"]
+  "amounts": ["7 €", "-8 $", "+9 BTC"]
 }
 """
 
@@ -288,7 +288,10 @@ balanceShowed = """
     (Date (Year 2017) April (Day 2))
     (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
   (fromFoldable
-    [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+    [ (Tuple (Commodity "$") (Amount -8 % 1 (Commodity "$")))
+    , (Tuple (Commodity "BTC") (Amount 9 % 1 (Commodity "BTC")))
+    , (Tuple (Commodity "€") (Amount 7 % 1 (Commodity "€")))
+    ]))
 """
 
 
@@ -425,7 +428,7 @@ ledgerShowed = """
       ]
     }
   )
- """
+"""
 
 
 ledgerPretty :: String
