@@ -1,5 +1,9 @@
-module Transity.Data.Transfer
-where
+module Transity.Data.Transfer where
+
+import Prelude
+  ( class Eq, class Ord, class Show, bind, compare, map, pure
+  , (#), ($), (<>), (==), (>>=)
+  )
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json, stringify)
@@ -11,7 +15,7 @@ import Data.DateTime (DateTime)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Just), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
 import Data.Rational (fromInt)
@@ -19,10 +23,9 @@ import Data.Result (Result(..), toEither, fromEither)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
-import Prelude (class Eq, class Ord, class Show, bind, compare, map, pure, (#), ($), (<>), (==), (>>=))
 import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
-import Transity.Data.Amount (Amount(..))
+import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
 import Transity.Utils (ColorFlag(..), dateShowPretty, getFieldVerbose, stringToDateTime)
 
@@ -73,6 +76,16 @@ decodeJsonTransfer json = do
     )
 
   pure transfer
+
+
+transferZero :: Transfer
+transferZero = Transfer
+  { utc: Nothing
+  , from: ""
+  , to: ""
+  , amount: Amount (fromInt 0) (Commodity "")
+  , note: Nothing
+  }
 
 
 verifyTransfer :: String -> Transfer -> Result String Transfer

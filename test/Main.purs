@@ -11,8 +11,9 @@ import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
 import Data.Map as Map
-import Data.Maybe (Maybe(Just, Nothing))
+import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
+import Data.Newtype (over)
 import Data.Rational (fromInt, (%))
 import Data.Ring (negate)
 import Data.Semigroup ((<>))
@@ -26,6 +27,7 @@ import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Effect (Effect)
 import Effect.Aff (Aff)
+import Partial.Unsafe (unsafePartial)
 import Test.Fixtures
 import Test.Spec
   ( describe
@@ -36,17 +38,19 @@ import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (run)
-import Transity.Data.Account (Account(..), Balance)
+import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
+import Transity.Data.Balance (Balance(..))
 import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Entity as Entity
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (fromJson, showPretty) as Transfer
-import Transity.Utils (digitsToRational, indentSubsequent, ColorFlag(..))
+import Transity.Utils
+  (digitsToRational, indentSubsequent, ColorFlag(..), stringToDateTime)
 
 
 rmWhitespace :: String -> String
@@ -315,6 +319,44 @@ main = run [consoleReporter] do
               # wrapWithOk
               # rmWhitespace
           actual `shouldEqualString` expected
+
+
+        it "converts an Entity to an array of accounts with long id" do
+          let
+            accountWithId = over Account.Account
+              (_ { id = "_default_" })
+              Account.zero
+            entity = over Entity.Entity
+              (_ { accounts = Just [account, accountWithId], id = "John" })
+              Entity.zero
+            accounts = Entity.toAccountsWithId entity
+
+          (show accounts) `shouldEqualString` (show
+            [ (Account
+                { balances: (Just [(Balance
+                    (unsafePartial $ fromJust
+                      $ stringToDateTime "2017-04-02 20:11:45")
+                    (Map.fromFoldable
+                      [(Tuple
+                          (Commodity "€")
+                          (Amount (100 % 1) (Commodity "€")))
+                      ]))
+                    ])
+                , commodityMap: (Map.fromFoldable
+                    [(Tuple
+                      (Commodity "€")
+                      (Amount (100 % 1) (Commodity "€")))
+                    ])
+                , id: "John:wallet"
+                })
+            , (Account
+                { balances: Nothing
+                , commodityMap: (Map.fromFoldable [])
+                , id: "John:_default_"
+                })
+            ]
+          )
+
 
 
       describe "Ledger" do

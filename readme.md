@@ -71,7 +71,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [x] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
   - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
-  - [ ] [(H)ledger Format] (for using (H)ledger exclusive features)
+  - [x] [(H)ledger Format] (for using (H)ledger exclusive features)
 - Additional features for crypto currencies
   - TODO: Think about what features exactly
 - [ ] Multi file support

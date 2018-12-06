@@ -12,7 +12,8 @@ import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(Nothing), maybe, fromMaybe)
-import Transity.Data.Account (Account)
+import Data.Newtype (class Newtype)
+import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Utils
   ( getObjField
@@ -32,12 +33,14 @@ newtype Entity = Entity
   }
 
 derive instance genericEntity :: Generic Entity _
+derive instance newtypeEntity :: Newtype Entity _
 
 instance showEntity :: Show Entity where
   show = genericShow
 
 instance decodeEntity :: DecodeJson Entity where
   decodeJson json = toEither $ decodeJsonEntity json
+
 
 
 decodeJsonEntity :: Json -> Result String Entity
@@ -91,3 +94,11 @@ showPretty (Entity entity) =
   <> (joinWith ", " $ fromMaybe [] entity.tags)
   <> " | "
   <> (joinWith ", " $ map Account.showPretty $ fromMaybe [] entity.accounts)
+
+
+-- | Map to fully qualified array of accounts
+-- | (e.g _default becomes john:_default_)
+toAccountsWithId :: Entity -> Array Account
+toAccountsWithId (Entity entity) =
+  (fromMaybe [] entity.accounts)
+  <#> \(Account a) -> Account a {id = entity.id <> ":" <> a.id}

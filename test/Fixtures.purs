@@ -1,25 +1,25 @@
 module Test.Fixtures where
 
-import Data.Maybe (Maybe(Just, Nothing))
+import Prelude ((<>), ($))
+
+import Data.Date (canonicalDate)
+import Data.Date.Component
+import Data.DateTime (DateTime(..))
+import Data.Map (fromFoldable)
+import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Rational (fromInt)
-import Prelude ((<>))
+import Data.Rational (fromInt, (%))
+import Data.Tuple (Tuple(..))
+import Partial.Unsafe (unsafePartial)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
+import Transity.Data.Account (Account(..))
+import Transity.Data.Balance (Balance(..))
 import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils (stringToDateTime, indentSubsequent)
 
 -- | Transfer Examples
-
-transferZero :: Transfer
-transferZero = Transfer
-  { utc: Nothing
-  , from: ""
-  , to: ""
-  , amount: Amount (fromInt 0) (Commodity "")
-  , note: Nothing
-  }
 
 transferMinimal :: Transfer
 transferMinimal = Transfer
@@ -295,6 +295,20 @@ balanceShowed = """
 """
 
 
+account :: Account
+account = Account
+  { id: "wallet"
+  , commodityMap: (fromFoldable
+      [(Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€")))])
+  , balances: Just
+      [ (Balance
+        (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")
+        (fromFoldable
+          [(Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€")))]))
+      ]
+  }
+
+
 accountJson :: String
 accountJson = """
 { "id": "_default_",
@@ -401,8 +415,8 @@ ledgerLedger  = """2014-12-24 A short note about this transaction
   john:giro
 """
 
-entity :: String -> String
-entity id = """
+idToEntityStr :: String -> String
+idToEntityStr id = """
 (Entity
   { accounts: Nothing
   , id: """ <> "\"" <> id <> "\"" <> """
@@ -418,9 +432,9 @@ ledgerShowed :: String
 ledgerShowed = """
   (Ledger
     { entities: (Just
-      [ """ <> entity "abcxyz" <> """
-      , """ <> entity "evil-corp" <> """
-      , """ <> entity "john:giro" <> """
+      [ """ <> idToEntityStr "abcxyz" <> """
+      , """ <> idToEntityStr "evil-corp" <> """
+      , """ <> idToEntityStr "john:giro" <> """
       ])
     , owner: "John Doe"
     , transactions:
