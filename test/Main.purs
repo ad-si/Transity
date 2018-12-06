@@ -6,7 +6,7 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith)
 import Data.Eq ((/=))
-import Data.Result (Result(Error, Ok), fromEither)
+import Data.Result (Result(Error, Ok), fromEither, isOk)
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -32,7 +32,7 @@ import Test.Fixtures
 import Test.Spec
   ( describe
   , it
-  -- , itOnly
+  , itOnly
   )
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
@@ -402,6 +402,16 @@ main = run [consoleReporter] do
               # wrapWithOk
               # rmWhitespace
           actual `shouldEqualString` expected
+
+
+        describe "Verification" do
+
+          itOnly "ledger without verification balances is valid" do
+            let verification = Ledger.verifyLedgerBalances ledger
+
+            (isOk verification) `shouldEqual` true
+            -- TODO: Use instead after purescript-spec was upgraded to v3.1.0
+            -- verification `shouldSatisfy` isOk
 
 
         it "fails if a transfer contains an empty field" do

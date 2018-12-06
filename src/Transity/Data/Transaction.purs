@@ -1,6 +1,9 @@
 module Transity.Data.Transaction where
 
-import Prelude (class Show, bind, map, pure, (#), ($), (<>), (>>=), (<#>), (/=))
+import Prelude
+  ( class Show, class Eq, bind, map, pure
+  , (#), ($), (<>), (>>=), (<#>), (/=)
+  )
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
@@ -37,6 +40,7 @@ newtype Transaction = Transaction
 
 derive instance genericTransaction :: Generic Transaction _
 derive instance newtypeTransaction :: Newtype Transaction _
+derive newtype instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow

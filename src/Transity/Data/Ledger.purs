@@ -1,8 +1,8 @@
 module Transity.Data.Ledger where
 
 import Prelude
-  ( class Show, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (<#>), (<>), (==), (>>=)
+  ( class Show, class Eq, bind, compare, identity, map, pure, show
+  , (#), ($), (+), (-), (<#>), (<>), (||), (==), (/=), (>>=)
   )
 
 import Control.Alt ((<|>))
@@ -11,11 +11,12 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, sort, sortBy, groupBy, (!!))
+import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!))
 import Data.Array as Array
 import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.List (fromFoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
@@ -26,10 +27,13 @@ import Data.Set as Set
 import Data.String (joinWith)
 import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple, snd)
+import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
+-- import Debug.Trace
 import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
+import Transity.Data.Balance
 import Transity.Data.Amount (Amount(..))
 import Transity.Data.Amount as Amount
 import Transity.Data.CommodityMap
@@ -37,7 +41,7 @@ import Transity.Data.CommodityMap
   , addAmountToMap
   , subtractAmountFromMap
   )
-import Transity.Data.Entity (Entity(..))
+import Transity.Data.Entity (Entity(..), toTransfers)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
@@ -51,6 +55,7 @@ import Transity.Utils
   , ColorFlag(..)
   )
 
+import Data.Foldable (foldr)
 
 -- | List of all transactions
 newtype Ledger = Ledger
@@ -60,6 +65,7 @@ newtype Ledger = Ledger
   }
 
 derive instance genericLedger :: Generic Ledger _
+derive newtype instance eqLedger :: Eq Ledger
 
 instance showLedger :: Show Ledger where
   show = genericShow
@@ -108,9 +114,51 @@ verifyAccounts wholeLedger@(Ledger ledger) =
         <> "to the entities section to fix this error"
 
 
-validateBalances :: Ledger -> Result String Ledger
-validateBalances wholeLedger@(Ledger ledger) =
-  Ok wholeLedger
+verifyBalances ::
+  BalanceMap ->
+  Array Transfer ->
+  Array Transaction ->
+  Result String Unit
+verifyBalances balanceMap balancingTransfers transactions =
+  let
+    transxTransfers = (Transaction.toTransfers transactions) :: Array Transfer
+    combined = balancingTransfers <> transxTransfers
+      -- <#> (sortBy (\(Transfer transfA) (Transfer transfB) ->
+      --                       compare transfA.utc transfB.utc))
+  in
+    case uncons combined of
+      Just {head: transfHead, tail: transfTail} ->
+        if true -- TODO: transX Is verification transaction / balance
+        then
+          if addTransfer transfHead balanceMap /= Map.empty -- TODO: 0 amount
+          then Error("Transactions don't match up with verification balances")
+          else verifyBalances Map.empty transfTail transactions
+        else
+          verifyBalances
+            (addTransfer transfHead balanceMap)
+            transfTail
+            transactions
+      Nothing ->
+        Ok unit
+
+
+verifyLedgerBalances :: Ledger -> Result String Ledger
+verifyLedgerBalances wholeLedger@(Ledger ledger) =
+  let
+    balancingTransfers = (fromMaybe [] ledger.entities)
+      <#> toTransfers
+      # fold
+    result = verifyBalances
+      Map.empty
+      balancingTransfers
+      ledger.transactions
+  in
+    if ledger.entities == Nothing || ledger.entities == Just []
+    then Ok wholeLedger
+    else
+      case result of
+        Ok _ -> Ok wholeLedger
+        Error error -> Error error
 
 
 fromJson :: String -> Result String Ledger
@@ -119,7 +167,7 @@ fromJson json = do
   ledger <- fromEither $ decodeJson jsonObj
   pure ledger
     >>= verifyAccounts
-    >>= validateBalances
+    -- >>= verifyBalances
     -- >>= addInitalBalance
 
 
@@ -218,6 +266,11 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
       updatedFromAccount
 
 
+-- subtractTransfer :: Transfer -> BalanceMap -> BalanceMap
+-- subtractTransfer (Transfer transf) balanceMap =
+--   -- TODO
+
+
 showBalance :: ColorFlag -> Ledger -> String
 showBalance colorFlag (Ledger ledger) =
   let
@@ -286,7 +339,6 @@ entriesToLedger (Ledger { transactions }) =
         in date <> " " <> note <> "\n" <>
            "  " <> to <> "  " <> (Amount.showPretty amount) <> "\n" <>
            "  " <> from <> "\n"
-
 
     result = do
         Transaction { utc , note, transfers } <- transactions

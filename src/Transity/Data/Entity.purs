@@ -42,6 +42,7 @@ newtype Entity = Entity
 
 derive instance genericEntity :: Generic Entity _
 derive instance newtypeEntity :: Newtype Entity _
+derive newtype instance eqEntity :: Eq Entity
 
 instance showEntity :: Show Entity where
   show = genericShow
