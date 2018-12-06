@@ -358,6 +358,26 @@ main = run [consoleReporter] do
           )
 
 
+        it "converts an Entitie's balances to an array of transfers" do
+          let
+            entity = over Entity.Entity
+              (_ { accounts = Just [account], id = "John" })
+              Entity.zero
+            transfers = Entity.toTransfers entity
+
+          (rmWhitespace $ show transfers) `shouldEqualString` (rmWhitespace """
+              [(Transfer
+                  { amount: (Amount 100 % 1 (Commodity "€"))
+                  , from: "John:wallet"
+                  , note: Nothing
+                  , to: "_void_"
+                  , utc: (Just (DateTime
+                      (Date (Year 2017) April (Day 2))
+                      (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0))))
+                  })
+              ]
+            """)
+
 
       describe "Ledger" do
         it "converts a JSON string to a Ledger" do

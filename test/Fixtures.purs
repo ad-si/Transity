@@ -2,9 +2,6 @@ module Test.Fixtures where
 
 import Prelude ((<>), ($))
 
-import Data.Date (canonicalDate)
-import Data.Date.Component
-import Data.DateTime (DateTime(..))
 import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)

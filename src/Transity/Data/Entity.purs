@@ -6,15 +6,23 @@ import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
+import Data.Array as Array
 import Data.DateTime (DateTime)
+import Data.List (fromFoldable)
+import Data.Foldable (fold)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Nothing), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Map (values)
 import Data.Newtype (class Newtype)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
+import Transity.Data.Amount (Amount(..))
+import Transity.Data.CommodityMap (CommodityMap(..))
+import Transity.Data.Balance (Balance(..))
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils
   ( getObjField
   , getFieldMaybe
@@ -97,8 +105,39 @@ showPretty (Entity entity) =
 
 
 -- | Map to fully qualified array of accounts
--- | (e.g _default becomes john:_default_)
+-- | (e.g _default_ becomes john:_default_)
 toAccountsWithId :: Entity -> Array Account
 toAccountsWithId (Entity entity) =
   (fromMaybe [] entity.accounts)
   <#> \(Account a) -> Account a {id = entity.id <> ":" <> a.id}
+
+
+-- | Map the entity's balance to an array of balancing transfers
+toTransfers :: Entity -> Array Transfer
+toTransfers entity@(Entity entityRec) =
+  let
+    accounts = toAccountsWithId entity
+
+    comMapToTransfers :: forall a.
+      {id :: String | a} -> DateTime -> CommodityMap -> Array Transfer
+    comMapToTransfers accountRec utc comMap =
+      (values comMap)
+      # Array.fromFoldable
+      <#> (\amount -> Transfer
+              { utc: Just utc
+              , from: accountRec.id
+              , to: "_void_"
+              , amount
+              , note: Nothing
+              })
+
+    accToTrans :: Account -> Array Transfer
+    accToTrans (Account account) =
+      (fromMaybe [] account.balances)
+      <#> (\(Balance utc comMap) ->
+              comMapToTransfers account utc comMap)
+      # fold
+  in
+    accounts <#> accToTrans # fold
+
+

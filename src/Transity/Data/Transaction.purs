@@ -87,6 +87,19 @@ fromYaml yaml =
       Ok json -> fromEither $ decodeJson json
 
 
+toTransfers :: Array Transaction -> Array Transfer
+toTransfers transactions =
+  transactions
+    <#> (\(Transaction transac) -> transac.transfers
+            <#> (\(Transfer transf) -> Transfer (transf
+                  { utc = if transf.utc /= Nothing
+                          then transf.utc
+                          else transac.utc
+                  }
+              )))
+    # fold
+
+
 showTransfersWithDate :: ColorFlag -> Transaction -> String
 showTransfersWithDate colorFlag (Transaction transac) =
   transac.transfers
