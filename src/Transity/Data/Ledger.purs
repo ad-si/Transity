@@ -1,7 +1,7 @@
 module Transity.Data.Ledger where
 import Prelude
   ( class Show, class Eq, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (<#>), (<>), (||), (==), (>>=)
+  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
   )
 
 import Control.Alt ((<|>))
@@ -158,22 +158,27 @@ verifyBalances balanceMap balancingTransfers =
       Ok unit
 
 
+entitiesToTransfers :: Maybe (Array Entity) -> Array Transfer
+entitiesToTransfers entities =
+  (fromMaybe [] entities)
+    <#> toTransfers
+    # fold
+    -- Label the balancing transfers to tell them apart from normal transfers
+    -- FIXME: Really hacky and should be solved with a wrapper datatype
+    <#> (\(Transfer tf) -> Transfer tf {note = Just "___BALANCE___"})
+
+
 verifyLedgerBalances :: Ledger -> Result String Ledger
-verifyLedgerBalances wholeLedger@(Ledger ledger) =
+verifyLedgerBalances wholeLedger@(Ledger {transactions, entities}) =
   let
-    balancingTransfers = (fromMaybe [] ledger.entities)
-      <#> toTransfers
-      # fold
-      -- Label the balancing transfers to tell them apart from normal transfers
-      -- FIXME: Really hacky and should be solved with a wrapper datatype
-      <#> (\(Transfer tf) -> Transfer tf {note = Just "___BALANCE___"})
-    transxTransfers = Transaction.toTransfers ledger.transactions
+    balancingTransfers = entitiesToTransfers entities
+    transxTransfers = Transaction.toTransfers transactions
     combined = (balancingTransfers <> transxTransfers)
       # sortBy (\(Transfer transfA) (Transfer transfB) ->
                     compare transfA.utc transfB.utc)
     result = verifyBalances Map.empty combined
   in
-    if ledger.entities == Nothing || ledger.entities == Just []
+    if entities == Nothing || entities == Just []
     then Ok wholeLedger
     else
       case result of
@@ -319,7 +324,7 @@ showBalance colorFlag (Ledger ledger) =
 -- | Serializes the journal to a command line printable version
 -- | (lines of columns).
 getEntries :: Ledger -> Maybe (Array (Array String))
-getEntries (Ledger {transactions}) = do
+getEntries (Ledger {transactions, entities}) = do
   let
     getQunty (Amount quantity _ ) = show $ toNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
@@ -343,7 +348,26 @@ getEntries (Ledger {transactions}) = do
     <#> splitTransfer
     # sequence
 
-  pure $ splitted # concat
+  let
+    initialEntries = entitiesToInitialTransfers entities <#>
+      \(Transfer t) ->
+          let isoString = fromMaybe "INVALID DATE" $ t.utc <#> utcToIsoString
+          in [[ isoString
+              , replace (Pattern ":_default_") (Replacement "") t.from
+              , getQunty t.amount
+              , getCmdty t.amount
+              ]]
+
+  pure $ (splitted <> initialEntries) # concat
+
+
+entitiesToInitialTransfers :: Maybe (Array Entity) -> Array Transfer
+entitiesToInitialTransfers entities =
+  (fromMaybe [] entities)
+    <#> toTransfers
+    # fold
+    # Array.filter (\(Transfer tf) ->
+        Amount.isZero tf.amount && tf.from /= "_void_")
 
 
 maybeToArr :: forall a. Maybe a -> Array a

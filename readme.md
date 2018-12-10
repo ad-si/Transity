@@ -45,11 +45,12 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [x] No misuse of accounts as categories / tags => direct support for them
 - [ ] No hard-coded asset / liability connotation as it is viewpoint dependent
   => Choose viewpoint when printing the balance
-- [x] Easily editable & processable file format based on [YAML](http://yaml.org)
+- [x] Easily editable & processable file format based on [YAML]
 - Clear separation between
   - [x] Physical account (e.g. wallet, bank account)
   - [x] Entities (e.g. my mum, a company)
   - [ ] Purpose of transaction (food, travel)
+- [x] Initial balances
 - [x] High precision timestamps
   - [ ] Including nanoseconds
 - [ ] Support for all states of transaction life cycle
@@ -62,7 +63,8 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Differentiation between transfers, transactions & exchanges
   - [ ] Special syntax for exchanges
 - [ ] Meta data for all entities (transactions, accounts, entities, …)
-- [x] Verification of data consistency
+- [x] Verifies sole use of predefined entities
+- [x] Checks match with verification balances
 - [ ] CSV import
 - [ ] Link to receipt file
 - [ ] Dashboard
@@ -83,6 +85,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [ ] Define which are allowed / prohibited for each account
 - [ ] Generate EPC QR Codes for transfers
 
+[YAML]: http://yaml.org
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
 [JS-Sequence-Diagrams]: https://bramp.github.io/js-sequence-diagrams
