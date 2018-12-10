@@ -6,17 +6,19 @@ import Prelude
 
 import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
+import Control.Semigroupoid ((>>>))
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!))
+import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
 import Data.Array as Array
 import Data.DateTime (DateTime)
 import Data.Foldable (all)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.List (index)
 import Data.HeytingAlgebra (not)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
@@ -25,12 +27,11 @@ import Data.Newtype (unwrap)
 import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
-import Data.String (joinWith)
+import Data.String (joinWith, split, Pattern(..), Replacement(..), replace)
 import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
--- import Debug.Trace
 import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
@@ -53,9 +54,9 @@ import Transity.Utils
   , mergeWidthRecords
   , utcToIsoString
   , utcToIsoDateString
+  , dateShowPretty
   , widthRecordZero
   , ColorFlag(..)
-  , WidthRecord
   )
 
 
@@ -138,11 +139,17 @@ verifyBalances balanceMap balancingTransfers =
           if not $ isAmountInMapZero
               newBal tfHeadRec.from (getCommodity tfHeadRec)
           then Error(
-              "Transactions don't match up with verification balances\n\n"
-              <> "The account '" <> tfHeadRec.from
-              <> "'' in following balance map is not zero:\n"
-              <> (show newBal)
-              <> "\n\n"
+              "Error:\nThe verification balance of account '" <> tfHeadRec.from
+              <> "' on '" <> (fromMaybe "" $ tfHeadRec.utc <#> dateShowPretty)
+              <> "'\nis off by "
+              <> (Map.lookup tfHeadRec.from newBal
+                    # fromMaybe Map.empty
+                    # Map.values
+                    # (flip index) 0
+                    <#> (Amount.negate >>> Amount.showPretty)
+                    # fromMaybe "ERROR: Amount is missing"
+                  )
+              <> " from the calculated balance."
             )
           else verifyBalances newBal transfTail
         else
@@ -248,29 +255,32 @@ addTransaction balanceMap (Transaction {transfers})  =
 addTransfer :: BalanceMap -> Transfer -> BalanceMap
 addTransfer balanceMap (Transfer {to, from, amount})  =
   let
-    -- toArray = split (Pattern "") to
-    -- toDefault = case toArray of
-    --   [] -> toArray <> "_default_"
-    --   []
-    -- fromArray = split (Pattern "") from
+    receiverArray = split (Pattern ":") to
+    receiverWithDefault = case length receiverArray of
+      1 -> to <> ":_default_"
+      _ -> to
+    senderArray = split (Pattern ":") from
+    senderWithDefault = case length senderArray of
+      1 -> from <> ":_default_"
+      _ -> from
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing ->
-          Just ((Map.empty :: CommodityMap) `subtractAmountFromMap` amount)
-        Just commodityMap ->
-          Just (commodityMap `subtractAmountFromMap` amount)
+          Nothing ->
+            Just ((Map.empty :: CommodityMap) `subtractAmountFromMap` amount)
+          Just commodityMap ->
+            Just (commodityMap `subtractAmountFromMap` amount)
       )
-      from
+      senderWithDefault
       balanceMap
   in
     Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing ->
-          Just ((Map.empty :: CommodityMap) `addAmountToMap` amount)
-        Just commodityMap ->
-          Just (commodityMap `addAmountToMap` amount)
+          Nothing ->
+            Just ((Map.empty :: CommodityMap) `addAmountToMap` amount)
+          Just commodityMap ->
+            Just (commodityMap `addAmountToMap` amount)
       )
-      to
+      receiverWithDefault
       updatedFromAccount
 
 
@@ -287,20 +297,22 @@ showBalance colorFlag (Ledger ledger) =
     balancesArray = balanceMap
       # (Map.toUnfoldable :: BalanceMap ->
           Array (Tuple Account.Id CommodityMap))
-    accWidthRecs :: Array WidthRecord
+    normAccId accId =
+      replace (Pattern ":_default_") (Replacement "") accId
     accWidthRecs = balancesArray
-      <#> (\(Tuple accId comMap) -> Account.toWidthRecord accId comMap)
-    widthRecord :: WidthRecord
+      <#> (\(Tuple accId comMap) ->
+              Account.toWidthRecord (normAccId accId) comMap)
     widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
     marginLeft = 2
+    showTuple (Tuple accId comMap) = (Account.showPrettyAligned
+        colorFlag
+        widthRecord { account = widthRecord.account + marginLeft }
+        (normAccId accId)
+        comMap
+      )
   in
     balancesArray
-      <#> (\(Tuple accId comMap) -> (Account.showPrettyAligned
-            colorFlag
-            widthRecord { account = widthRecord.account + marginLeft }
-            accId
-            comMap
-          ))
+      <#> showTuple
       # fold
 
 

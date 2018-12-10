@@ -2,7 +2,10 @@ module Main where
 
 import Prelude (Unit, bind, discard, pure, (#), ($), (<#>), (<>))
 
+import Ansi.Codes (Color(..))
+import Ansi.Output (withGraphics, foreground)
 import Data.Array ((!!))
+import Data.Eq ((==))
 import Data.Result (Result(..), note)
 import Data.Newtype (over)
 import Data.Tuple (Tuple(..))
@@ -16,6 +19,14 @@ import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 import Transity.Plot as Plot
 import Transity.Utils (ColorFlag(..))
+
+
+type Config = { colorState :: ColorFlag }
+
+config :: Config
+config =
+  { colorState: ColorYes
+  }
 
 
 usageString :: String
@@ -50,6 +61,7 @@ run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
+    -- "balance-on"         -> Ok $ Ledger.showBalanceOn dateMaybe ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries  " " ledger
@@ -115,7 +127,9 @@ main = do
   case execution of
     Ok output -> log output
     Error message -> do
-      error message
+      error (if config.colorState == ColorYes
+        then withGraphics (foreground Red) message
+        else message)
       exit 1
 
 

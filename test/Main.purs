@@ -4,10 +4,9 @@ import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (zipWith, tail)
-import Data.Eq ((/=), (==))
+import Data.Array (zipWith)
+import Data.Eq ((/=))
 import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
-import Data.Ring ((-))
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -25,7 +24,6 @@ import Data.String.CodeUnits (toCharArray)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Debug.Trace as Trace
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Effect (Effect)
@@ -35,7 +33,7 @@ import Test.Fixtures
 import Test.Spec
   ( describe
   , it
-  , itOnly
+  -- , itOnly
   )
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
@@ -54,7 +52,7 @@ import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (Transfer(..), fromJson, showPretty)
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
   (digitsToRational, indentSubsequent, ColorFlag(..), stringToDateTime)
@@ -450,7 +448,7 @@ main = run [consoleReporter] do
               , note: Just "A little note"
               }
             expected = fromFoldable
-              [ Tuple "anna" $ fromFoldable
+              [ Tuple "anna:_default_" $ fromFoldable
                   [ (Tuple
                       (Commodity "€")
                       (Amount (15 % 1) (Commodity "€")))
@@ -626,10 +624,10 @@ main = run [consoleReporter] do
 
 
         it "subtracts a transfer from a balance map" do
-          let result = balanceMap `Ledger.subtractTransfer` transferSimple
-          (show result) `shouldEqualString`
-            (show (Map.fromFoldable
-              [ (Tuple "evil-corp"
+          let
+            result = balanceMap `Ledger.subtractTransfer` transferSimple
+            expected = Map.fromFoldable
+              [ (Tuple "evil-corp:_default_"
                   (Map.fromFoldable
                     [(Tuple
                       (Commodity "€")
@@ -648,7 +646,8 @@ main = run [consoleReporter] do
                       (Amount (15 % 1) (Commodity "€")))
                     ]))
               ]
-            ))
+
+          (show result) `shouldEqualString` (show expected)
 
 
         it "fails if a transfer contains an empty field" do
@@ -673,7 +672,9 @@ main = run [consoleReporter] do
         it "supports multiple transactions on one account" do
           let
             actual = Ledger.showBalance ColorNo ledgerMultiTrans
+
           actual `shouldEqualString` ledgerBalanceMultiTrans
+
 
         it "serializes to HLedger format" do
           (Ledger.entriesToLedger ledger) `shouldEqualString` ledgerLedger

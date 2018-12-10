@@ -87,10 +87,10 @@ entities:
           - wallet
         balances:
           - utc: '2014-05-01 12:00'
-            amounts: [200 €, -1 evil_machine]
+            amounts: []
 
           - utc: '2017-04-02 19:33:28'
-            amounts: [300 $, 400 €]
+            amounts: [66.05 €]
 
 
 transactions:

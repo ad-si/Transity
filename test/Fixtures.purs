@@ -2,7 +2,7 @@ module Test.Fixtures where
 
 import Prelude ((<>), ($))
 
-import Data.Map (fromFoldable, empty)
+import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
