@@ -2,7 +2,7 @@ module Transity.Data.Transfer where
 
 import Prelude
   ( class Eq, class Ord, class Show, bind, compare, map, pure
-  , (#), ($), (<>), (==), (>>=)
+  , (-), (#), ($), (<>), (==), (>>=)
   )
 
 import Control.Monad.Except (runExcept)
@@ -20,6 +20,7 @@ import Data.Monoid (power)
 import Data.Newtype (class Newtype)
 import Data.Rational (fromInt)
 import Data.Result (Result(..), toEither, fromEither)
+import Data.Ring (negate)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
@@ -86,6 +87,14 @@ transferZero = Transfer
   , amount: Amount (fromInt 0) (Commodity "")
   , note: Nothing
   }
+
+
+negateTransfer :: Transfer -> Transfer
+negateTransfer (Transfer transferRec) =
+  let
+    negateAmount (Amount qnt com) = Amount (negate qnt) com
+  in
+    Transfer transferRec {amount = negateAmount transferRec.amount}
 
 
 verifyTransfer :: String -> Transfer -> Result String Transfer

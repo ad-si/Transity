@@ -2,7 +2,7 @@ module Test.Fixtures where
 
 import Prelude ((<>), ($))
 
-import Data.Map (fromFoldable)
+import Data.Map (fromFoldable, empty)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
 import Data.Rational (fromInt, (%))
@@ -11,7 +11,8 @@ import Partial.Unsafe (unsafePartial)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
 import Transity.Data.Account (Account(..))
 import Transity.Data.Balance (Balance(..))
-import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.CommodityMap (CommodityMap)
+import Transity.Data.Ledger (Ledger(..), BalanceMap)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils (stringToDateTime, indentSubsequent)
@@ -292,11 +293,23 @@ balanceShowed = """
 """
 
 
+commodityMap :: CommodityMap
+commodityMap = fromFoldable
+  [(Tuple
+    (Commodity "€")
+    (Amount (100 % 1) (Commodity "€")))
+  ]
+
+
+balanceMap :: BalanceMap
+balanceMap =
+  fromFoldable [Tuple "john" commodityMap]
+
+
 account :: Account
 account = Account
   { id: "wallet"
-  , commodityMap: (fromFoldable
-      [(Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€")))])
+  , commodityMap
   , balances: Just
       [ (Balance
         (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")

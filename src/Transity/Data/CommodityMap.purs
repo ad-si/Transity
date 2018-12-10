@@ -1,12 +1,15 @@
 module Transity.Data.CommodityMap
 where
 
--- import Data.Array ((!!))
-import Data.Foldable (foldr)
-import Data.Functor (map)
-import Data.Function (flip)
+import Data.Array (fromFoldable)
+import Data.Eq ((==))
+import Data.Foldable (foldr, all)
+import Data.Functor (map, (<#>))
+import Data.Function (flip, ($))
+import Data.HeytingAlgebra ((||))
 import Data.Map as Map
-import Data.Maybe (Maybe(Nothing, Just))
+import Data.Maybe (Maybe(Nothing, Just), fromMaybe)
+import Data.Ratio ((%))
 import Data.Semigroup ((<>))
 -- import Data.String (Pattern(..), joinWith, split, length)
 import Data.String (joinWith)
@@ -57,10 +60,25 @@ subtractAmountFromMap commodityMap amount@(Amount value (Commodity commodity)) =
     commodityMap
 
 
---| Specify the width (in characters) of the integer part,
---| the width of the fractional part
---| (both exluding the decimal point) and receive a pretty printed
---| multi line string.
+isCommodityMapZero :: CommodityMap -> Boolean
+isCommodityMapZero comMap =
+  (Map.values comMap)
+  # fromFoldable
+  # all Amount.isZero
+
+
+isCommodityZero :: CommodityMap -> Commodity -> Boolean
+isCommodityZero comMap commodity =
+  let
+    amountMaybe = Map.lookup commodity comMap
+  in
+    fromMaybe false $
+      amountMaybe <#> Amount.isZero
+
+
+-- TODO: Verify commodity map
+--       by checking that the commodity of the key and the value match
+
 
 showPretty :: CommodityMap -> String
 showPretty = showPrettyAligned ColorNo 0 0 0

@@ -90,26 +90,26 @@ subtractAmount (Account account) amount =
   in Account account {commodityMap = newMap}
 
 
-toWidthRecord :: Account -> WidthRecord
-toWidthRecord (Account account) =
+toWidthRecord :: Id -> CommodityMap -> WidthRecord
+toWidthRecord accountId commodityMap =
   let
-    widthRecord = CommodityMap.toWidthRecord account.commodityMap
+    widthRecord = CommodityMap.toWidthRecord commodityMap
   in
     widthRecord {
-      account = max (length account.id) widthRecord.account
+      account = max (length accountId) widthRecord.account
     }
 
 
-showPretty :: Account -> String
+showPretty :: Id -> CommodityMap -> String
 showPretty = showPrettyAligned ColorNo widthRecordZero
 
 
-showPrettyAligned :: ColorFlag -> WidthRecord -> Account -> String
-showPrettyAligned colorFlag widthRec (Account account) =
+showPrettyAligned :: ColorFlag -> WidthRecord -> Id -> CommodityMap -> String
+showPrettyAligned colorFlag widthRec accountId commodityMap =
   let
     gap = 2
-    accountWidth = max widthRec.account (length account.id)
-    accName = format (width accountWidth) account.id
+    accountWidth = max widthRec.account (length accountId)
+    accName = format (width accountWidth) accountId
     accColor = if colorFlag == ColorYes
       then foreground Blue
       else foreground White
@@ -125,5 +125,5 @@ showPrettyAligned colorFlag widthRec (Account account) =
           widthRec.integer
           widthRec.fraction
           widthRec.commodity
-          account.commodityMap)
+          commodityMap)
     <> "\n"

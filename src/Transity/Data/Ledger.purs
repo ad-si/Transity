@@ -1,8 +1,7 @@
 module Transity.Data.Ledger where
-
 import Prelude
   ( class Show, class Eq, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (-), (<#>), (<>), (||), (==), (/=), (>>=)
+  , (#), ($), (+), (<#>), (<>), (||), (==), (>>=)
   )
 
 import Control.Alt ((<|>))
@@ -14,9 +13,11 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!))
 import Data.Array as Array
 import Data.DateTime (DateTime)
+import Data.Foldable (all)
+import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.List (fromFoldable)
+import Data.HeytingAlgebra (not)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
@@ -26,25 +27,26 @@ import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
 import Data.String (joinWith)
 import Data.Traversable (fold, foldr, intercalate, sequence)
-import Data.Tuple (Tuple, snd)
+import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 -- import Debug.Trace
 import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
-import Transity.Data.Balance
-import Transity.Data.Amount (Amount(..))
+import Transity.Data.Amount (Amount(..), Commodity)
 import Transity.Data.Amount as Amount
 import Transity.Data.CommodityMap
   ( CommodityMap
   , addAmountToMap
   , subtractAmountFromMap
+  , isCommodityMapZero
+  , isCommodityZero
   )
 import Transity.Data.Entity (Entity(..), toTransfers)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transfer (Transfer(..), negateTransfer)
 import Transity.Utils
   ( getFieldMaybe
   , getObjField
@@ -53,9 +55,9 @@ import Transity.Utils
   , utcToIsoDateString
   , widthRecordZero
   , ColorFlag(..)
+  , WidthRecord
   )
 
-import Data.Foldable (foldr)
 
 -- | List of all transactions
 newtype Ledger = Ledger
@@ -114,32 +116,39 @@ verifyAccounts wholeLedger@(Ledger ledger) =
         <> "to the entities section to fix this error"
 
 
-verifyBalances ::
-  BalanceMap ->
-  Array Transfer ->
-  Array Transaction ->
-  Result String Unit
-verifyBalances balanceMap balancingTransfers transactions =
+isAmountInMapZero :: BalanceMap -> String -> Commodity -> Boolean
+isAmountInMapZero balanceMap accountId commodity =
   let
-    transxTransfers = (Transaction.toTransfers transactions) :: Array Transfer
-    combined = balancingTransfers <> transxTransfers
-      -- <#> (sortBy (\(Transfer transfA) (Transfer transfB) ->
-      --                       compare transfA.utc transfB.utc))
+    comMap = Map.lookup accountId balanceMap
   in
-    case uncons combined of
-      Just {head: transfHead, tail: transfTail} ->
-        if true -- TODO: transX Is verification transaction / balance
+    fromMaybe false $
+      comMap <#> (flip isCommodityZero) commodity
+
+
+verifyBalances :: BalanceMap -> Array Transfer -> Result String Unit
+verifyBalances balanceMap balancingTransfers =
+  case uncons balancingTransfers of
+    Just {head: transfHead@(Transfer tfHeadRec), tail: transfTail} ->
+      let
+        newBal = balanceMap `addTransfer` transfHead
+        getCommodity {amount: Amount _ commodity} = commodity
+      in
+        if tfHeadRec.note == Just "___BALANCE___"
         then
-          if addTransfer transfHead balanceMap /= Map.empty -- TODO: 0 amount
-          then Error("Transactions don't match up with verification balances")
-          else verifyBalances Map.empty transfTail transactions
+          if not $ isAmountInMapZero
+              newBal tfHeadRec.from (getCommodity tfHeadRec)
+          then Error(
+              "Transactions don't match up with verification balances\n\n"
+              <> "The account '" <> tfHeadRec.from
+              <> "'' in following balance map is not zero:\n"
+              <> (show newBal)
+              <> "\n\n"
+            )
+          else verifyBalances newBal transfTail
         else
-          verifyBalances
-            (addTransfer transfHead balanceMap)
-            transfTail
-            transactions
-      Nothing ->
-        Ok unit
+          verifyBalances newBal transfTail
+    Nothing ->
+      Ok unit
 
 
 verifyLedgerBalances :: Ledger -> Result String Ledger
@@ -148,10 +157,14 @@ verifyLedgerBalances wholeLedger@(Ledger ledger) =
     balancingTransfers = (fromMaybe [] ledger.entities)
       <#> toTransfers
       # fold
-    result = verifyBalances
-      Map.empty
-      balancingTransfers
-      ledger.transactions
+      -- Label the balancing transfers to tell them apart from normal transfers
+      -- FIXME: Really hacky and should be solved with a wrapper datatype
+      <#> (\(Transfer tf) -> Transfer tf {note = Just "___BALANCE___"})
+    transxTransfers = Transaction.toTransfers ledger.transactions
+    combined = (balancingTransfers <> transxTransfers)
+      # sortBy (\(Transfer transfA) (Transfer transfB) ->
+                    compare transfA.utc transfB.utc)
+    result = verifyBalances Map.empty combined
   in
     if ledger.entities == Nothing || ledger.entities == Just []
     then Ok wholeLedger
@@ -167,8 +180,8 @@ fromJson json = do
   ledger <- fromEither $ decodeJson jsonObj
   pure ledger
     >>= verifyAccounts
-    -- >>= verifyBalances
-    -- >>= addInitalBalance
+    >>= verifyLedgerBalances
+    -- TODO: >>= addInitalBalance
 
 
 fromYaml :: String -> Result String Ledger
@@ -185,7 +198,9 @@ fromYaml yaml =
         )
       Ok json -> fromEither $ decodeJson json
   in
-    unverified >>= verifyAccounts
+    unverified
+      >>= verifyAccounts
+      >>= verifyLedgerBalances
 
 
 showPretty :: Ledger -> String
@@ -216,16 +231,22 @@ showTransfers colorFlag (Ledger l) =
     <> transactionsPretty
 
 
-type BalanceMap = Map.Map Account.Id Account
+type BalanceMap = Map.Map Account.Id CommodityMap
 
 
-addTransaction :: Transaction -> BalanceMap -> BalanceMap
-addTransaction (Transaction {transfers}) balanceMap =
-  foldr addTransfer balanceMap transfers
+isBalanceMapZero :: BalanceMap -> Boolean
+isBalanceMapZero balanceMap =
+  (Map.values balanceMap)
+  # all isCommodityMapZero
 
 
-addTransfer :: Transfer -> BalanceMap -> BalanceMap
-addTransfer (Transfer {to, from, amount}) balanceMap =
+addTransaction :: BalanceMap -> Transaction -> BalanceMap
+addTransaction balanceMap (Transaction {transfers})  =
+  foldr (flip addTransfer) balanceMap transfers
+
+
+addTransfer :: BalanceMap -> Transfer -> BalanceMap
+addTransfer balanceMap (Transfer {to, from, amount})  =
   let
     -- toArray = split (Pattern "") to
     -- toDefault = case toArray of
@@ -234,62 +255,54 @@ addTransfer (Transfer {to, from, amount}) balanceMap =
     -- fromArray = split (Pattern "") from
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just ( Account
-          { id: from
-          , commodityMap: (Map.empty :: CommodityMap)
-              `subtractAmountFromMap` amount
-          , balances: Nothing
-          })
-        Just (Account account) -> Just ( Account
-          { id: from
-          , commodityMap: account.commodityMap `subtractAmountFromMap` amount
-          , balances: Nothing
-          })
+        Nothing ->
+          Just ((Map.empty :: CommodityMap) `subtractAmountFromMap` amount)
+        Just commodityMap ->
+          Just (commodityMap `subtractAmountFromMap` amount)
       )
       from
       balanceMap
   in
     Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (Account
-          { id: to
-          , commodityMap: (Map.empty :: CommodityMap) `addAmountToMap` amount
-          , balances: Nothing
-          })
-        Just (Account account) -> Just (Account
-          { id: to
-          , commodityMap: (account.commodityMap `addAmountToMap` amount)
-          , balances: Nothing
-          })
+        Nothing ->
+          Just ((Map.empty :: CommodityMap) `addAmountToMap` amount)
+        Just commodityMap ->
+          Just (commodityMap `addAmountToMap` amount)
       )
       to
       updatedFromAccount
 
 
--- subtractTransfer :: Transfer -> BalanceMap -> BalanceMap
--- subtractTransfer (Transfer transf) balanceMap =
---   -- TODO
+subtractTransfer :: BalanceMap -> Transfer -> BalanceMap
+subtractTransfer balanceMap transfer  =
+  let transferNegated = negateTransfer transfer
+  in balanceMap `addTransfer` transferNegated
 
 
 showBalance :: ColorFlag -> Ledger -> String
 showBalance colorFlag (Ledger ledger) =
   let
-    balanceMap = foldr addTransaction Map.empty ledger.transactions
-    accountsArray = balanceMap
-      # (Map.toUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
-      # map snd
-    accWidthRecs = accountsArray
-      # map Account.toWidthRecord
+    balanceMap = foldr (flip addTransaction) Map.empty ledger.transactions
+    balancesArray = balanceMap
+      # (Map.toUnfoldable :: BalanceMap ->
+          Array (Tuple Account.Id CommodityMap))
+    accWidthRecs :: Array WidthRecord
+    accWidthRecs = balancesArray
+      <#> (\(Tuple accId comMap) -> Account.toWidthRecord accId comMap)
+    widthRecord :: WidthRecord
     widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
     marginLeft = 2
   in
-    accountsArray
-      # map (Account.showPrettyAligned
-          colorFlag
-          widthRecord
-            { account = widthRecord.account + marginLeft }
-        )
+    balancesArray
+      <#> (\(Tuple accId comMap) -> (Account.showPrettyAligned
+            colorFlag
+            widthRecord { account = widthRecord.account + marginLeft }
+            accId
+            comMap
+          ))
       # fold
+
 
 -- | Serializes the journal to a command line printable version
 -- | (lines of columns).

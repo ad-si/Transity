@@ -8,7 +8,6 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.List (fromFoldable)
 import Data.Foldable (fold)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
@@ -19,8 +18,7 @@ import Data.Map (values)
 import Data.Newtype (class Newtype)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
-import Transity.Data.Amount (Amount(..))
-import Transity.Data.CommodityMap (CommodityMap(..))
+import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.Balance (Balance(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils
@@ -102,7 +100,8 @@ showPretty (Entity entity) =
   <> " | "
   <> (joinWith ", " $ fromMaybe [] entity.tags)
   <> " | "
-  <> (joinWith ", " $ map Account.showPretty $ fromMaybe [] entity.accounts)
+  <> (joinWith ", " $ (fromMaybe [] entity.accounts)
+        <#> (\(Account acc) -> Account.showPretty acc.id acc.commodityMap))
 
 
 -- | Map to fully qualified array of accounts

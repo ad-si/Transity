@@ -6,7 +6,7 @@ import Data.Argonaut.Core (toString, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Array (take)
 import Data.Boolean (otherwise)
-import Data.Eq (class Eq, (/=))
+import Data.Eq (class Eq, (/=), (==))
 import Data.Function (($))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
@@ -105,8 +105,13 @@ subtract (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
 
 
 negate :: Amount -> Amount
-negate (Amount num com) = Amount (Ring.negate num) com
+negate (Amount num com) =
+  Amount (Ring.negate num) com
 
+
+isZero :: Amount -> Boolean
+isZero (Amount quantity _) =
+  quantity == 0 % 1
 
 
 toWidthRecord :: Amount -> WidthRecord

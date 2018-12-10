@@ -1,15 +1,17 @@
 module Test.Main where
 
 import Control.Applicative (pure)
-import Control.Bind (discard, bind)
+import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (zipWith)
-import Data.Eq ((/=))
-import Data.Result (Result(Error, Ok), fromEither, isOk)
+import Data.Array (zipWith, tail)
+import Data.Eq ((/=), (==))
+import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
+import Data.Ring ((-))
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
+import Data.Map (fromFoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
@@ -23,6 +25,7 @@ import Data.String.CodeUnits (toCharArray)
 import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
+import Debug.Trace as Trace
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Effect (Effect)
@@ -43,12 +46,16 @@ import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
 import Transity.Data.Balance (Balance(..))
-import Transity.Data.CommodityMap (CommodityMap)
+import Transity.Data.CommodityMap (CommodityMap, isCommodityMapZero)
 import Transity.Data.CommodityMap as CommodityMap
+import Transity.Data.Entity (Entity(..))
 import Transity.Data.Entity as Entity
+import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Ledger as Ledger
+import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (fromJson, showPretty) as Transfer
+import Transity.Data.Transfer (Transfer(..), fromJson, showPretty)
+import Transity.Data.Transfer as Transfer
 import Transity.Utils
   (digitsToRational, indentSubsequent, ColorFlag(..), stringToDateTime)
 
@@ -207,9 +214,16 @@ main = run [consoleReporter] do
             actualMap = initialMap `CommodityMap.subtractAmountFromMap` amount
           actualMap `shouldEqual` expectedMap
 
+        it "can check if a commodity map as only zero of each commodity" do
+          let commodityMapZero = Map.fromFoldable
+                [ (Tuple (Commodity "€") (Amount (0 % 1) (Commodity "€")))
+                , (Tuple (Commodity "$") (Amount (0 % 1) (Commodity "$")))
+                ]
+          (isCommodityMapZero commodityMapZero) `shouldEqual` true
+
 
         let commodityMap = Map.fromFoldable
-              [ (Tuple (Commodity "€") (Amount (fromInt 2) (Commodity "EUR")))
+              [ (Tuple (Commodity "EUR") (Amount (fromInt 2) (Commodity "EUR")))
               , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
               ]
 
@@ -224,8 +238,7 @@ main = run [consoleReporter] do
 
 
         it "pretty shows an account" do
-          let actualPretty = Account.showPretty
-                (Account {id: "test", commodityMap, balances: Nothing})
+          let actualPretty = Account.showPretty "test" commodityMap
           actualPretty `shouldEqualString` accountPretty
 
         it "pretty shows and aligns an account" do
@@ -239,7 +252,8 @@ main = run [consoleReporter] do
             actualPretty = Account.showPrettyAligned
               ColorNo
               widthRecord
-              (Account {id: "test", commodityMap, balances: Nothing})
+              "test"
+              commodityMap
           actualPretty `shouldEqualString` accountPrettyAligned
 
 
@@ -404,14 +418,237 @@ main = run [consoleReporter] do
           actual `shouldEqualString` expected
 
 
+        it "checks if balance map is zero" do
+          (Ledger.isBalanceMapZero balanceMap) `shouldEqual` false
+
+
+        it "checks if amount in balance map is zero" do
+          let
+            balMap = fromFoldable [Tuple "john" $ fromFoldable
+              [ (Tuple
+                  (Commodity "€")
+                  (Amount (100 % 1) (Commodity "€")))
+              , (Tuple
+                  (Commodity "$")
+                  (Amount (0 % 1) (Commodity "$")))
+              ]]
+            isZeroUSD = Ledger.isAmountInMapZero balMap "john" (Commodity "$")
+            isZeroEUR = Ledger.isAmountInMapZero balMap "john" (Commodity "€")
+
+          isZeroUSD `shouldEqual` true
+          isZeroEUR `shouldEqual` false
+
+
+        it "adds a transfer to a balance map" do
+          let
+            emptyMap = fromFoldable [Tuple "john" Map.empty]
+            transfer = Transfer
+              { utc: stringToDateTime "2014-12-24"
+              , from: "john:wallet"
+              , to: "anna"
+              , amount: Amount (fromInt 15) (Commodity "€")
+              , note: Just "A little note"
+              }
+            expected = fromFoldable
+              [ Tuple "anna" $ fromFoldable
+                  [ (Tuple
+                      (Commodity "€")
+                      (Amount (15 % 1) (Commodity "€")))
+                  ]
+              , Tuple "john" $ fromFoldable []
+              , Tuple "john:wallet" $ fromFoldable
+                  [ (Tuple
+                      (Commodity "€")
+                      (Amount (-15 % 1) (Commodity "€")))
+                  ]
+              ]
+            actual = emptyMap `Ledger.addTransfer` transfer
+
+          (show actual) `shouldEqualString` (show expected)
+
+
         describe "Verification" do
 
-          itOnly "ledger without verification balances is valid" do
+          it "ledger without verification balances is valid" do
             let verification = Ledger.verifyLedgerBalances ledger
 
             (isOk verification) `shouldEqual` true
-            -- TODO: Use instead after purescript-spec was upgraded to v3.1.0
+            -- TODO: Use instead following with purescript-spec@v3.1.0
             -- verification `shouldSatisfy` isOk
+
+
+          it "fails if verification balances are incorrect" do
+            let
+              ledgerValid = Ledger.fromYaml """
+                  owner: John Doe
+                  entities:
+                    - id: anna
+                      accounts:
+                        - id: wallet
+                          balances:
+                            - utc: '2000-01-01 12:00'
+                              amounts: []
+                            - utc: '2010-01-01 12:00'
+                              amounts: [5 €]
+                    - id: ben
+                      accounts: [id: wallet]
+                  transactions:
+                    - utc: '2005-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 €
+                """
+              verification = ledgerValid >>= Ledger.verifyLedgerBalances
+
+            (isError verification) `shouldEqual` true
+
+
+          it "passes if verification balance is correct" do
+            let
+              ledgerValid = Ledger.fromYaml """
+                  owner: John Doe
+                  entities:
+                    - id: anna
+                      accounts:
+                        - id: wallet
+                          balances:
+                            - utc: '2000-01-01 12:00'
+                              amounts: []
+                            - utc: '2010-01-01 12:00'
+                              amounts: [3 €]
+                    - id: ben
+                      accounts: [id: wallet]
+                  transactions:
+                    - utc: '2005-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 €
+                """
+              verification = ledgerValid >>= Ledger.verifyLedgerBalances
+              expected = Ledger
+                { entities: (Just
+                    [ (Entity
+                        { accounts: (Just
+                          [(Account { balances: (Just
+                            [ (Balance
+                                (unsafePartial $ fromJust
+                                  $ stringToDateTime "2000-01-01 12:00")
+                                (fromFoldable []))
+                            , (Balance
+                                (unsafePartial $ fromJust
+                                  $ stringToDateTime "2010-01-01 12:00")
+                                (fromFoldable
+                                  [(Tuple
+                                    (Commodity "€")
+                                    (Amount (3 % 1) (Commodity "€")))
+                                  ]
+                                )
+                              )
+                            ])
+                          , commodityMap: (fromFoldable [])
+                          , id: "wallet" })])
+                        , id: "anna"
+                        , name: Nothing
+                        , note: Nothing
+                        , tags: Nothing
+                        , utc: Nothing
+                        })
+                    , (Entity
+                        { accounts: (Just
+                            [(Account
+                              { balances: Nothing
+                              , commodityMap: (fromFoldable [])
+                              , id: "wallet"
+                              })
+                            ])
+                        , id: "ben"
+                        , name: Nothing
+                        , note: Nothing
+                        , tags: Nothing
+                        , utc: Nothing
+                        })
+                    ])
+                , owner: "John Doe"
+                , transactions:
+                    [(Transaction
+                      { id: Nothing
+                      , note: Nothing
+                      , receipt: Nothing
+                      , transfers:
+                          [ (Transfer
+                              { amount: (Amount (3 % 1) (Commodity "€"))
+                              , from: "ben:wallet"
+                              , note: Nothing
+                              , to: "anna:wallet"
+                              , utc: Nothing
+                              })
+                          ]
+                      , utc: (Just (unsafePartial $ fromJust
+                          $ stringToDateTime "2005-01-01 12:00"))
+                      })
+                    ]
+                }
+
+            (show verification) `shouldEqualString`
+              (show (Ok expected :: Result String Ledger.Ledger) )
+
+
+          it "passes if verification balances are correct" do
+            let
+              ledgerValid = Ledger.fromYaml """
+                  owner: John Doe
+                  entities:
+                    - id: anna
+                      accounts:
+                        - id: wallet
+                          balances:
+                            - utc: '2000-01-01 12:00'
+                              amounts: []
+                            - utc: '2010-01-01 12:00'
+                              amounts: [3 €, 3 $]
+                    - id: ben
+                      accounts: [id: wallet]
+                  transactions:
+                    - utc: '2005-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 €
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 $
+                """
+              verification = ledgerValid >>= Ledger.verifyLedgerBalances
+
+            (isOk verification) `shouldEqual` true
+
+
+        it "subtracts a transfer from a balance map" do
+          let result = balanceMap `Ledger.subtractTransfer` transferSimple
+          (show result) `shouldEqualString`
+            (show (Map.fromFoldable
+              [ (Tuple "evil-corp"
+                  (Map.fromFoldable
+                    [(Tuple
+                      (Commodity "€")
+                      (Amount (-15 % 1) (Commodity "€")))
+                    ]))
+              , (Tuple "john"
+                  (Map.fromFoldable
+                    [(Tuple
+                      (Commodity "€")
+                      (Amount (100 % 1) (Commodity "€")))
+                    ]))
+              , (Tuple "john:giro"
+                  (Map.fromFoldable
+                    [(Tuple
+                      (Commodity "€")
+                      (Amount (15 % 1) (Commodity "€")))
+                    ]))
+              ]
+            ))
 
 
         it "fails if a transfer contains an empty field" do
