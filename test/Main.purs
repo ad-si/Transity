@@ -654,6 +654,40 @@ main = run [consoleReporter] do
             (isOk verification) `shouldEqual` true
 
 
+          it "passes if verification balances at different UTCs are correct" do
+            let
+              ledgerValid = Ledger.fromYaml """
+                  owner: John Doe
+                  entities:
+                    - id: anna
+                      accounts:
+                        - id: wallet
+                          balances:
+                            - utc: '2000-01-01 12:00'
+                              amounts: []
+                            - utc: '2006-01-01 12:00'
+                              amounts: [3 €]
+                            - utc: '2010-01-01 12:00'
+                              amounts: [3 €, 4 $]
+                    - id: ben
+                      accounts: [id: wallet]
+                  transactions:
+                    - utc: '2005-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 €
+                    - utc: '2007-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 4 $
+                """
+              verification = ledgerValid >>= Ledger.verifyLedgerBalances
+
+            (isOk verification) `shouldEqual` true
+
+
         it "subtracts a transfer from a balance map" do
           let
             result = balanceMap `Ledger.subtractTransfer` transferSimple

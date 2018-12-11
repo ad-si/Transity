@@ -150,7 +150,7 @@ verifyBalances balanceMap balancingTransfers =
                   )
               <> " from the calculated balance."
             )
-          else verifyBalances newBal transfTail
+          else verifyBalances balanceMap transfTail
         else
           verifyBalances newBal transfTail
     Nothing ->
