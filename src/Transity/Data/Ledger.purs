@@ -14,11 +14,10 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
 import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.Foldable (all)
+import Data.Foldable (all, find)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.List (index)
 import Data.HeytingAlgebra (not)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
@@ -133,11 +132,11 @@ verifyBalances balanceMap balancingTransfers =
       let
         newBal = balanceMap `addTransfer` transfHead
         getCommodity {amount: Amount _ commodity} = commodity
+        targetCom = getCommodity tfHeadRec
       in
         if tfHeadRec.note == Just "___BALANCE___"
         then
-          if not $ isAmountInMapZero
-              newBal tfHeadRec.from (getCommodity tfHeadRec)
+          if not $ isAmountInMapZero newBal tfHeadRec.from targetCom
           then Error(
               "Error:\nThe verification balance of account '" <> tfHeadRec.from
               <> "' on '" <> (fromMaybe "" $ tfHeadRec.utc <#> dateShowPretty)
@@ -145,7 +144,7 @@ verifyBalances balanceMap balancingTransfers =
               <> (Map.lookup tfHeadRec.from newBal
                     # fromMaybe Map.empty
                     # Map.values
-                    # (flip index) 0
+                    # find (\(Amount _ commodity) -> commodity == targetCom)
                     <#> (Amount.negate >>> Amount.showPretty)
                     # fromMaybe "ERROR: Amount is missing"
                   )

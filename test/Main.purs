@@ -37,6 +37,7 @@ import Test.Spec
   )
 import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Spec.Assertions.Aff (expectError)
+import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (run)
 import Transity.Data.Account (Account(..))
@@ -500,6 +501,36 @@ main = run [consoleReporter] do
               verification = ledgerValid >>= Ledger.verifyLedgerBalances
 
             (isError verification) `shouldEqual` true
+
+
+          it "fails if verification balance has too many entries" do
+            let
+              ledgerValid = Ledger.fromYaml """
+                  owner: John Doe
+                  entities:
+                    - id: anna
+                      accounts:
+                        - id: wallet
+                          balances:
+                            - utc: '2000-01-01 12:00'
+                              amounts: [0 €]
+                            - utc: '2010-01-01 12:00'
+                              amounts: [3 €, 5 $, 5 BTC]
+                    - id: ben
+                      accounts: [id: wallet]
+                  transactions:
+                    - utc: '2005-01-01 12:00'
+                      transfers:
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 3 €
+                        - from: ben:wallet
+                          to: anna:wallet
+                          amount: 5 $
+                """
+              verification = ledgerValid >>= Ledger.verifyLedgerBalances
+
+            (show verification) `shouldContain` "off by 5 BTC"
 
 
           it "passes if verification balance is correct" do
