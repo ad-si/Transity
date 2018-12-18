@@ -5,6 +5,7 @@ import Control.Bind (bind)
 import Data.Argonaut.Core (toString, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Array (take)
+import Data.BigInt (BigInt)
 import Data.Boolean (otherwise)
 import Data.Eq (class Eq, (/=), (==))
 import Data.Function (($))
@@ -14,7 +15,7 @@ import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
 import Data.Newtype
 import Data.Ord (class Ord)
-import Data.Rational (Rational, fromInt, toNumber, (%))
+import Data.Rational (Ratio)
 import Data.Result (Result(..), toEither)
 import Data.Ring ((-))
 import Data.Ring (negate) as Ring
@@ -31,6 +32,8 @@ import Transity.Utils
   , WidthRecord
   , widthRecordZero
   , ColorFlag(..)
+  , bigIntToNumber
+  , ratioZero
   )
 
 
@@ -61,7 +64,7 @@ decodeJsonCommodity json =
 --| E.g. "20 €", "10 cows", or "20 minutes"
 --| `amount = Amount (fromInt 20) (Commodity "€")
 
-data Amount = Amount Rational Commodity
+data Amount = Amount (Ratio BigInt) Commodity
 
 derive instance genericAmount :: Generic Amount _
 derive instance eqAmount :: Eq Amount
@@ -69,11 +72,12 @@ derive instance ordAmount :: Ord Amount
 
 instance semigroupAmount :: Semigroup Amount where
   append (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
-    | comA /= comB = Amount (fromInt 0) (Commodity "INVALID COMPUTATION")
+    | comA /= comB =
+        Amount ratioZero (Commodity "INVALID COMPUTATION")
     | otherwise = Amount (numA + numB) (Commodity comA)
 
 instance monoidAmount :: Monoid Amount where
-  mempty = Amount (fromInt 0) (Commodity "")
+  mempty = Amount ratioZero (Commodity "")
 
 instance showAmount :: Show Amount where
   show = genericShow
@@ -88,7 +92,8 @@ parseAmount string = do
   case take 2 amountFrags of
     [value, currency] -> case digitsToRational value of
       Nothing -> Error "Amount does not contain a valid value"
-      Just quantity -> Ok $ Amount quantity (Commodity currency)
+      Just quantity ->
+        Ok $ Amount quantity (Commodity currency)
     _ -> Error "Amount does not contain a value and a commodity"
 
 
@@ -100,7 +105,7 @@ decodeJsonAmount json = do
 
 subtract :: Amount -> Amount -> Amount
 subtract (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
-  | comA /= comB = Amount (0 % 1) (Commodity "INVALID COMPUTATION")
+  | comA /= comB = Amount ratioZero (Commodity "INVALID COMPUTATION")
   | otherwise = Amount (numA - numB) (Commodity comA)
 
 
@@ -111,13 +116,13 @@ negate (Amount num com) =
 
 isZero :: Amount -> Boolean
 isZero (Amount quantity _) =
-  quantity == 0 % 1
+  quantity == ratioZero
 
 
 toWidthRecord :: Amount -> WidthRecord
 toWidthRecord (Amount quantity (Commodity commodity)) =
   let
-    Tuple intPart fracPart = lengthOfNumParts (toNumber quantity)
+    Tuple intPart fracPart = lengthOfNumParts (bigIntToNumber quantity)
   in
     widthRecordZero
       { integer = intPart
@@ -137,6 +142,6 @@ showPretty = showPrettyAligned ColorNo 0 0 0
 
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> Amount -> String
 showPrettyAligned colorFlag intWid fracWid comWid (Amount val (Commodity com)) =
-  alignNumber colorFlag intWid fracWid (toNumber val)
+  alignNumber colorFlag intWid fracWid (bigIntToNumber val)
   <> " "
   <> padEnd comWid com

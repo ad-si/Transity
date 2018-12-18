@@ -5,6 +5,7 @@ import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith)
+import Data.BigInt (BigInt, fromInt, fromString)
 import Data.Eq ((/=))
 import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
 import Data.Foldable (fold)
@@ -15,7 +16,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
 import Data.Newtype (over)
-import Data.Rational (fromInt, (%))
+import Data.Rational (Ratio, (%))
 import Data.Ring (negate)
 import Data.Semigroup ((<>))
 import Data.Show (show)
@@ -56,7 +57,12 @@ import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
-  (digitsToRational, indentSubsequent, ColorFlag(..), stringToDateTime)
+  ( digitsToRational
+  , indentSubsequent
+  , ColorFlag(..)
+  , stringToDateTime
+  , ratioZero
+  )
 
 
 rmWhitespace :: String -> String
@@ -117,37 +123,40 @@ main = run [consoleReporter] do
   describe "Utils" do
     describe "digitsToRational" do
       it "converts 137 to 137/1" do
-        (digitsToRational "137") `shouldEqual` (Just (137 % 1))
+        (digitsToRational "137") `shouldEqual` (Just (fromInt 137 % fromInt 1))
 
       it "converts 13 to 13/1" do
-        (digitsToRational "13") `shouldEqual` (Just (13 % 1))
+        (digitsToRational "13") `shouldEqual` (Just (fromInt 13 % fromInt 1))
 
       it "converts 3 to 3/1" do
-        (digitsToRational "3") `shouldEqual` (Just (3 % 1))
+        (digitsToRational "3") `shouldEqual` (Just (fromInt 3 % fromInt 1))
 
       it "converts 0 to 0/1" do
-        (digitsToRational "0") `shouldEqual` (Just (0 % 1))
+        (digitsToRational "0") `shouldEqual` (Just (fromInt 0 % fromInt 1))
 
       it "converts 0.3 to 3/10" do
-        (digitsToRational "0.3") `shouldEqual` (Just (3 % 10))
+        (digitsToRational "0.3") `shouldEqual` (Just (fromInt 3 % fromInt 10))
 
       it "converts .3 to 3/10" do
-        (digitsToRational ".3") `shouldEqual` (Just (3 % 10))
+        (digitsToRational ".3") `shouldEqual` (Just (fromInt 3 % fromInt 10))
 
       it "converts 0.300 to 3/10" do
-        (digitsToRational "0.300") `shouldEqual` (Just (3 % 10))
+        (digitsToRational "0.300") `shouldEqual` (Just (fromInt 3 % fromInt 10))
 
       it "converts 2.1 to 21/10" do
-        (digitsToRational "2.1") `shouldEqual` (Just (21 % 10))
+        (digitsToRational "2.1") `shouldEqual` (Just (fromInt 21 % fromInt 10))
 
       it "converts 3.21 to 321/100" do
-        (digitsToRational "3.21") `shouldEqual` (Just (321 % 100))
+        (digitsToRational "3.21") `shouldEqual`
+          (Just (fromInt 321 % fromInt 100))
 
       it "converts 12.3456 to 123456/10000" do
-        (digitsToRational "12.3456") `shouldEqual` (Just (123456 % 10000))
+        (digitsToRational "12.3456") `shouldEqual`
+            (Just (fromInt 123456 % fromInt 10000))
 
       it "converts -0.3 to -3/10" do
-        (digitsToRational "-0.3") `shouldEqual` (Just (-3 % 10))
+        (digitsToRational "-0.3") `shouldEqual`
+          (Just (fromInt (-3) % fromInt 10))
 
       it "converts abc to Nothing" do
         (digitsToRational "abc") `shouldEqual` Nothing
@@ -155,8 +164,17 @@ main = run [consoleReporter] do
       let
         digits = "1." <> ("5" `power` 10)
 
-      it ("converts " <> digits <> " to Nothing (Int range overflow)") do
-        (digitsToRational digits) `shouldEqual` Nothing
+      it ("converts " <> digits <> " to valid Ratio BigInt") do
+        let
+          bigIntRatio :: Maybe (Ratio BigInt)
+          bigIntRatio = do
+           a <- fromString "3111111111"
+           b <- fromString "2000000000"
+           pure (a % b)
+
+        -- This would fail with a range overflow
+        -- if Ints instead of BigInt were used
+        (Just $ digitsToRational digits) `shouldEqual` (Just bigIntRatio)
 
 
   describe "Transity" do
@@ -164,19 +182,20 @@ main = run [consoleReporter] do
       describe "Amount" do
         it "pretty shows an amount" do
           let
-            actual = Amount.showPretty (Amount (fromInt 37) (Commodity "€"))
+            actual = Amount.showPretty
+              (Amount (fromInt 37 % fromInt 1) (Commodity "€"))
           actual `shouldEqual` "37 €"
 
         it "pretty shows and aligns an amount" do
           let
             actual = Amount.showPrettyAligned ColorNo 8 5 7
-              (Amount (37237 % 1000) (Commodity "EUR"))
+              (Amount (fromInt 37237 % fromInt 1000) (Commodity "EUR"))
           actual `shouldEqualString` "      37.237  EUR    "
 
         it "pretty shows and aligns an amount and hides fractional part" do
           let
             actual = Amount.showPrettyAligned ColorNo 8 5 7
-              (Amount (fromInt 37) (Commodity "EUR"))
+              (Amount (fromInt 37 % fromInt 1) (Commodity "EUR"))
           actual `shouldEqualString` "      37      EUR    "
 
 
@@ -197,33 +216,43 @@ main = run [consoleReporter] do
         it "can add an amount to a commodity map" do
           let
             expectedMap = Map.fromFoldable
-              [(Tuple (Commodity "€") (Amount (fromInt 37) (Commodity "€")))]
+              [(Tuple
+                  (Commodity "€")
+                  (Amount (fromInt 37 % fromInt 1) (Commodity "€")))]
             emptyMap = Map.empty :: CommodityMap
-            amount = Amount (fromInt 37) (Commodity "€")
+            amount = Amount (fromInt 37 % fromInt 1) (Commodity "€")
             actualMap = emptyMap `CommodityMap.addAmountToMap` amount
           actualMap `shouldEqual` expectedMap
 
         it "can subtract an amount from a commodity map" do
           let
             expectedMap = Map.fromFoldable
-              [(Tuple (Commodity "€") (Amount (fromInt 37) (Commodity "€")))]
+              [(Tuple
+                  (Commodity "€")
+                  (Amount (fromInt 37 % fromInt 1) (Commodity "€")))]
             initialMap = Map.fromFoldable
-              [(Tuple (Commodity "€") (Amount (fromInt 42) (Commodity "€")))]
-            amount = Amount (fromInt 5) (Commodity "€")
+              [(Tuple
+                  (Commodity "€")
+                  (Amount (fromInt 42 % fromInt 1) (Commodity "€")))]
+            amount = Amount (fromInt 5 % fromInt 1) (Commodity "€")
             actualMap = initialMap `CommodityMap.subtractAmountFromMap` amount
           actualMap `shouldEqual` expectedMap
 
         it "can check if a commodity map as only zero of each commodity" do
           let commodityMapZero = Map.fromFoldable
-                [ (Tuple (Commodity "€") (Amount (0 % 1) (Commodity "€")))
-                , (Tuple (Commodity "$") (Amount (0 % 1) (Commodity "$")))
+                [ (Tuple (Commodity "€") (Amount ratioZero (Commodity "€")))
+                , (Tuple (Commodity "$") (Amount ratioZero (Commodity "$")))
                 ]
           (isCommodityMapZero commodityMapZero) `shouldEqual` true
 
 
         let commodityMap = Map.fromFoldable
-              [ (Tuple (Commodity "EUR") (Amount (fromInt 2) (Commodity "EUR")))
-              , (Tuple (Commodity "$") (Amount (fromInt 12) (Commodity "$")))
+              [ (Tuple
+                  (Commodity "EUR")
+                  (Amount (fromInt 2 % fromInt 1) (Commodity "EUR")))
+              , (Tuple
+                  (Commodity "$")
+                  (Amount (fromInt 12 % fromInt 1) (Commodity "$")))
               ]
 
         it "pretty shows a commodity map" do
@@ -352,13 +381,13 @@ main = run [consoleReporter] do
                     (Map.fromFoldable
                       [(Tuple
                           (Commodity "€")
-                          (Amount (100 % 1) (Commodity "€")))
+                          (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
                       ]))
                     ])
                 , commodityMap: (Map.fromFoldable
                     [(Tuple
                       (Commodity "€")
-                      (Amount (100 % 1) (Commodity "€")))
+                      (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
                     ])
                 , id: "John:wallet"
                 })
@@ -380,7 +409,9 @@ main = run [consoleReporter] do
 
           (rmWhitespace $ show transfers) `shouldEqualString` (rmWhitespace """
               [(Transfer
-                  { amount: (Amount 100 % 1 (Commodity "€"))
+                  { amount: (Amount
+                              fromString "100" % fromString "1"
+                              (Commodity "€"))
                   , from: "John:wallet"
                   , note: Nothing
                   , to: "_void_"
@@ -426,10 +457,10 @@ main = run [consoleReporter] do
             balMap = fromFoldable [Tuple "john" $ fromFoldable
               [ (Tuple
                   (Commodity "€")
-                  (Amount (100 % 1) (Commodity "€")))
+                  (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
               , (Tuple
                   (Commodity "$")
-                  (Amount (0 % 1) (Commodity "$")))
+                  (Amount ratioZero (Commodity "$")))
               ]]
             isZeroUSD = Ledger.isAmountInMapZero balMap "john" (Commodity "$")
             isZeroEUR = Ledger.isAmountInMapZero balMap "john" (Commodity "€")
@@ -445,20 +476,20 @@ main = run [consoleReporter] do
               { utc: stringToDateTime "2014-12-24"
               , from: "john:wallet"
               , to: "anna"
-              , amount: Amount (fromInt 15) (Commodity "€")
+              , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
               , note: Just "A little note"
               }
             expected = fromFoldable
               [ Tuple "anna:_default_" $ fromFoldable
                   [ (Tuple
                       (Commodity "€")
-                      (Amount (15 % 1) (Commodity "€")))
+                      (Amount (fromInt 15 % fromInt 1) (Commodity "€")))
                   ]
               , Tuple "john" $ fromFoldable []
               , Tuple "john:wallet" $ fromFoldable
                   [ (Tuple
                       (Commodity "€")
-                      (Amount (-15 % 1) (Commodity "€")))
+                      (Amount (fromInt (-15) % fromInt 1) (Commodity "€")))
                   ]
               ]
             actual = emptyMap `Ledger.addTransfer` transfer
@@ -571,7 +602,9 @@ main = run [consoleReporter] do
                                 (fromFoldable
                                   [(Tuple
                                     (Commodity "€")
-                                    (Amount (3 % 1) (Commodity "€")))
+                                    (Amount
+                                      (fromInt 3 % fromInt 1)
+                                      (Commodity "€")))
                                   ]
                                 )
                               )
@@ -607,7 +640,9 @@ main = run [consoleReporter] do
                       , receipt: Nothing
                       , transfers:
                           [ (Transfer
-                              { amount: (Amount (3 % 1) (Commodity "€"))
+                              { amount: (Amount
+                                  (fromInt 3 % fromInt 1)
+                                  (Commodity "€"))
                               , from: "ben:wallet"
                               , note: Nothing
                               , to: "anna:wallet"
@@ -696,19 +731,19 @@ main = run [consoleReporter] do
                   (Map.fromFoldable
                     [(Tuple
                       (Commodity "€")
-                      (Amount (-15 % 1) (Commodity "€")))
+                      (Amount (fromInt (-15) % fromInt 1) (Commodity "€")))
                     ]))
               , (Tuple "john"
                   (Map.fromFoldable
                     [(Tuple
                       (Commodity "€")
-                      (Amount (100 % 1) (Commodity "€")))
+                      (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
                     ]))
               , (Tuple "john:giro"
                   (Map.fromFoldable
                     [(Tuple
                       (Commodity "€")
-                      (Amount (15 % 1) (Commodity "€")))
+                      (Amount (fromInt 15 % fromInt 1) (Commodity "€")))
                     ]))
               ]
 

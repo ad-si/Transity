@@ -1,5 +1,7 @@
 module ApproxRatio where
 
+-- import Data.BigInt
+--
 -- TODO: Implement (cloned from Haskell's approxRational)
 -- simplest x y =
 --   let
@@ -31,6 +33,6 @@ module ApproxRatio where
 --                      else (q * n'' + d'') % n''
 
 
--- approxRational :: Number -> Number -> Rational
+-- approxRational :: Number -> Number -> Ratio BigInt
 -- approxRational rat eps  =
 --   simplest (rat - eps) (rat + eps)

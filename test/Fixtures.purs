@@ -2,10 +2,11 @@ module Test.Fixtures where
 
 import Prelude ((<>), ($))
 
+import Data.BigInt (fromInt)
 import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Rational (fromInt, (%))
+import Data.Rational ((%))
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
@@ -24,7 +25,7 @@ transferMinimal = Transfer
   { utc: Nothing
   , from: "john:giro"
   , to: "evil-corp"
-  , amount: Amount (fromInt 15) (Commodity "€")
+  , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
   , note: Nothing
   }
 
@@ -33,7 +34,7 @@ transferSimple = Transfer
   { utc: stringToDateTime "2014-12-24"
   , from: "john:giro"
   , to: "evil-corp"
-  , amount: Amount (fromInt 15) (Commodity "€")
+  , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
   , note: Just "A little note"
   }
 
@@ -60,7 +61,7 @@ note: A little note
 transferSimpleShowed :: String
 transferSimpleShowed = """
 (Transfer
-  { amount: (Amount 15 % 1 (Commodity "€"))
+  { amount: (Amount fromString "15" % fromString "1" (Commodity "€"))
   , from: "john:giro"
   , note: (Just "A little note")
   , to: "evil-corp"
@@ -83,14 +84,14 @@ transferSimpleB = Transfer
   { utc: stringToDateTime "2007-03-29"
   , from: "evil-corp"
   , to: "flower-power"
-  , amount: Amount (fromInt 7) (Commodity "€")
+  , amount: Amount (fromInt 7 % fromInt 1) (Commodity "€")
   , note: Just "Bought some flowers"
   }
 
 transferSimpleBShowed :: String
 transferSimpleBShowed = """
 (Transfer
-  { amount: (Amount 7 % 1 (Commodity "USD"))
+  { amount: (Amount fromString "7" % fromString "1" (Commodity "USD"))
   , from: "carlos:wallet"
   , note: (Just "Bought some flowers")
   , to: "flower-power"
@@ -286,9 +287,9 @@ balanceShowed = """
     (Date (Year 2017) April (Day 2))
     (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
   (fromFoldable
-    [ (Tuple (Commodity "$") (Amount -8 % 1 (Commodity "$")))
-    , (Tuple (Commodity "BTC") (Amount 9 % 1 (Commodity "BTC")))
-    , (Tuple (Commodity "€") (Amount 7 % 1 (Commodity "€")))
+    [ (Tuple (Commodity "$") (Amount fromString "-8" % fromString "1" (Commodity "$")))
+    , (Tuple (Commodity "BTC") (Amount fromString "9" % fromString "1" (Commodity "BTC")))
+    , (Tuple (Commodity "€") (Amount fromString "7" % fromString "1" (Commodity "€")))
     ]))
 """
 
@@ -297,7 +298,7 @@ commodityMap :: CommodityMap
 commodityMap = fromFoldable
   [(Tuple
     (Commodity "€")
-    (Amount (100 % 1) (Commodity "€")))
+    (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
   ]
 
 
@@ -314,7 +315,7 @@ account = Account
       [ (Balance
         (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")
         (fromFoldable
-          [(Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€")))]))
+          [(Tuple (Commodity "€") (Amount (fromInt 100 % fromInt 1) (Commodity "€")))]))
       ]
   }
 
@@ -341,7 +342,9 @@ accountShowed = """
             (Date (Year 2017) April (Day 2))
             (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
           (fromFoldable
-            [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+            [(Tuple
+                (Commodity "€")
+                (Amount fromString "100" % fromString "1" (Commodity "€")))]))
       , (Balance
           (DateTime
             (Date (Year 2014) May (Day 1))
@@ -349,8 +352,12 @@ accountShowed = """
           (fromFoldable
             [ (Tuple
                 (Commodity "evil_machine")
-                (Amount 1 % 1 (Commodity "evil_machine")))
-            , (Tuple (Commodity "€") (Amount 200 % 1 (Commodity "€")))
+                (Amount
+                    fromString "1" % fromString "1"
+                    (Commodity "evil_machine")))
+            , (Tuple
+                (Commodity "€")
+                (Amount fromString "200" % fromString "1" (Commodity "€")))
             ]))
       ])
   , commodityMap: (fromFoldable [])
@@ -383,7 +390,12 @@ entityShowed = """
                   (Date (Year 2017) April (Day 2))
                   (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
                 (fromFoldable
-                  [(Tuple (Commodity "€") (Amount 100 % 1 (Commodity "€")))]))
+                  [ (Tuple
+                      (Commodity "€")
+                      (Amount
+                        fromString "100" % fromString "1"
+                        (Commodity "€")))
+                  ]))
             , (Balance
                 (DateTime
                   (Date (Year 2014) May (Day 1))
@@ -391,8 +403,14 @@ entityShowed = """
                 (fromFoldable
                   [ (Tuple
                       (Commodity "evil_machine")
-                      (Amount 1 % 1 (Commodity "evil_machine")))
-                  , (Tuple (Commodity "€") (Amount 200 % 1 (Commodity "€")))
+                      (Amount
+                        fromString "1" % fromString "1"
+                        (Commodity "evil_machine")))
+                  , (Tuple
+                      (Commodity "€")
+                      (Amount
+                        fromString "200" % fromString "1"
+                        (Commodity "€")))
                   ]))
             ])
         , commodityMap: (fromFoldable [])

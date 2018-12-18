@@ -23,7 +23,6 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
-import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
 import Data.String (joinWith, split, Pattern(..), Replacement(..), replace)
@@ -56,6 +55,7 @@ import Transity.Utils
   , dateShowPretty
   , widthRecordZero
   , ColorFlag(..)
+  , bigIntToNumber
   )
 
 
@@ -325,7 +325,7 @@ showBalance colorFlag (Ledger ledger) =
 getEntries :: Ledger -> Maybe (Array (Array String))
 getEntries (Ledger {transactions, entities}) = do
   let
-    getQunty (Amount quantity _ ) = show $ toNumber quantity
+    getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
 
     splitTransfer :: Transfer -> Maybe (Array (Array String))

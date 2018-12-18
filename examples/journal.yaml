@@ -154,7 +154,14 @@ transactions:
     transfers:
       - from: ben
         to: john:giro
-        amount: 1.432592 BTC
+        amount: 0.434114 BTC
+
+  - utc: '2015-03-12'
+    note: More financial support in Bitcoin
+    transfers:
+      - from: ben
+        to: john:giro
+        amount: 60.318 BTC
 
   - utc: '2015-07-05 17:13'
     note: Food

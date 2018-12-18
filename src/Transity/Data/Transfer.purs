@@ -2,7 +2,7 @@ module Transity.Data.Transfer where
 
 import Prelude
   ( class Eq, class Ord, class Show, bind, compare, map, pure
-  , (-), (#), ($), (<>), (==), (>>=)
+  , (#), ($), (<>), (==), (>>=)
   )
 
 import Control.Monad.Except (runExcept)
@@ -11,6 +11,7 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
+import Data.BigInt (fromInt)
 import Data.DateTime (DateTime)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
@@ -18,7 +19,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
-import Data.Rational (fromInt)
+import Data.Rational ((%))
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Ring (negate)
 import Data.String (length)
@@ -28,7 +29,13 @@ import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
-import Transity.Utils (ColorFlag(..), dateShowPretty, getFieldVerbose, stringToDateTime)
+import Transity.Utils
+  ( ColorFlag(..)
+  , dateShowPretty
+  , getFieldVerbose
+  , stringToDateTime
+  , ratioZero
+  )
 
 
 newtype Transfer = Transfer
@@ -84,7 +91,7 @@ transferZero = Transfer
   { utc: Nothing
   , from: ""
   , to: ""
-  , amount: Amount (fromInt 0) (Commodity "")
+  , amount: Amount ratioZero (Commodity "")
   , note: Nothing
   }
 
@@ -106,7 +113,7 @@ verifyTransfer json transfer@(Transfer transRec) =
       then Error $ "Field 'from' in " <> json <>  " must not be empty" else
     if (length transRec.to == 0)
       then Error $ "Field 'to' in " <> json <>  " must not be empty" else
-    if (quantity == (fromInt 0))
+    if (quantity == (fromInt 0 % fromInt 1))
       then Error $ "Field 'amount' in " <> json <>  " must not be 0"
     else Ok transfer
 

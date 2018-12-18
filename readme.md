@@ -53,6 +53,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [x] Initial balances
 - [x] High precision timestamps
   - [ ] Including nanoseconds
+- [x] BigInt rational numbers to eliminate rounding errors
 - [ ] Support for all states of transaction life cycle
   1. Request - Request to exchange a commodity
   1. Offer - Specification of commodity & expected trade item

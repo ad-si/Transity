@@ -1,10 +1,11 @@
 {
   "name": "transity",
-  "set": "psc-0.12.0-20180909t1546",
+  "set": "psc-0.12.1-20181218t2112",
   "source": "https://github.com/feramhq/package-sets.git",
   "depends": [
     "ansi",
     "argonaut-codecs",
+    "bigints",
     "console",
     "debug",
     "either",

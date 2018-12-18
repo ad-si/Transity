@@ -2,7 +2,7 @@ module Transity.Utils where
 
 import Prelude
   ( class Eq, bind, map, max, pure, show
-  , (#), ($), (+), (-), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>)
+  , (#), ($), (+), (-), (/), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>)
   )
 
 import Ansi.Codes (Color(..))
@@ -15,12 +15,12 @@ import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Result (Result(..), fromEither)
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
-import Data.Int (fromString, pow)
+import Data.BigInt (BigInt, fromInt, fromString, pow, toNumber)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
 import Data.Monoid (power)
 import Data.Nullable (Nullable, toMaybe)
-import Data.Rational (Rational, (%))
+import Data.Rational (Ratio, numerator, denominator, (%))
 import Data.String
   ( indexOf
   , length
@@ -146,7 +146,7 @@ testNumberChar char =
   in elem char digitArray
 
 
-digitsToRational :: String -> Maybe Rational
+digitsToRational :: String -> Maybe (Ratio BigInt)
 digitsToRational stringOfDigits =
   let
     isNumChar = all testNumberChar (toCharArray stringOfDigits)
@@ -157,9 +157,19 @@ digitsToRational stringOfDigits =
         numeratorStr = replaceAll (Pattern ".") (Replacement "") stringOfDigits
         numStrLength = length numeratorStr
         index = fromMaybe numStrLength (indexOf (Pattern ".") stringOfDigits)
-        denominator =  10 `pow` (numStrLength - index)
+        denominator = (fromInt 10) `pow` (fromInt $ numStrLength - index)
       numerator <- fromString numeratorStr
       pure (numerator % denominator)
+
+
+bigIntToNumber :: Ratio BigInt -> Number
+bigIntToNumber x =
+  toNumber (numerator x) / toNumber (denominator x)
+
+
+ratioZero :: Ratio BigInt
+ratioZero =
+  fromInt 0 % fromInt 1
 
 
 getPadding :: Int -> String -> String

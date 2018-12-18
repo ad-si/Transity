@@ -14,9 +14,14 @@
     "test": "tests"
   },
   "keywords": [
-    "transaction",
+    "accounting",
+    "cli",
+    "command-line-tool",
     "ledger",
-    "purescript"
+    "money",
+    "plaintext-accounting",
+    "purescript",
+    "tui"
   ],
   "author": "Adrian Sieber",
   "license": "GPL-3.0-or-later",
@@ -25,6 +30,7 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
+    "big-integer": "^1.6.40",
     "js-yaml": "^3.12.0",
     "psc-package-bin-simple": "^1.0.4",
     "pulp": "12.3.0",
