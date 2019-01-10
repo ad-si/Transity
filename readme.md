@@ -1,12 +1,16 @@
 # Transity
 
 [![Build Status][]][travis]
+[![Join irc.freenode.net on IRCCloud][]][irccloud]
 
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 [Build Status]: https://travis-ci.com/feramhq/transity.svg?token=ipYeEBNjb9wCxCwPq6aS&branch=master
 [travis]: https://travis-ci.com/feramhq/transity
+
+[Join irc.freenode.net on IRCCloud]: https://img.shields.io/badge/IRC-%23transity-1e72ff.svg?style=flat
+[irccloud]: https://www.irccloud.com/invite?channel=%23transity&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1
 
 <img
   src='images/screenshot-balance.svg'
