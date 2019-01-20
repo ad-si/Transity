@@ -37,7 +37,11 @@
     "purescript": "0.12.0"
   },
   "optionalDependencies": {
+    "converter": "0.0.5",
+    "csvnorm": "^0.6.0",
     "inquirer": "^6.2.0",
-    "nightmare": "^3.0.1"
+    "nightmare": "^3.0.1",
+    "nightmare-inline-download": "^0.2.2",
+    "tempy": "^0.2.1"
   }
 }
