@@ -1,12 +1,18 @@
 # Transity
 
+[![Join the chat at https://gitter.im/feramhq/transity](https://badges.gitter.im/feramhq/transity.svg)](https://gitter.im/feramhq/transity?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Build Status][]][travis]
+[![Join irc.freenode.net on IRCCloud][]][irccloud]
 
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 [Build Status]: https://travis-ci.com/feramhq/transity.svg?token=ipYeEBNjb9wCxCwPq6aS&branch=master
 [travis]: https://travis-ci.com/feramhq/transity
+
+[Join irc.freenode.net on IRCCloud]: https://img.shields.io/badge/IRC-%23transity-1e72ff.svg?style=flat
+[irccloud]: https://www.irccloud.com/invite?channel=%23transity&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1
 
 <img
   src='images/screenshot-balance.svg'
@@ -18,8 +24,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 - [List of Features / TODOs](#list-of-features--todos)
 - [Installation](#installation)
-  * [From npm](#from-npm)
-  * [From Source](#from-source)
+- [License](#license)
 - [Usage](#usage)
 - [Journal File Format](#journal-file-format)
 - [Plotting](#plotting)
@@ -46,13 +51,15 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [x] No misuse of accounts as categories / tags => direct support for them
 - [ ] No hard-coded asset / liability connotation as it is viewpoint dependent
   => Choose viewpoint when printing the balance
-- [x] Easily editable & processable file format based on [YAML](http://yaml.org)
+- [x] Easily editable & processable file format based on [YAML]
 - Clear separation between
   - [x] Physical account (e.g. wallet, bank account)
   - [x] Entities (e.g. my mum, a company)
   - [ ] Purpose of transaction (food, travel)
+- [x] Initial balances
 - [x] High precision timestamps
   - [ ] Including nanoseconds
+- [x] BigInt rational numbers to eliminate rounding errors
 - [ ] Support for all states of transaction life cycle
   1. Request - Request to exchange a commodity
   1. Offer - Specification of commodity & expected trade item
@@ -63,7 +70,9 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [ ] Differentiation between transfers, transactions & exchanges
   - [ ] Special syntax for exchanges
 - [ ] Meta data for all entities (transactions, accounts, entities, …)
-- [x] Verification of data consistency
+- [x] Verifies sole use of predefined entities
+- [x] Checks match with verification balances
+- [ ] Duplicate detection
 - [ ] CSV import
 - [ ] Link to receipt file
 - [ ] Dashboard
@@ -72,7 +81,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [x] [Gnuplot] (for trends)
   - [ ] [Graphviz] (for account / entity relations)
   - [ ] [JS-Sequence-Diagrams] (sequence of transactions)
-  - [ ] [(H)ledger Format] (for using (H)ledger exclusive features)
+  - [x] [(H)ledger Format] (for using (H)ledger exclusive features)
 - Additional features for crypto currencies
   - TODO: Think about what features exactly
 - [ ] Multi file support
@@ -84,6 +93,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   - [ ] Define which are allowed / prohibited for each account
 - [ ] Generate EPC QR Codes for transfers
 
+[YAML]: http://yaml.org
 [Gnuplot]: http://www.gnuplot.info
 [Graphviz]: https://graphviz.org
 [JS-Sequence-Diagrams]: https://bramp.github.io/js-sequence-diagrams
@@ -92,20 +102,19 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 ## Installation
 
-### From npm
-
-```shell
-npm install --global transity
-```
+Go to [cliapp.store/apps/transity] to receive Transity.
 
 
-### From Source
+## License
 
-```shell
-git clone https://github.com/feramhq/transity
-cd transity
-npm link
-```
+Transity is licensed under GPL-3.0-or-later and
+can be used free of charge at non-profits and for evaluation.
+For long-term usage, however, please make sure to purchase a license
+at [cliapp.store/apps/transity].
+
+For including Transity in proprietary closed source products, please contact me.
+
+[cliapp.store/apps/transity]: https://cliapp.store/apps/transity
 
 
 ## Usage
@@ -121,14 +130,19 @@ $ transity balance examples/journal.yaml
                  50015        €
       good-inc    -100        €
   grocery-shop      11.97     €
-     john:giro      50        $
+  john             371.04     €
+                    50        $
+                     1.432592 BTC
+      :default     219.99     €
+          giro      50        $
                      1.432592 BTC
                     85        €
-   john:wallet      66.05     €
+        wallet      66.05     €
 ```
 
 If linked modules aren't exposed in your path you can also run
-```
+
+```shell
 cli/main.js balance examples/journal.yaml
 ```
 
@@ -144,6 +158,7 @@ Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
 transactions        All transcations and their transfers
+transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals
 entries-by-account  All individual deposits & withdrawals grouped by account
 gplot               Code and data for gnuplot impulse diagram
@@ -151,6 +166,12 @@ gplot               Code and data for gnuplot impulse diagram
 gplot-cumul         Code and data for cumuluative gnuplot step chart
                     to visualize balance of all accounts
 ```
+
+<img
+  src='images/screenshot-transfers.svg'
+  alt='Screenshot Transfers'
+  width='600'
+/>
 
 
 ## Journal File Format
@@ -165,25 +186,25 @@ commodities:
     alias:
       - EUR
     note: Currency used in the European Union
-    utc: 2017-04-02 19:33:53
+    utc: '2017-04-02 19:33:53'
 
 entities:
   - id: anna
     name: Anna Smith
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     tags:
       - person
     accounts:
       - id: wallet
         name: Wallet
         note: Anna's black wallet
-        utc: 2017-04-02 19:33:28
+        utc: '2017-04-02 19:33:28'
         tags:
           - wallet
 
   - id: evil-corp
     name: Evil Corporation
-    utc: 2017-04-02 19:33:28
+    utc: '2017-04-02 19:33:28'
     note: The Evil Corporation in the United States of Evil
     tags:
       - company
@@ -191,11 +212,11 @@ entities:
 transactions:
   - title: Purchase of evil machine
     transfers:
-      - utc: 2017-02-17
+      - utc: '2017-02-17'
         from: anna
         to: evil-corp
         amount: 50000 €
-      - utc: 2017-02-17
+      - utc: '2017-02-17'
         from: evil-corp
         to: anna
         amount: 1 evil-machine
@@ -231,34 +252,11 @@ transity gplot-cumul examples/journal.yaml \
 
 ## Import from Ledger CLI
 
-Update the ledger filepath in following command,
-copy it into your CLI and execute it.
+Exeute the include ledger2transity script:
 
-```sh
-bash -c '{ \
-  echo date,id,from,to,amount,note,tags; \
-  ledger \
-    --file ledgers/main.ledger \
-    --csv-format \'%(
-        format_date(date,"%Y-%m-%d")),%(
-        quoted(code)),%(
-        quoted("")),%(
-        quoted(payee)),%(quoted(display_amount)),%(
-        quoted(join(trim(xact.note | "{{PLACEHOLDER}}")))),%(
-        quoted("- " + display_account + "\\\\n- " +
-          join(trim(note | "{{PLACEHOLDER}}")))
-        )\n\' \
-    --sort date \
-    csv; \
-} \
-| sed "s/{{PLACEHOLDER}}//g" \
-| sed \'s/\\\\"/""/g\' \
-> transactions.csv'
+```shell
+./ledger2transity.sh examples/hledger.journal > transactions.csv
 ```
-
-(The ugly `{{PLACEHOLDER}}` workaround is necessary to make it work
-if no note is specified for a transaction,
-the second `sed` command fixes escaping of `"` in CSV)
 
 Convert `transactions.csv` to YAML with e.g. [browserling.com/tools/csv-to-yaml]
 
@@ -409,6 +407,34 @@ transity entries examples/journal.yaml
 
 [Report Scripts for Ledger CLI with Gnuplot]:
   https://www.sundialdreams.com/report-scripts-for-ledger-cli-with-gnuplot
+
+
+### Performance
+
+Measured with hyperfine including 3 warmups on an early 2015 MacBook Pro.
+
+*For a journal file with around 2000 entries:*
+
+Transity:
+```txt
+Benchmark #1: transity balance journals/main.yaml
+  Time (mean ± σ):      1.287 s ±  0.021 s    [User: 1.790 s, System: 0.140 s]
+  Range (min … max):    1.250 s …  1.324 s    10 runs
+```
+
+Hledger:
+```txt
+Benchmark #1: hledger -f test.ledger balance
+  Time (mean ± σ):     409.6 ms ±   6.1 ms    [User: 366.6 ms, System: 28.5 ms]
+  Range (min … max):   398.8 ms … 417.6 ms    10 runs
+```
+
+Ledger:
+```txt
+Benchmark #1: ledger -f test.ledger balance
+  Time (mean ± σ):      76.3 ms ±   9.1 ms    [User: 62.7 ms, System: 9.4 ms]
+  Range (min … max):    65.1 ms … 101.8 ms    28 runs
+```
 
 
 ## Ideas
