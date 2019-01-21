@@ -427,6 +427,13 @@ Benchmark #1: hledger -f test.ledger balance
   Range (min … max):   398.8 ms … 417.6 ms    10 runs
 ```
 
+Ledger:
+```txt
+Benchmark #1: ledger -f test.ledger balance
+  Time (mean ± σ):      76.3 ms ±   9.1 ms    [User: 62.7 ms, System: 9.4 ms]
+  Range (min … max):    65.1 ms … 101.8 ms    28 runs
+```
+
 
 ## Ideas
 
