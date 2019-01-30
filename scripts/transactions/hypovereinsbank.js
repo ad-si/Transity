@@ -10,10 +10,12 @@ const converter = require('converter')
 const inquirer = require('inquirer')
 
 const {
-  toDayMonthYear,
+  toDdotMdotYYYY,
   keysToEnglish,
   noteToAccount,
 } = require('../helpers.js')
+
+const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 nightmareDownloadManager(Nightmare)
 
@@ -123,10 +125,10 @@ async function downloadRange (options = {}) {
   )
   await nightmare
     .insert(startInputSelector, '')
-    .insert(startInputSelector, toDayMonthYear(startDate))
+    .insert(startInputSelector, toDdotMdotYYYY(startDate))
 
     .insert(endInputSelector, '')
-    .insert(endInputSelector, toDayMonthYear(endDate))
+    .insert(endInputSelector, toDdotMdotYYYY(endDate))
 
     .click('#j_id_12')
 
@@ -184,8 +186,8 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await inquirer
-    .prompt([
+  const answers = await
+    prompt([
       {
         type: 'input',
         name: 'username',

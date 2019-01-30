@@ -5,6 +5,7 @@ const Nightmare = require('nightmare')
 
 const {prettyPrint} = require('../helpers.js')
 
+const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
   ? console.warn
   : () => {}
@@ -58,8 +59,7 @@ async function getBalance (options = {}) {
 }
 
 
-inquirer
-  .prompt([
+prompt([
     {
       type: 'input',
       name: 'username',

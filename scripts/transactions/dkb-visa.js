@@ -15,6 +15,8 @@ const {
   noteToAccount,
 } = require('../helpers.js')
 
+const prompt = inquirer.createPromptModule({ output: process.stderr })
+
 nightmareDownloadManager(Nightmare)
 
 
@@ -200,8 +202,8 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await inquirer
-    .prompt([
+  const answers = await
+    prompt([
       {
         type: 'input',
         name: 'username',

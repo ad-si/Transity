@@ -8,7 +8,7 @@ const tempy = require('tempy')
 const csvnorm = require('csvnorm')
 const converter = require('converter')
 
-const {toDayMonthYear} = require('../helpers.js')
+const {toDdotMdotYYYY} = require('../helpers.js')
 
 nightmareDownloadManager(Nightmare)
 
@@ -123,10 +123,10 @@ async function downloadRange (options = {}) {
   )
   await nightmare
     .insert(startInputSelector, '')
-    .insert(startInputSelector, toDayMonthYear(startDate))
+    .insert(startInputSelector, toDdotMdotYYYY(startDate))
 
     .insert(endInputSelector, '')
-    .insert(endInputSelector, toDayMonthYear(endDate))
+    .insert(endInputSelector, toDdotMdotYYYY(endDate))
 
     .click('.bcontinue input[type=submit]')
     .refresh() // Necessary to update the list

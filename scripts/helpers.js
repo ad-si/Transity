@@ -3,8 +3,8 @@ module.exports = {
   noteToAccount,
   prettyFormat,
   prettyPrint,
-  toDayMonthYear,
   toDdotMdotYYYY,
+  toDDdotMMdotYYYY,
 }
 
 
@@ -19,7 +19,7 @@ function prettyPrint (account, balance) {
 }
 
 
-function toDayMonthYear (date) {
+function toDdotMdotYYYY (date) {
   return [
     date.getUTCDate(),
     date.getUTCMonth() + 1,
@@ -28,9 +28,9 @@ function toDayMonthYear (date) {
 }
 
 
-function toDdotMdotYYYY (date) {
+function toDDdotMMdotYYYY (date) {
   return [
-    date.getUTCDate(),
+    ('0' + String(date.getUTCDate())).slice(-2),
     ('0' + String(date.getUTCMonth() + 1)).slice(-2),
     date.getUTCFullYear(),
   ].join('.')

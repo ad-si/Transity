@@ -10,10 +10,12 @@ const converter = require('converter')
 const inquirer = require('inquirer')
 
 const {
-  toDayMonthYear,
+  toDDdotMMdotYYYY,
   keysToEnglish,
   noteToAccount,
 } = require('../helpers.js')
+
+const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 nightmareDownloadManager(Nightmare)
 
@@ -64,15 +66,15 @@ function normalizeAndPrint (filePathTemp) {
         const transfersObj = transaction.amount.startsWith('-')
           ? {
               transfers: [{
-                from: 'dkb:visa',
-                to: noteToAccount(transaction.note),
+                from: 'dkb:giro',
+                to: noteToAccount(note),
                 amount: amount.slice(1),
               }]
             }
           : {
               transfers: [{
-                from: noteToAccount(transaction.note),
-                to: 'dkb:visa',
+                from: noteToAccount(note),
+                to: 'dkb:giro',
                 // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
                 amount: transaction.amount === '0,00' ? '0 €' : amount,
               }]
@@ -83,6 +85,10 @@ function normalizeAndPrint (filePathTemp) {
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
+      .sort((a, b) =>
+        // Oldest first
+        String(a.utc).localeCompare(String(b.utc), 'en')
+      )
 
     const yamlString = yaml
       .dump(transactions)
@@ -105,7 +111,6 @@ async function downloadRange (options = {}) {
   const {
     nightmare,
     filePathTemp,
-    // type = 'CSV-CAMT-Format',
     startDate,
     endDate,
   } = options
@@ -130,12 +135,13 @@ async function downloadRange (options = {}) {
 
   await nightmare
     .insert(startInputSelector, '')
-    .insert(startInputSelector, toDayMonthYear(startDate))
+    .insert(startInputSelector, toDDdotMMdotYYYY(startDate))
 
     .insert(endInputSelector, '')
-    .insert(endInputSelector, toDayMonthYear(endDate))
+    .insert(endInputSelector, toDDdotMMdotYYYY(endDate))
 
     .click('#searchbutton')
+    .refresh() // Necessary to avoid race condition
 
 
   log(`Download CSV file to ${filePathTemp}`)
@@ -195,8 +201,8 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await inquirer
-    .prompt([
+  const answers = await
+    prompt([
       {
         type: 'input',
         name: 'username',
@@ -213,7 +219,7 @@ async function main () {
     username: answers.username,
     password: answers.password,
     shallShowBrowser: true,
-    numberOfDays: 300,
+    numberOfDays: 1095,
     // startDate: new Date('2016-01-01'),
   })
 }
