@@ -10,6 +10,7 @@ const converter = require('converter')
 const inquirer = require('inquirer')
 
 const {
+  rmEmptyString,
   toDdotMdotYYYY,
   keysToEnglish,
   noteToAccount,
@@ -19,12 +20,6 @@ const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 nightmareDownloadManager(Nightmare)
 
-
-function rmEmptyString (key, value) {
-  return value === ''
-    ? undefined
-    : value
-}
 
 
 function normalizeAndPrint (filePathTemp) {
@@ -59,7 +54,7 @@ function normalizeAndPrint (filePathTemp) {
                 from: 'hypo:giro',
                 to: noteToAccount(transaction.note),
                 amount: transaction.amount.slice(1) + currency,
-              }]
+              }],
             }
           : {
               transfers: [{
@@ -69,7 +64,7 @@ function normalizeAndPrint (filePathTemp) {
                 amount: transaction.amount === '0,00'
                   ? 0
                   : transaction.amount + currency,
-              }]
+              }],
             }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 

@@ -3,6 +3,7 @@ module.exports = {
   noteToAccount,
   prettyFormat,
   prettyPrint,
+  rmEmptyString,
   toDdotMdotYYYY,
   toDDdotMMdotYYYY,
 }
@@ -16,6 +17,13 @@ function prettyFormat (account, balance) {
 
 function prettyPrint (account, balance) {
   console.info(prettyFormat(account, balance))
+}
+
+
+function rmEmptyString (key, value) {
+  return value === ''
+    ? undefined
+    : value
 }
 
 
@@ -48,6 +56,7 @@ function keysToEnglish (object) {
         .replace('Beschreibung', 'note')
         .replace('Betrag (EUR)', 'amount')
         .replace('Betrag', 'amount')
+        .replace('Beguenstigter/Zahlungspflichtiger', 'to')
         .replace('Belegdatum', 'entry-utc')
         .replace('BIC (SWIFT-Code)', 'bic')
         .replace('BLZ', 'bank-code')
@@ -55,6 +64,7 @@ function keysToEnglish (object) {
         .replace('Buchungstag', 'entry-utc')
         .replace('Buchungstext', 'type')
         .replace('Gläubiger-ID', 'creditor-id')
+        .replace('Glaeubiger ID', 'creditor-id')
         .replace('Info', 'info')
         .replace('Kontonummer', 'account-id')
         .replace('Kontonummer/IBAN', 'account-id')
@@ -62,6 +72,7 @@ function keysToEnglish (object) {
         .replace('Kundenreferenz', 'customer-id')
         .replace('Mandatsreferenz', 'mandate')
         .replace('Ursprünglicher Betrag', 'original-amount')
+        .replace('Valutadatum', 'value-utc')
         .replace('Valuta', 'value-utc')
         .replace('Verwendungszweck', 'note')
         .replace('Waehrung', 'currency')
@@ -107,29 +118,37 @@ function noteToAccount (note) {
     'stdlib': 'stdlib',
     'uber.com': 'uber',
     'walgreens': 'walgreens',
+    'dropbox': 'dropbox',
+    'saturn electro': 'saturn',
+    'dropscan': 'dropscan',
+    'google ireland limited': 'google',
 
     // German
+    'ihk ': 'ihk',
+    'etl ': 'etl',
+    'lidl': 'lidl',
+    'edeka': 'edeka',
     'auslandseinsatz': 'dkb:visa',
     'db bahn': 'deutsche_bahn',
     'db vertrieb gmbh': 'deutsche_bahn',
     'deutsche post ag': 'deutsche_post',
     'e-plus service gmbh': 'eplus',
     'ebay gmbh': 'ebay',
-    'edeka': 'edeka',
     'huk24 ag': 'huk24',
-    'lidl': 'lidl',
     'nextbike gmbh': 'nextbike',
     'rossmann': 'rossmann',
     'siehe anlage': ' ',
     'spar dankt': 'spar',
     'sparda-bank': 'sparda',
     'united domains ag': 'united_domains',
+    'mittelbrandenburgische spk': 'mbs',
+    'finanzamt': 'tax_office',
   }
   let account = note
 
   Object.entries(mappings)
     .forEach(entry => {
-      if (note.toLowerCase().includes(entry[0])) {
+      if (note && note.toLowerCase().includes(entry[0])) {
         account = entry[1]
       }
     })

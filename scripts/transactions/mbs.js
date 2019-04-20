@@ -8,7 +8,12 @@ const tempy = require('tempy')
 const csvnorm = require('csvnorm')
 const converter = require('converter')
 
-const {toDdotMdotYYYY} = require('../helpers.js')
+const {
+  rmEmptyString,
+  toDdotMdotYYYY,
+  keysToEnglish,
+  noteToAccount,
+} = require('../helpers.js')
 
 nightmareDownloadManager(Nightmare)
 
@@ -29,55 +34,52 @@ function normalizeAndPrint (filePathTemp) {
   csv2json.on('end', () => {
     const transactions = JSON
       .parse(jsonTemp)
+      .map(keysToEnglish)
       .reverse() // Now sorted ascending by value date
       .map(transaction => {
-        if (transaction.Betrag.startsWith('-')) {
-          transaction = Object.assign(
+        const sortedTransaction = Object.assign(
             {
-              from: 'MBS/Girokonto',
-              to: transaction['Beguenstigter/Zahlungspflichtiger'],
-              amount: transaction.Betrag.slice(1) + transaction.Waehrung,
+              utc: transaction['value-utc'] < transaction['entry-utc']
+                ? transaction['value-utc']
+                : transaction['entry-utc'],
+              note: '',
             },
-            transaction
+            transaction,
           )
+
+        if (sortedTransaction['value-utc'] === sortedTransaction.utc) {
+          delete sortedTransaction['value-utc']
         }
-        else {
-          transaction = Object.assign(
-            {
-              from: transaction['Beguenstigter/Zahlungspflichtiger'],
-              to: 'MBS/Girokonto',
-              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.Betrag === '0,00'
-                ? 0
-                : transaction.Betrag + transaction.Waehrung,
-            },
-            transaction
-          )
+        if (sortedTransaction['entry-utc'] === sortedTransaction.utc) {
+          delete sortedTransaction['entry-utc']
         }
 
-        transaction.iban = transaction['Kontonummer/IBAN']
-        delete transaction['Kontonummer/IBAN']
+        const account = noteToAccount(transaction.to)
+        const transfersObj = transaction.amount.startsWith('-')
+          ? {
+              transfers: [{
+                from: 'mbs:giro',
+                to: account,
+                amount: transaction.amount.slice(1) + transaction.currency,
+              }],
+            }
+          : {
+              transfers: [{
+                from: account,
+                to: 'mbs:giro',
+                // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
+                amount: transaction.amount === '0,00'
+                  ? 0
+                  : transaction.amount + transaction.currency,
+              }],
+            }
+        const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
-        transaction.bic = transaction['BIC (SWIFT-Code)']
-        delete transaction['BIC (SWIFT-Code)']
+        delete newTransaction.to
+        delete newTransaction.amount
+        delete newTransaction.currency
 
-        transaction['end to end id'] =
-          transaction['Kundenreferenz (End-to-End)']
-        delete transaction['Kundenreferenz (End-to-End)']
-
-        delete transaction.Auftragskonto
-        delete transaction['Beguenstigter/Zahlungspflichtiger']
-        delete transaction.Betrag
-        delete transaction.Info
-        delete transaction.Waehrung
-
-        function rmEmptyString (key, value) {
-          return value === ''
-            ? undefined
-            : value
-        }
-
-        return JSON.parse(JSON.stringify(transaction, rmEmptyString))
+        return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
 
     const yamlString = yaml
@@ -88,7 +90,7 @@ function normalizeAndPrint (filePathTemp) {
     console.info(yamlString)
   })
 
-  csvnorm({
+  csvnorm.default({
     readableStream: fse.createReadStream(filePathTemp),
     writableStream: csv2json,
   })
@@ -227,31 +229,27 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  try {
-    const envYaml = await fse.readFile(
-      path.resolve(__dirname, '../environment.yaml')
-    )
-    const environment = yaml.safeLoad(envYaml)
+  const answers = await
+    prompt([
+      {
+        type: 'input',
+        name: 'username',
+        message: 'MBS Username:',
+      },
+      {
+        type: 'password',
+        name: 'password',
+        message: 'MBS Password:',
+      },
+    ])
 
-    return getTransactions({
-      username: environment.mbs.username,
-      password: environment.mbs.password,
-      shallShowBrowser: true,
-      numberOfDays: 100,
-      // startDate: new Date('2016-01-01'),
-    })
-  }
-  catch (error) {
-    if (error.code === 'ENOENT') {
-      console.warn(
-        'Retrieve the environment.yaml file from gopass' +
-        'and add it to the project\'s root directory'
-      )
-    }
-    else {
-      console.error(error)
-    }
-  }
+  return getTransactions({
+    username: answers.username,
+    password: answers.password,
+    shallShowBrowser: true,
+    numberOfDays: 100,
+    // startDate: new Date('2016-01-01'),
+  })
 }
 
 
