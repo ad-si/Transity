@@ -125,12 +125,12 @@ async function downloadRange (options = {}) {
     .insert(endInputSelector, '')
     .insert(endInputSelector, toDdotMdotYYYY(endDate))
 
-    .click('#j_id_12')
+    .click('#showtransactions')
 
 
   log(`Download CSV file to ${filePathTemp}`)
   return await nightmare
-    .click(`#j_id_2q_1`)
+    .click('a[title=CSV]')
     .download(filePathTemp)
     .end()
 }
