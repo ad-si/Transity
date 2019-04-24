@@ -127,6 +127,8 @@ function noteToAccount (note) {
     'ihk ': 'ihk',
     'etl ': 'etl',
     'lidl': 'lidl',
+    'caya': 'caya'
+    'conrad electronic': 'conrad',
     'edeka': 'edeka',
     'auslandseinsatz': 'dkb:visa',
     'db bahn': 'deutsche_bahn',
@@ -143,12 +145,19 @@ function noteToAccount (note) {
     'united domains ag': 'united_domains',
     'mittelbrandenburgische spk': 'mbs',
     'finanzamt': 'tax_office',
+    'wikimedia deutschland': 'wikimedia',
+    'mcpaper': 'mcpaper',
   }
   let account = note
 
   Object.entries(mappings)
     .forEach(entry => {
-      if (note && note.toLowerCase().includes(entry[0])) {
+      if (
+        note && note
+          .toLowerCase()
+          .replace(/\s\s+/g, ' ')
+          .includes(entry[0])
+      ) {
         account = entry[1]
       }
     })

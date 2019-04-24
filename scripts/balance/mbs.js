@@ -62,12 +62,12 @@ prompt([
     {
       type: 'input',
       name: 'username',
-      message: 'AWS Username:',
+      message: 'MBS Username:',
     },
     {
       type: 'password',
       name: 'password',
-      message: 'AWS Password:',
+      message: 'MBS Password:',
     },
   ])
   .then(async answers => {
