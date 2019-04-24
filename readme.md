@@ -71,6 +71,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [x] Verifies sole use of predefined entities
 - [x] Checks match with verification balances
 - [ ] Duplicate detection
+- [ ] Syntax checking in addition to syntax highlighting
 - [ ] CSV import
 - [ ] Link to receipt file
 - [ ] Dashboard
@@ -170,6 +171,15 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
   alt='Screenshot Transfers'
   width='600'
 />
+
+
+### Check Order
+
+Check if all entries are in a chronological order
+
+```sh
+ag --nonumbers "    utc:" journals/main.yaml | tr -d "\'" | sort -c
+```
 
 
 ## Journal File Format
@@ -372,11 +382,47 @@ or quarrel with experimental stuff like GHCJS.
 
 ## Comparison with Hledger
 
+(H)ledger's transactions are a (balanced) group of account postings.
+Transity's transactions are a group of transfers between two accounts.
+
+
+### Syntax
+
 Checkout the files [hledger.journal] and [journal.yaml]
 for similar transactions modeled in Hledger and in Transity.
 
 [hledger.journal]: ./examples/hledger.journal
 [journal.yaml]: ./examples/journal.yaml
+
+
+There is a lot of ambiguity in the ledger journal format.
+Are you able to tell the difference between the 2 options?
+
+
+```ledger
+2019-01-17 Bought food
+  expenses:food  $10
+  assets:cash
+
+; vs
+
+2019-01-17 Bought food
+  assets:cash
+  expenses:food  $10
+```
+
+Also, it lacks some fields for more precise recording
+of which parties where involved.
+
+- What food?
+- Where did you buy it?
+- Which supermarket?
+
+```ledger
+2019-01-17 Bought food
+  expenses:food  $10
+  assets:cash
+```
 
 ### Reporting
 
@@ -398,9 +444,11 @@ hledger --file examples/hledger.journal register --output-format=csv
 transity entries examples/journal.yaml
 ```
 
+
 ### Missing features
 
-- Hledger has no first class support for Gnuplot
+- No support for precise timestamps (transactions only have an associated date)
+- No first class support for Gnuplot
   (Check out [Report Scripts for Ledger CLI with Gnuplot] for some scripts)
 
 [Report Scripts for Ledger CLI with Gnuplot]:

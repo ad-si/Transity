@@ -1,10 +1,28 @@
 # Transity Development
 
-## Build
+## Getting Started
+
+Install dependencies:
 
 ```shell
-npx pulp --watch build
+npm install
+npx psc-package install
 ```
+
+Build project:
+
+```shell
+npx pulp build
+```
+
+Make `transity` executable available in your path:
+
+```shell
+npm link
+```
+
+All modifications to the source code (after building it)
+will now be available via the linked `transity` executable.
 
 
 ## Test
