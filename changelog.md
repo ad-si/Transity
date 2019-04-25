@@ -4,11 +4,11 @@
     from several German banks (097eb93, 204874e)
 - Use BigInts instead of Ints for amounts to eliminate rounding errors (30f5408)
 - Add support for initial balances (d6f5799)
-- Add support for verification balances
-    (as demonstrated in [./examples/verification-balances.yaml]) (33684ae)
+- Add support for verification balances (as demonstrated in
+    [verification-balances.yaml](examples/verification-balances.yaml)) (33684ae)
 - Add support for signed amounts (d8ecabd)
 - Switch to GPL-3.0-or-later license (53c0c0f)
-- Fix "npm install" by using psc-package instead of bower (5cada63)
+- Fix `npm install` by using psc-package instead of bower (5cada63)
 
 
 # 0.3.0 (2018-09-10)
