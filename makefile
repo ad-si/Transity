@@ -1,7 +1,14 @@
 all: output
 
 
-output:
+changelog.md: .git
+	npx conventional-changelog \
+		--infile $@ \
+		--same-file \
+		--output-unreleased
+
+
+output: src package.json package-lock.json psc-package.json
 	npx pulp build
 
 
