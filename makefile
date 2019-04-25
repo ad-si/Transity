@@ -2,6 +2,8 @@ all: output
 
 
 changelog.md: .git
+	# git config changelog.format '- %s (%h)'
+	# git changelog
 	npx conventional-changelog \
 		--infile $@ \
 		--same-file \
