@@ -10,12 +10,16 @@ changelog.md: .git
 		--output-unreleased
 
 
-output: src package.json package-lock.json psc-package.json
+output: src package.json package-lock.json psc-package.json .pulp-cache
+
+.pulp-cache: .psc-package
 	npx pulp build
 
+.psc-package: node_modules
+	npx psc-package install
 
-.PHONY: postinstall
-postinstall: install output
+node_modules:
+	npm install
 
 
 .PHONY: test
@@ -23,11 +27,11 @@ test:
 	npx pulp test
 
 
-.PHONY: install
-install:
-	npx psc-package install
-
-
 .PHONY: clean
 clean:
-	-rm -rf output
+	-rm -rf \
+		.psc-package \
+		.psci_modules \
+		.pulp-cache \
+		output \
+		node_modules

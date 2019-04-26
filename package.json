@@ -13,6 +13,11 @@
   "directories": {
     "test": "tests"
   },
+  "files": [
+    "/cli",
+    "/output",
+    "/scripts"
+  ],
   "keywords": [
     "accounting",
     "cli",
