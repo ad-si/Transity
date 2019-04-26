@@ -1,32 +1,31 @@
 module Test.Fixtures where
 
-import Data.Maybe (Maybe(Just, Nothing))
+import Prelude ((<>), ($))
+
+import Data.BigInt (fromInt)
+import Data.Map (fromFoldable)
+import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Rational (fromInt)
-import Prelude ((<>))
+import Data.Rational ((%))
+import Data.Tuple (Tuple(..))
+import Partial.Unsafe (unsafePartial)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
-import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.Account (Account(..))
+import Transity.Data.Balance (Balance(..))
+import Transity.Data.CommodityMap (CommodityMap)
+import Transity.Data.Ledger (Ledger(..), BalanceMap)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils (stringToDateTime, indentSubsequent)
 
 -- | Transfer Examples
 
-transferZero :: Transfer
-transferZero = Transfer
-  { utc: Nothing
-  , from: ""
-  , to: ""
-  , amount: Amount (fromInt 0) (Commodity "")
-  , note: Nothing
-  }
-
 transferMinimal :: Transfer
 transferMinimal = Transfer
   { utc: Nothing
   , from: "john:giro"
   , to: "evil-corp"
-  , amount: Amount (fromInt 15) (Commodity "€")
+  , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
   , note: Nothing
   }
 
@@ -35,7 +34,7 @@ transferSimple = Transfer
   { utc: stringToDateTime "2014-12-24"
   , from: "john:giro"
   , to: "evil-corp"
-  , amount: Amount (fromInt 15) (Commodity "€")
+  , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
   , note: Just "A little note"
   }
 
@@ -62,7 +61,7 @@ note: A little note
 transferSimpleShowed :: String
 transferSimpleShowed = """
 (Transfer
-  { amount: (Amount 15 % 1 (Commodity "€"))
+  { amount: (Amount fromString "15" % fromString "1" (Commodity "€"))
   , from: "john:giro"
   , note: (Just "A little note")
   , to: "evil-corp"
@@ -85,14 +84,14 @@ transferSimpleB = Transfer
   { utc: stringToDateTime "2007-03-29"
   , from: "evil-corp"
   , to: "flower-power"
-  , amount: Amount (fromInt 7) (Commodity "€")
+  , amount: Amount (fromInt 7 % fromInt 1) (Commodity "€")
   , note: Just "Bought some flowers"
   }
 
 transferSimpleBShowed :: String
 transferSimpleBShowed = """
 (Transfer
-  { amount: (Amount 7 % 1 (Commodity "USD"))
+  { amount: (Amount fromString "7" % fromString "1" (Commodity "USD"))
   , from: "carlos:wallet"
   , note: (Just "Bought some flowers")
   , to: "flower-power"
@@ -273,6 +272,159 @@ ledgerJson = """
 """
 
 
+balanceJson :: String
+balanceJson = """
+{
+  "utc": "2017-04-02 20:11:45",
+  "amounts": ["7 €", "-8 $", "+9 BTC"]
+}
+"""
+
+balanceShowed :: String
+balanceShowed = """
+(Balance
+  (DateTime
+    (Date (Year 2017) April (Day 2))
+    (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+  (fromFoldable
+    [ (Tuple (Commodity "$") (Amount fromString "-8" % fromString "1" (Commodity "$")))
+    , (Tuple (Commodity "BTC") (Amount fromString "9" % fromString "1" (Commodity "BTC")))
+    , (Tuple (Commodity "€") (Amount fromString "7" % fromString "1" (Commodity "€")))
+    ]))
+"""
+
+
+commodityMap :: CommodityMap
+commodityMap = fromFoldable
+  [(Tuple
+    (Commodity "€")
+    (Amount (fromInt 100 % fromInt 1) (Commodity "€")))
+  ]
+
+
+balanceMap :: BalanceMap
+balanceMap =
+  fromFoldable [Tuple "john" commodityMap]
+
+
+account :: Account
+account = Account
+  { id: "wallet"
+  , commodityMap
+  , balances: Just
+      [ (Balance
+        (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")
+        (fromFoldable
+          [(Tuple (Commodity "€") (Amount (fromInt 100 % fromInt 1) (Commodity "€")))]))
+      ]
+  }
+
+
+accountJson :: String
+accountJson = """
+{ "id": "_default_",
+  "balances": [
+    { "utc": "2017-04-02 20:11:45",
+      "amounts": ["100 €"]
+    },
+    { "utc": "2014-05-01 12:00",
+      "amounts": ["200 €", "1 evil_machine"]
+    }]}
+"""
+
+
+accountShowed :: String
+accountShowed = """
+(Account
+  { balances: (Just
+      [ (Balance
+          (DateTime
+            (Date (Year 2017) April (Day 2))
+            (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+          (fromFoldable
+            [(Tuple
+                (Commodity "€")
+                (Amount fromString "100" % fromString "1" (Commodity "€")))]))
+      , (Balance
+          (DateTime
+            (Date (Year 2014) May (Day 1))
+            (Time (Hour 12) (Minute 0) (Second 0) (Millisecond 0)))
+          (fromFoldable
+            [ (Tuple
+                (Commodity "evil_machine")
+                (Amount
+                    fromString "1" % fromString "1"
+                    (Commodity "evil_machine")))
+            , (Tuple
+                (Commodity "€")
+                (Amount fromString "200" % fromString "1" (Commodity "€")))
+            ]))
+      ])
+  , commodityMap: (fromFoldable [])
+  , id: "_default_"
+  })
+"""
+
+
+entityJson :: String
+entityJson = """
+{ "id": "john",
+  "accounts": [
+    { "id": "_default_",
+      "balances": [
+        { "utc": "2017-04-02 20:11:45",
+          "amounts": ["100 €"]
+        },
+        { "utc": "2014-05-01 12:00",
+          "amounts": ["200 €", "1 evil_machine"] } ] } ] }
+"""
+
+entityShowed :: String
+entityShowed = """
+(Entity
+  {accounts: (Just
+    [ (Account
+        { balances: (Just
+            [ (Balance
+                (DateTime
+                  (Date (Year 2017) April (Day 2))
+                  (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
+                (fromFoldable
+                  [ (Tuple
+                      (Commodity "€")
+                      (Amount
+                        fromString "100" % fromString "1"
+                        (Commodity "€")))
+                  ]))
+            , (Balance
+                (DateTime
+                  (Date (Year 2014) May (Day 1))
+                  (Time (Hour 12) (Minute 0) (Second 0) (Millisecond 0)))
+                (fromFoldable
+                  [ (Tuple
+                      (Commodity "evil_machine")
+                      (Amount
+                        fromString "1" % fromString "1"
+                        (Commodity "evil_machine")))
+                  , (Tuple
+                      (Commodity "€")
+                      (Amount
+                        fromString "200" % fromString "1"
+                        (Commodity "€")))
+                  ]))
+            ])
+        , commodityMap: (fromFoldable [])
+        , id: "_default_"
+        })
+    ])
+  , id: "john"
+  , name: Nothing
+  , note: Nothing
+  , tags: Nothing
+  , utc: Nothing
+  })
+"""
+
 ledgerYaml :: String
 ledgerYaml = """
 entities:
@@ -285,11 +437,16 @@ transactions:
   - """ <> indentSubsequent 4 transactionSimpleYaml <> """
 """
 
+ledgerLedger :: String
+ledgerLedger  = """2014-12-24 A short note about this transaction
+  evil-corp  15 €
+  john:giro
+"""
 
-entity :: String -> String
-entity id = """
+idToEntityStr :: String -> String
+idToEntityStr id = """
 (Entity
-  { accounts:Nothing
+  { accounts: Nothing
   , id: """ <> "\"" <> id <> "\"" <> """
   , name: Nothing
   , note: Nothing
@@ -303,9 +460,9 @@ ledgerShowed :: String
 ledgerShowed = """
   (Ledger
     { entities: (Just
-      [ """ <> entity "abcxyz" <> """
-      , """ <> entity "evil-corp" <> """
-      , """ <> entity "john:giro" <> """
+      [ """ <> idToEntityStr "abcxyz" <> """
+      , """ <> idToEntityStr "evil-corp" <> """
+      , """ <> idToEntityStr "john:giro" <> """
       ])
     , owner: "John Doe"
     , transactions:
@@ -313,11 +470,11 @@ ledgerShowed = """
       ]
     }
   )
- """
+"""
 
 
 ledgerPretty :: String
-ledgerPretty = """Ledger for "John Doe"
+ledgerPretty = """Journal for "John Doe"
 ================================================================================
 2014-12-24 00:00 | A short note about this transaction | (id abcxyz)
     """ <> transferSimplePretty <> "    \n"

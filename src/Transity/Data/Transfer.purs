@@ -1,38 +1,40 @@
-module Transity.Data.Transfer
-where
+module Transity.Data.Transfer where
 
 import Prelude
+  ( class Eq, class Ord, class Show, bind, compare, map, pure
+  , (#), ($), (<>), (==), (>>=)
+  )
 
 import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Core (toObject, Json, stringify)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional)
 import Data.Argonaut.Parser (jsonParser)
+import Data.BigInt (fromInt)
 import Data.DateTime (DateTime)
-import Data.Eq ((==))
 import Data.Foldable (fold)
-import Data.Foreign (renderForeignError)
-import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Just), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
-import Data.Newtype
-import Data.Rational (fromInt)
+import Data.Newtype (class Newtype)
+import Data.Rational ((%))
 import Data.Result (Result(..), toEither, fromEither)
-import Data.Show (show)
+import Data.Ring (negate)
 import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Text.Format (format, width)
 import Transity.Data.Account (Id) as Account
-import Transity.Data.Amount (Amount(..))
+import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
 import Transity.Utils
-  ( getFieldVerbose
-  , stringToDateTime
+  ( ColorFlag(..)
   , dateShowPretty
-  , ColorFlag(..)
+  , getFieldVerbose
+  , stringToDateTime
+  , ratioZero
   )
 
 
@@ -72,7 +74,7 @@ decodeJsonTransfer json = do
   utc <- fromEither $ object `getFieldOptional` "utc"
   note <- fromEither $ object `getFieldOptional` "note"
 
-  transfer <- verifyTransfer (show json) (Transfer
+  transfer <- verifyTransfer (stringify json) (Transfer
       { utc: utc >>= stringToDateTime
       , from
       , to
@@ -84,6 +86,24 @@ decodeJsonTransfer json = do
   pure transfer
 
 
+transferZero :: Transfer
+transferZero = Transfer
+  { utc: Nothing
+  , from: ""
+  , to: ""
+  , amount: Amount ratioZero (Commodity "")
+  , note: Nothing
+  }
+
+
+negateTransfer :: Transfer -> Transfer
+negateTransfer (Transfer transferRec) =
+  let
+    negateAmount (Amount qnt com) = Amount (negate qnt) com
+  in
+    Transfer transferRec {amount = negateAmount transferRec.amount}
+
+
 verifyTransfer :: String -> Transfer -> Result String Transfer
 verifyTransfer json transfer@(Transfer transRec) =
   let
@@ -93,7 +113,7 @@ verifyTransfer json transfer@(Transfer transRec) =
       then Error $ "Field 'from' in " <> json <>  " must not be empty" else
     if (length transRec.to == 0)
       then Error $ "Field 'to' in " <> json <>  " must not be empty" else
-    if (quantity == (fromInt 0))
+    if (quantity == (fromInt 0 % fromInt 1))
       then Error $ "Field 'amount' in " <> json <>  " must not be 0"
     else Ok transfer
 
@@ -123,6 +143,10 @@ fromYaml yaml =
 
 showPretty :: Transfer -> String
 showPretty = showPrettyAligned ColorNo 15 15 5 3 10
+
+
+showPrettyColorized :: Transfer -> String
+showPrettyColorized = showPrettyAligned ColorYes 15 15 5 3 10
 
 
 --| - From account name width

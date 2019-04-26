@@ -1,4 +1,5 @@
-owner: John Doe
+owner: john
+
 commodities:
   - id: €
     name: Euro
@@ -19,9 +20,15 @@ commodities:
 entities:
   - id: anna
     name: Anna Smith
-    utc: '2017-04-02 20:11:45'
-    tags:
-      - person
+    tags: [person]
+    accounts:
+      - id: _default_
+        balances:
+          - utc: '2012-04-02 20:11:45'
+            amounts: [0 €, 0 evil_machine]
+
+          - utc: '2014-05-01 12:00'
+            amounts: [200 €, 1 evil_machine]
 
   - id: bakery
 
@@ -29,37 +36,61 @@ entities:
 
   - id: evil-corp
     name: Evil Corporation
-    utc: '2017-04-02 19:33:28'
     note: The Evil Corporation in the United States of Evil
-    tags:
-      - company
+    tags: [company]
+    accounts:
+      - id: _default_
+        balances:
+          - utc: '2013-04-02 19:33:28'
+            amounts: [0 €, 0 evil_machine]
+
+          - utc: '2014-05-01 12:00'
+            amounts: [300 €, -1 evil_machine]
 
   - id: good-inc
+    accounts:
+      - id: _default_
+        balances:
+          - utc: '2013-11-01 12:00'
+            amounts: [0 €]
+
+          - utc: '2014-05-01 12:00'
+            amounts: [-500 €]
 
   - id: grocery-shop
 
   - id: john
     name: John Doe
-    utc: '2017-04-02 19:33:28'
-    tags:
-      - person
+    tags: [person]
     accounts:
-      - id: wallet
-        name: Wallet
-        note: John's black wallet
-        utc: '2017-04-02 19:33:28'
-        tags:
-          - wallet
+      - id: _default_
+        balance:
+          - utc: '2013-06-19 19:33:28'
+            amounts: []
+
+      - id: giro
 
       - id: visa
         name: VISA card
         note: John's VISA card
-        utc: '2017-04-02 19:36:57'
         tags:
           - credit card
           - visa
+        balances:
+          - utc: '2013-07-22 19:36:57'
+            amounts: []
 
-      - id: giro
+      - id: wallet
+        name: Wallet
+        note: John's black wallet
+        tags:
+          - wallet
+        balances:
+          - utc: '2014-05-01 12:00'
+            amounts: [0 €]
+
+          - utc: '2017-04-02 19:33:28'
+            amounts: [66.05 €]
 
 
 transactions:
@@ -81,7 +112,7 @@ transactions:
       - utc: '2014-03-05'
         from: evil-corp
         to: anna
-        amount: 1 evil-machine
+        amount: 1 evil_machine
 
   - utc: '2014-12-24'
     note: Money for evil deal
@@ -123,7 +154,14 @@ transactions:
     transfers:
       - from: ben
         to: john:giro
-        amount: 1.432592 BTC
+        amount: 0.434114 BTC
+
+  - utc: '2015-03-12'
+    note: More financial support in Bitcoin
+    transfers:
+      - from: ben
+        to: john:giro
+        amount: 60.318 BTC
 
   - utc: '2015-07-05 17:13'
     note: Food
@@ -145,3 +183,10 @@ transactions:
       - from: anna
         to: bakery
         amount: 7.29 €
+
+  - utc: '2016-04-24 23:43'
+    note: Bicycle
+    transfers:
+      - from: anna
+        to: john
+        amount: 219.99 €

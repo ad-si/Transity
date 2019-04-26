@@ -1,6 +1,9 @@
 module Transity.Data.Transaction where
 
 import Prelude
+  ( class Show, class Eq, bind, map, pure
+  , (#), ($), (<>), (>>=), (<#>), (/=)
+  )
 
 import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
@@ -8,28 +11,21 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Result (Result(..), toEither, fromEither)
 import Data.Foldable (fold)
-import Data.Foreign (renderForeignError)
-import Data.Function ((#))
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Nothing,Just), maybe, fromMaybe)
+import Data.Maybe (Maybe(Nothing), fromMaybe, maybe)
 import Data.Monoid (power)
-import Data.Newtype
+import Data.Newtype (class Newtype)
+import Data.Result (Result(..), toEither, fromEither)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Prelude (($), (<>), bind, class Show, map, pure)
+import Foreign (renderForeignError)
 import Text.Format (format, width)
-import Transity.Data.Transfer (Transfer)
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
-  ( getObjField
-  , getFieldMaybe
-  , stringToDateTime
-  , dateShowPretty
-  , indentSubsequent
-  , ColorFlag(..)
-  )
+  ( getObjField, getFieldMaybe, stringToDateTime
+  , dateShowPretty, indentSubsequent, ColorFlag(..))
 
 
 -- newtype FilePath = FilePath String
@@ -44,6 +40,7 @@ newtype Transaction = Transaction
 
 derive instance genericTransaction :: Generic Transaction _
 derive instance newtypeTransaction :: Newtype Transaction _
+derive newtype instance eqTransaction :: Eq Transaction
 
 instance showTransaction :: Show Transaction where
   show = genericShow
@@ -92,6 +89,32 @@ fromYaml yaml =
           <> fold (map renderForeignError error)
         )
       Ok json -> fromEither $ decodeJson json
+
+
+toTransfers :: Array Transaction -> Array Transfer
+toTransfers transactions =
+  transactions
+    <#> (\(Transaction transac) -> transac.transfers
+            <#> (\(Transfer transf) -> Transfer (transf
+                  { utc = if transf.utc /= Nothing
+                          then transf.utc
+                          else transac.utc
+                  }
+              )))
+    # fold
+
+
+showTransfersWithDate :: ColorFlag -> Transaction -> String
+showTransfersWithDate colorFlag (Transaction transac) =
+  transac.transfers
+    <#> (\(Transfer transf) -> Transfer (transf
+            { utc = if transf.utc /= Nothing
+                    then transf.utc
+                    else transac.utc
+            }
+        ))
+    <#> Transfer.showPrettyColorized
+    # fold
 
 
 showPretty :: Transaction -> String

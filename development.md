@@ -1,5 +1,39 @@
 # Transity Development
 
+## Getting Started
+
+Install dependencies:
+
+```shell
+npm install
+npx psc-package install
+```
+
+Build project:
+
+```shell
+npx pulp build
+```
+
+Make `transity` executable available in your path:
+
+```shell
+npm link
+```
+
+All modifications to the source code (after building it)
+will now be available via the linked `transity` executable.
+
+
+## Test
+
+```shell
+npx pulp --watch test
+```
+
+
+## Documentation
+
 Generate and serve the Pursuit documentation with:
 
 ```sh
@@ -21,7 +55,7 @@ markdown-toc -i readme.md
 [markdown-toc]: https://github.com/jonschlinkert/markdown-toc
 
 
-## Add Documentation File to Local Pursuit
+### Add Documentation File to Local Pursuit
 
 **Not working. Format seems wrong,
 but can't find code in pulp where it gets changed**

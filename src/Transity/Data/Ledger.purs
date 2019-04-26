@@ -1,47 +1,61 @@
 module Transity.Data.Ledger where
-
 import Prelude
+  ( class Show, class Eq, bind, compare, identity, map, pure, show
+  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
+  )
 
 import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
+import Control.Semigroupoid ((>>>))
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, sort, sortBy, groupBy, (!!))
+import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
 import Data.Array as Array
-import Data.Foldable (fold, foldr, intercalate)
-import Data.Foreign (renderForeignError)
+import Data.DateTime (DateTime)
+import Data.Foldable (all, find)
+import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
+import Data.HeytingAlgebra (not)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
-import Data.Rational (toNumber)
 import Data.Result (Result(..), toEither, fromEither)
-import Data.String (joinWith)
-import Data.Traversable
-import Data.Tuple (Tuple, snd)
+import Data.Set as Set
+import Data.String (joinWith, split, Pattern(..), Replacement(..), replace)
+import Data.Traversable (fold, foldr, intercalate, sequence)
+import Data.Tuple (Tuple(..))
+import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
-import Transity.Data.Amount (Amount(..))
+import Transity.Data.Amount (Amount(..), Commodity)
 import Transity.Data.Amount as Amount
-import Transity.Data.Entity (Entity(..))
 import Transity.Data.CommodityMap
-  (CommodityMap, addAmountToMap, subtractAmountFromMap)
-import Data.Set as Set
+  ( CommodityMap
+  , addAmountToMap
+  , subtractAmountFromMap
+  , isCommodityMapZero
+  , isCommodityZero
+  )
+import Transity.Data.Entity (Entity(..), toTransfers)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transfer (Transfer(..), negateTransfer)
 import Transity.Utils
   ( getFieldMaybe
   , getObjField
   , mergeWidthRecords
   , utcToIsoString
+  , utcToIsoDateString
+  , dateShowPretty
   , widthRecordZero
   , ColorFlag(..)
+  , bigIntToNumber
   )
 
 
@@ -53,6 +67,7 @@ newtype Ledger = Ledger
   }
 
 derive instance genericLedger :: Generic Ledger _
+derive newtype instance eqLedger :: Eq Ledger
 
 instance showLedger :: Show Ledger where
   show = genericShow
@@ -76,7 +91,8 @@ verifyAccounts wholeLedger@(Ledger ledger) =
     definedAccounts = Set.fromFoldable $ concat
       $ (fromMaybe [] ledger.entities) <#>
         (\(Entity {id, accounts}) -> [id] <>
-          ((fromMaybe [] accounts) <#> (\(Account aId _) -> id <> ":" <> aId))
+          ((fromMaybe [] accounts) <#>
+            (\(Account account) -> id <> ":" <> account.id))
         )
     usedAccounts =
       (ledger.transactions <#> \(Transaction {transfers}) -> transfers)
@@ -100,11 +116,83 @@ verifyAccounts wholeLedger@(Ledger ledger) =
         <> "to the entities section to fix this error"
 
 
+isAmountInMapZero :: BalanceMap -> String -> Commodity -> Boolean
+isAmountInMapZero balanceMap accountId commodity =
+  let
+    comMap = Map.lookup accountId balanceMap
+  in
+    fromMaybe false $
+      comMap <#> (flip isCommodityZero) commodity
+
+
+verifyBalances :: BalanceMap -> Array Transfer -> Result String Unit
+verifyBalances balanceMap balancingTransfers =
+  case uncons balancingTransfers of
+    Just {head: transfHead@(Transfer tfHeadRec), tail: transfTail} ->
+      let
+        newBal = balanceMap `addTransfer` transfHead
+        getCommodity {amount: Amount _ commodity} = commodity
+        targetCom = getCommodity tfHeadRec
+      in
+        if tfHeadRec.note == Just "___BALANCE___"
+        then
+          if not $ isAmountInMapZero newBal tfHeadRec.from targetCom
+          then Error(
+              "Error:\nThe verification balance of account '" <> tfHeadRec.from
+              <> "' on '" <> (fromMaybe "" $ tfHeadRec.utc <#> dateShowPretty)
+              <> "'\nis off by "
+              <> (Map.lookup tfHeadRec.from newBal
+                    # fromMaybe Map.empty
+                    # Map.values
+                    # find (\(Amount _ commodity) -> commodity == targetCom)
+                    <#> (Amount.negate >>> Amount.showPretty)
+                    # fromMaybe "ERROR: Amount is missing"
+                  )
+              <> " from the calculated balance."
+            )
+          else verifyBalances balanceMap transfTail
+        else
+          verifyBalances newBal transfTail
+    Nothing ->
+      Ok unit
+
+
+entitiesToTransfers :: Maybe (Array Entity) -> Array Transfer
+entitiesToTransfers entities =
+  (fromMaybe [] entities)
+    <#> toTransfers
+    # fold
+    -- Label the balancing transfers to tell them apart from normal transfers
+    -- FIXME: Really hacky and should be solved with a wrapper datatype
+    <#> (\(Transfer tf) -> Transfer tf {note = Just "___BALANCE___"})
+
+
+verifyLedgerBalances :: Ledger -> Result String Ledger
+verifyLedgerBalances wholeLedger@(Ledger {transactions, entities}) =
+  let
+    balancingTransfers = entitiesToTransfers entities
+    transxTransfers = Transaction.toTransfers transactions
+    combined = (balancingTransfers <> transxTransfers)
+      # sortBy (\(Transfer transfA) (Transfer transfB) ->
+                    compare transfA.utc transfB.utc)
+    result = verifyBalances Map.empty combined
+  in
+    if entities == Nothing || entities == Just []
+    then Ok wholeLedger
+    else
+      case result of
+        Ok _ -> Ok wholeLedger
+        Error error -> Error error
+
+
 fromJson :: String -> Result String Ledger
 fromJson json = do
   jsonObj <- fromEither $ jsonParser json
   ledger <- fromEither $ decodeJson jsonObj
-  pure ledger >>= verifyAccounts
+  pure ledger
+    >>= verifyAccounts
+    >>= verifyLedgerBalances
+    -- TODO: >>= addInitalBalance
 
 
 fromYaml :: String -> Result String Ledger
@@ -121,7 +209,9 @@ fromYaml yaml =
         )
       Ok json -> fromEither $ decodeJson json
   in
-    unverified >>= verifyAccounts
+    unverified
+      >>= verifyAccounts
+      >>= verifyLedgerBalances
 
 
 showPretty :: Ledger -> String
@@ -135,76 +225,107 @@ showPrettyAligned colorFlag (Ledger l) =
       (Transaction.showPrettyAligned colorFlag)
       l.transactions
   in ""
-    <> "Ledger for \"" <> l.owner <> "\"\n"
+    <> "Journal for \"" <> l.owner <> "\"\n"
     <> "=" `power` 80 <> "\n"
     <> fold transactionsPretty
 
 
-type BalanceMap = Map.Map Account.Id Account
-
-
-addTransaction :: Transaction -> BalanceMap -> BalanceMap
-addTransaction (Transaction {transfers}) balanceMap =
-  foldr addTransfer balanceMap transfers
-
-
-addTransfer :: Transfer -> BalanceMap -> BalanceMap
-addTransfer (Transfer {to, from, amount}) balanceMap =
+showTransfers :: ColorFlag -> Ledger -> String
+showTransfers colorFlag (Ledger l) =
   let
+    transactionsPretty = l.transactions
+      <#> Transaction.showTransfersWithDate colorFlag
+      # fold
+  in ""
+    <> "Journal for \"" <> l.owner <> "\"\n"
+    <> "=" `power` 80 <> "\n"
+    <> transactionsPretty
+
+
+type BalanceMap = Map.Map Account.Id CommodityMap
+
+
+isBalanceMapZero :: BalanceMap -> Boolean
+isBalanceMapZero balanceMap =
+  (Map.values balanceMap)
+  # all isCommodityMapZero
+
+
+addTransaction :: BalanceMap -> Transaction -> BalanceMap
+addTransaction balanceMap (Transaction {transfers})  =
+  foldr (flip addTransfer) balanceMap transfers
+
+
+addTransfer :: BalanceMap -> Transfer -> BalanceMap
+addTransfer balanceMap (Transfer {to, from, amount})  =
+  let
+    receiverArray = split (Pattern ":") to
+    receiverWithDefault = case length receiverArray of
+      1 -> to <> ":_default_"
+      _ -> to
+    senderArray = split (Pattern ":") from
+    senderWithDefault = case length senderArray of
+      1 -> from <> ":_default_"
+      _ -> from
     updatedFromAccount = Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (
-            Account from ((Map.empty :: CommodityMap)
-            `subtractAmountFromMap`
-            amount)
-          )
-        Just (Account _ comMapNow) -> Just (
-          Account from (comMapNow `subtractAmountFromMap` amount)
-        )
+          Nothing ->
+            Just ((Map.empty :: CommodityMap) `subtractAmountFromMap` amount)
+          Just commodityMap ->
+            Just (commodityMap `subtractAmountFromMap` amount)
       )
-      from
+      senderWithDefault
       balanceMap
   in
     Map.alter
       (\maybeValue -> case maybeValue of
-        Nothing -> Just (
-            Account to ((Map.empty :: CommodityMap)
-            `addAmountToMap`
-             amount)
-          )
-        Just (Account _ comMapNow) -> Just (
-            Account to (comMapNow `addAmountToMap` amount)
-          )
+          Nothing ->
+            Just ((Map.empty :: CommodityMap) `addAmountToMap` amount)
+          Just commodityMap ->
+            Just (commodityMap `addAmountToMap` amount)
       )
-      to
+      receiverWithDefault
       updatedFromAccount
+
+
+subtractTransfer :: BalanceMap -> Transfer -> BalanceMap
+subtractTransfer balanceMap transfer  =
+  let transferNegated = negateTransfer transfer
+  in balanceMap `addTransfer` transferNegated
 
 
 showBalance :: ColorFlag -> Ledger -> String
 showBalance colorFlag (Ledger ledger) =
   let
-    balanceMap = foldr addTransaction Map.empty ledger.transactions
-    accountsArray = balanceMap
-      # (Map.toAscUnfoldable :: BalanceMap -> Array (Tuple Account.Id Account))
-      # map snd
-    accWidthRecs = accountsArray
-      # map Account.toWidthRecord
+    balanceMap = foldr (flip addTransaction) Map.empty ledger.transactions
+    balancesArray = balanceMap
+      # (Map.toUnfoldable :: BalanceMap ->
+          Array (Tuple Account.Id CommodityMap))
+    normAccId accId =
+      replace (Pattern ":_default_") (Replacement "") accId
+    accWidthRecs = balancesArray
+      <#> (\(Tuple accId comMap) ->
+              Account.toWidthRecord (normAccId accId) comMap)
     widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
     marginLeft = 2
+    showTuple (Tuple accId comMap) = (Account.showPrettyAligned
+        colorFlag
+        widthRecord { account = widthRecord.account + marginLeft }
+        (normAccId accId)
+        comMap
+      )
   in
-    accountsArray
-      # map (Account.showPrettyAligned
-          colorFlag
-          widthRecord
-            { account = widthRecord.account + marginLeft }
-        )
+    balancesArray
+      <#> showTuple
       # fold
 
 
+-- | Serializes the journal to a command line printable version
+-- | (lines of columns).
 getEntries :: Ledger -> Maybe (Array (Array String))
-getEntries (Ledger {transactions}) = do
+getEntries (Ledger {transactions, entities}) = do
   let
-    getQunty (Amount quantity _ ) = show $ toNumber quantity
+    getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
 
     splitTransfer :: Transfer -> Maybe (Array (Array String))
@@ -226,16 +347,63 @@ getEntries (Ledger {transactions}) = do
     <#> splitTransfer
     # sequence
 
-  pure $ splitted # concat
+  let
+    initialEntries = entitiesToInitialTransfers entities <#>
+      \(Transfer t) ->
+          let isoString = fromMaybe "INVALID DATE" $ t.utc <#> utcToIsoString
+          in [[ isoString
+              , replace (Pattern ":_default_") (Replacement "") t.from
+              , getQunty t.amount
+              , getCmdty t.amount
+              ]]
+
+  pure $ (splitted <> initialEntries) # concat
 
 
-showEntries :: Ledger -> Maybe String
-showEntries ledger = do
+entitiesToInitialTransfers :: Maybe (Array Entity) -> Array Transfer
+entitiesToInitialTransfers entities =
+  (fromMaybe [] entities)
+    <#> toTransfers
+    # fold
+    # Array.filter (\(Transfer tf) ->
+        Amount.isZero tf.amount && tf.from /= "_void_")
+
+
+maybeToArr :: forall a. Maybe a -> Array a
+maybeToArr m = case m of
+  Just val -> [val]
+  Nothing -> []
+
+
+-- | Serialize the journal to the Ledger format.
+entriesToLedger :: Ledger -> String
+entriesToLedger (Ledger { transactions }) =
+  let
+    print :: DateTime -> Maybe String -> Account.Id
+      -> Account.Id -> Amount -> String
+    print dt maybeNote from to amount =
+        let date = dt # utcToIsoDateString
+            note = maybe "" identity maybeNote
+        in date <> " " <> note <> "\n" <>
+           "  " <> to <> "  " <> (Amount.showPretty amount) <> "\n" <>
+           "  " <> from <> "\n"
+
+    result = do
+        Transaction { utc , note, transfers } <- transactions
+        xutc <- maybeToArr utc
+        Transfer { to, from, amount } <- transfers
+        pure $ print xutc note from to amount
+
+  in result # joinWith "\n"
+
+
+showEntries :: String -> Ledger -> Maybe String
+showEntries separator ledger = do
   entries <- getEntries ledger
 
   pure $ entries
     # sort
-    <#> joinWith " "
+    <#> joinWith separator
     # joinWith "\n"
 
 

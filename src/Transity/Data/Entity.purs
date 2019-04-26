@@ -3,15 +3,24 @@ module Transity.Data.Entity where
 import Prelude
 
 import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Parser (jsonParser)
+import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.Result (Result(..), toEither)
+import Data.Foldable (fold)
+import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
-import Data.Maybe (Maybe(Nothing), maybe, fromMaybe)
-import Transity.Data.Account (Account)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Map (values)
+import Data.Newtype (class Newtype)
+import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
+import Transity.Data.CommodityMap (CommodityMap)
+import Transity.Data.Balance (Balance(..))
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils
   ( getObjField
   , getFieldMaybe
@@ -30,12 +39,15 @@ newtype Entity = Entity
   }
 
 derive instance genericEntity :: Generic Entity _
+derive instance newtypeEntity :: Newtype Entity _
+derive newtype instance eqEntity :: Eq Entity
 
 instance showEntity :: Show Entity where
   show = genericShow
 
 instance decodeEntity :: DecodeJson Entity where
   decodeJson json = toEither $ decodeJsonEntity json
+
 
 
 decodeJsonEntity :: Json -> Result String Entity
@@ -57,6 +69,12 @@ decodeJsonEntity json = do
     , tags
     , accounts
     }
+
+
+fromJson :: String -> Result String Entity
+fromJson json = do
+  jsonObj <- fromEither $ jsonParser json
+  fromEither $ decodeJson jsonObj
 
 
 zero :: Entity
@@ -82,4 +100,44 @@ showPretty (Entity entity) =
   <> " | "
   <> (joinWith ", " $ fromMaybe [] entity.tags)
   <> " | "
-  <> (joinWith ", " $ map Account.showPretty $ fromMaybe [] entity.accounts)
+  <> (joinWith ", " $ (fromMaybe [] entity.accounts)
+        <#> (\(Account acc) -> Account.showPretty acc.id acc.commodityMap))
+
+
+-- | Map to fully qualified array of accounts
+-- | (e.g _default_ becomes john:_default_)
+toAccountsWithId :: Entity -> Array Account
+toAccountsWithId (Entity entity) =
+  (fromMaybe [] entity.accounts)
+  <#> \(Account a) -> Account a {id = entity.id <> ":" <> a.id}
+
+
+-- | Map the entity's balance to an array of balancing transfers
+toTransfers :: Entity -> Array Transfer
+toTransfers entity@(Entity entityRec) =
+  let
+    accounts = toAccountsWithId entity
+
+    comMapToTransfers :: forall a.
+      {id :: String | a} -> DateTime -> CommodityMap -> Array Transfer
+    comMapToTransfers accountRec utc comMap =
+      (values comMap)
+      # Array.fromFoldable
+      <#> (\amount -> Transfer
+              { utc: Just utc
+              , from: accountRec.id
+              , to: "_void_"
+              , amount
+              , note: Nothing
+              })
+
+    accToTrans :: Account -> Array Transfer
+    accToTrans (Account account) =
+      (fromMaybe [] account.balances)
+      <#> (\(Balance utc comMap) ->
+              comMapToTransfers account utc comMap)
+      # fold
+  in
+    accounts <#> accToTrans # fold
+
+

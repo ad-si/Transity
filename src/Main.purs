@@ -2,22 +2,31 @@ module Main where
 
 import Prelude (Unit, bind, discard, pure, (#), ($), (<#>), (<>))
 
-import Control.Monad.Eff (Eff)
-import Control.Monad.Eff.Console (CONSOLE, log, error)
-import Control.Monad.Eff.Exception (EXCEPTION)
+import Ansi.Codes (Color(..))
+import Ansi.Output (withGraphics, foreground)
 import Data.Array ((!!))
+import Data.Eq ((==))
 import Data.Result (Result(..), note)
 import Data.Newtype (over)
 import Data.Tuple (Tuple(..))
+import Effect
+import Effect.Class.Console (log, error)
 import Node.Encoding (Encoding(UTF8))
-import Node.FS (FS)
 import Node.FS.Sync (readTextFile)
 import Node.Path as Path
-import Node.Process (PROCESS, argv, cwd, exit)
+import Node.Process (argv, cwd, exit)
 import Transity.Data.Ledger (Ledger)
 import Transity.Data.Ledger as Ledger
 import Transity.Plot as Plot
 import Transity.Utils (ColorFlag(..))
+
+
+type Config = { colorState :: ColorFlag }
+
+config :: Config
+config =
+  { colorState: ColorYes
+  }
 
 
 usageString :: String
@@ -27,9 +36,13 @@ Usage: transity <command> <path/to/journal.yaml>
 Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
-transactions        All transcations and their transfers
-entries             All individual deposits & withdrawals
-entries-by-account  All individual deposits & withdrawals grouped by account
+transactions        All transactions and their transfers
+transfers           All transfers with one transfer per line
+entries             All individual deposits & withdrawals, space separated
+ledger-entries      All entries in Ledger format
+csv                 Entries, comma separated
+tsv                 Entries, tab separated
+entries-by-account  All individual deposits & withdrawals, grouped by account
 gplot               Code and data for gnuplot impulse diagram
                     to visualize transfers of all accounts
 gplot-cumul         Code and data for cumuluative gnuplot step chart
@@ -40,15 +53,21 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 -- TODO: Move validation to parsing
 utcError :: String
 utcError =
-  "All transfers or their parent transaction must have a valid utc field"
+  "All transfers or their parent transaction must have a valid UTC field"
+
 
 
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
     "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
+    -- "balance-on"         -> Ok $ Ledger.showBalanceOn dateMaybe ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
-    "entries"            -> note utcError $ Ledger.showEntries ledger
+    "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
+    "entries"            -> note utcError $ Ledger.showEntries  " " ledger
+    "ledger-entries"     -> Ok $ Ledger.entriesToLedger ledger
+    "csv"                -> note utcError $ Ledger.showEntries  "," ledger
+    "tsv"                -> note utcError $ Ledger.showEntries  "\t" ledger
     "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
     "gplot" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)
@@ -80,11 +99,11 @@ parseArguments arguments = do
 loadAndExec
   :: String
   -> Tuple String String
-  -> forall e. Eff (exception :: EXCEPTION, fs :: FS | e) (Result String String)
+  -> Effect (Result String String)
 
 loadAndExec currentDir (Tuple command filePathRel) = do
   let resolve = Path.resolve [currentDir]
-  let filePathAbs = resolve filePathRel
+  filePathAbs <- resolve filePathRel
   ledgerFileContent <- readTextFile UTF8 filePathAbs
   let
     result = do
@@ -93,11 +112,7 @@ loadAndExec currentDir (Tuple command filePathRel) = do
   pure result
 
 
-main :: forall eff . Eff
-  ( exception :: EXCEPTION
-  , console :: CONSOLE
-  , fs :: FS
-  , process :: PROCESS | eff) Unit
+main :: Effect Unit
 main = do
   arguments <- argv
   currentDir <- cwd
@@ -112,7 +127,9 @@ main = do
   case execution of
     Ok output -> log output
     Error message -> do
-      error message
+      error (if config.colorState == ColorYes
+        then withGraphics (foreground Red) message
+        else message)
       exit 1
 
 
