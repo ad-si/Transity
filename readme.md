@@ -2,6 +2,7 @@
 
 [![Build Status][]][travis]
 [![Join irc.freenode.net on IRCCloud][]][irccloud]
+[![Join the chat at https://gitter.im/feramhq/transity](https://badges.gitter.im/feramhq/transity.svg)](https://gitter.im/feramhq/transity?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
