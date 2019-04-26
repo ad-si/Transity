@@ -2,14 +2,11 @@ module Transity.Data.CommodityMap
 where
 
 import Data.Array (fromFoldable)
-import Data.Eq ((==))
 import Data.Foldable (foldr, all)
 import Data.Functor (map, (<#>))
 import Data.Function (flip, ($))
-import Data.HeytingAlgebra ((||))
 import Data.Map as Map
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe)
-import Data.Ratio ((%))
 import Data.Semigroup ((<>))
 -- import Data.String (Pattern(..), joinWith, split, length)
 import Data.String (joinWith)

@@ -1,6 +1,6 @@
 {
   "name": "transity",
-  "set": "psc-0.12.1-20181218t2112",
+  "set": "psc-0.12.1-20190426t1917",
   "source": "https://github.com/feramhq/package-sets.git",
   "depends": [
     "ansi",

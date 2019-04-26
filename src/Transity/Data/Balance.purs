@@ -11,7 +11,6 @@ import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Show (genericShow)
 import Data.Traversable (sequence)
 import Transity.Data.Amount (parseAmount)
-import Transity.Data.Balance
 import Transity.Data.CommodityMap (CommodityMap, fromAmounts)
 import Transity.Utils (getObjField, stringToDateTime)
 
