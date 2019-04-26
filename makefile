@@ -23,7 +23,7 @@ node_modules:
 
 
 .PHONY: test
-test:
+test: output
 	npx pulp test
 
 
