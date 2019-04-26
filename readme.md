@@ -157,7 +157,7 @@ Usage: transity <command> <path/to/journal.yaml>
 Command             Description
 ------------------  ------------------------------------------------------------
 balance             Simple balance of all accounts
-transactions        All transcations and their transfers
+transactions        All transactions and their transfers
 transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals
 entries-by-account  All individual deposits & withdrawals grouped by account
@@ -234,7 +234,7 @@ transactions:
 
 ## Plotting
 
-Per default all accounts are plotted.
+By default all accounts are plotted.
 To limit it to only a subsection use `awk` to filter the output.
 
 For example all transactions of Euro accounts:
@@ -261,7 +261,7 @@ transity gplot-cumul examples/journal.yaml \
 
 ## Import from Ledger CLI
 
-Exeute the include ledger2transity script:
+Execute the included ledger2transity script:
 
 ```shell
 ./ledger2transity.sh examples/hledger.journal > transactions.csv
@@ -275,10 +275,10 @@ Convert `transactions.csv` to YAML with e.g. [browserling.com/tools/csv-to-yaml]
 **Attention:**
 
 - Merge adjacent entries as each entry only debits / credits an account.
-  An transaction always involves 2 accounts (`from` and `to`).
+  A transaction always involves 2 accounts (`from` and `to`).
   (For expenses basically copy the ledger-account from the second entry
   into the `from` field of the first entry)
-- `from` and `to` might reversed for income
+- `from` and `to` might be reversed for income
   (depending on how the `payee` field was used)
 - Account names of Ledger-CLI are interpreted as tags
   Transity understands accounts as **physical accounts**
@@ -310,8 +310,8 @@ Wallet  |         | 20.00 €
 Simple, but also incomplete.
 Where did the money come from, where did it go?
 This led to double entry bookkeeping.
-Whenever you add some money to an account you have to remove the same
-amount from another.
+Whenever you add some money to an account,
+you have to remove the same amount from another.
 
 
 ```txt
@@ -358,8 +358,8 @@ Amount | From   | To
 - Intuitive - Just like you would talk about it
 - Safe - It's obvious if you forget to fill out a field
 
-Together with some further changes it yields a
-**easier understandable, more robust and more complete**
+Together with some further changes it yields an
+**easier to understand, more robust and more complete**
 representation of accounting!
 
 
@@ -369,7 +369,7 @@ PureScript leverages strong static typing and can therefore
 give more guarantees about the functionality of the code
 than weakly typed or untyped languages (like JavaScript).
 
-You wouldn't want your money get lost in rounding errors or
+You wouldn't want your money to get lost in rounding errors or
 be turned to `undefined`, would you? 😉
 
 
@@ -378,7 +378,9 @@ be turned to `undefined`, would you? 😉
 PureScript can also easily be used in the browser or get deployed
 as a cloud function as it simply compiles to JavaScript.
 With Haskell you'd have to use another language for a web frontend
-or quarrel with experimental stuff like GHCJS.
+or quarrel with experimental stuff like [GHCJS].
+
+[GHCJS]: https://github.com/ghcjs/ghcjs
 
 
 ## Comparison with Hledger
@@ -540,4 +542,3 @@ namecheap -> john      :  1    Domain
 [github.com/nuex/t]: https://github.com/nuex/t
 [github.com/bankscrap/bankscrap]: https://github.com/bankscrap/bankscrap
 [github.com/prashants/webzash]: https://github.com/prashants/webzash
-
