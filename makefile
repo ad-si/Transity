@@ -12,6 +12,7 @@ changelog.md: .git
 
 docs: output
 	npx parcel build webapp/index.html \
+	    --public-url /transity \
 		--no-source-maps \
 		--out-dir $@
 
