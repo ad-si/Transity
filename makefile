@@ -1,4 +1,4 @@
-all: output
+all: docs
 
 
 changelog.md: .git
@@ -8,6 +8,12 @@ changelog.md: .git
 		--infile $@ \
 		--same-file \
 		--output-unreleased
+
+
+docs: output
+	npx parcel build webapp/index.html \
+		--no-source-maps \
+		--out-dir $@
 
 
 output: src package.json package-lock.json psc-package.json .pulp-cache
@@ -33,5 +39,6 @@ clean:
 		.psc-package \
 		.psci_modules \
 		.pulp-cache \
-		output \
-		node_modules
+		docs \
+		node_modules \
+		output
