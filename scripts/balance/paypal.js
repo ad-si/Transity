@@ -12,21 +12,21 @@ const log = process.env.NODE_DEBUG
 
 
 
-let paypalBalancesPromise = null
-function getPaypalBalanceFunc (commodity) {
-  return async config => {
-    if (paypalBalancesPromise == null) {
-      paypalBalancesPromise = getPaypalBalances(config)
-    }
+// let paypalBalancesPromise = null
+// function getPaypalBalanceFunc (commodity) {
+//   return async config => {
+//     if (paypalBalancesPromise == null) {
+//       paypalBalancesPromise = getPaypalBalances(config)
+//     }
 
-    const balances = await paypalBalancesPromise
-    const balanceMap = {
-      eur: balances[0],
-      usd: balances[1],
-    }
-    return balanceMap[commodity]
-  }
-}
+//     const balances = await paypalBalancesPromise
+//     const balanceMap = {
+//       eur: balances[0],
+//       usd: balances[1],
+//     }
+//     return balanceMap[commodity]
+//   }
+// }
 
 
 async function getBalance (options = {}) {
@@ -88,19 +88,20 @@ async function getBalance (options = {}) {
     .end()
 }
 
+const promptValues = [
+  {
+    type: 'input',
+    name: 'username',
+    message: 'PayPal Username:',
+  },
+  {
+    type: 'password',
+    name: 'password',
+    message: 'PayPal Password:',
+  },
+]
 
-prompt([
-    {
-      type: 'input',
-      name: 'username',
-      message: 'PayPal Username:',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'PayPal Password:',
-    },
-  ])
+prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)

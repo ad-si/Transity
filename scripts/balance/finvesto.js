@@ -59,19 +59,20 @@ async function getBalance (options = {}) {
   return balance + ' €'
 }
 
+const promptValues = [
+  {
+    type: 'input',
+    name: 'username',
+    message: 'Finvesto Username:',
+  },
+  {
+    type: 'password',
+    name: 'password',
+    message: 'Finvesto Password:',
+  },
+]
 
-prompt([
-    {
-      type: 'input',
-      name: 'username',
-      message: 'Finvesto Username:',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'Finvesto Password:',
-    },
-  ])
+prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)

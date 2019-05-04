@@ -1,5 +1,4 @@
 const fse = require('fs-extra')
-const path = require('path')
 
 const Nightmare = require('nightmare')
 const nightmareDownloadManager = require('nightmare-inline-download')
@@ -50,22 +49,22 @@ function normalizeAndPrint (filePathTemp) {
         )
         const transfersObj = transaction.amount.startsWith('-')
           ? {
-              transfers: [{
-                from: 'hypo:giro',
-                to: noteToAccount(transaction.note),
-                amount: transaction.amount.slice(1) + currency,
-              }],
-            }
+            transfers: [{
+              from: 'hypo:giro',
+              to: noteToAccount(transaction.note),
+              amount: transaction.amount.slice(1) + currency,
+            }],
+          }
           : {
-              transfers: [{
-                from: noteToAccount(transaction.note),
-                to: 'hypo:giro',
-                // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-                amount: transaction.amount === '0,00'
-                  ? 0
-                  : transaction.amount + currency,
-              }],
-            }
+            transfers: [{
+              from: noteToAccount(transaction.note),
+              to: 'hypo:giro',
+              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
+              amount: transaction.amount === '0,00'
+                ? 0
+                : transaction.amount + currency,
+            }],
+          }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
         delete newTransaction.amount
@@ -181,19 +180,19 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await
-    prompt([
-      {
-        type: 'input',
-        name: 'username',
-        message: 'HypoVereinsbank Username:',
-      },
-      {
-        type: 'password',
-        name: 'password',
-        message: 'HypoVereinsbank Password:',
-      },
-    ])
+  const promptValues = [
+    {
+      type: 'input',
+      name: 'username',
+      message: 'HypoVereinsbank Username:',
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'HypoVereinsbank Password:',
+    },
+  ]
+  const answers = await prompt(promptValues)
 
   return getTransactions({
     username: answers.username,

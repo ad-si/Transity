@@ -1,5 +1,3 @@
-const assert = require('assert')
-
 const inquirer = require('inquirer')
 const Nightmare = require('nightmare')
 
@@ -49,19 +47,20 @@ async function getBalance (options = {}) {
     .end()
 }
 
+const promptValues = [
+  {
+    type: 'input',
+    name: 'username',
+    message: 'Portokasse Username:',
+  },
+  {
+    type: 'password',
+    name: 'password',
+    message: 'Portokasse Password:',
+  },
+]
 
-prompt([
-    {
-      type: 'input',
-      name: 'username',
-      message: 'Portokasse Username:',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'Portokasse Password:',
-    },
-  ])
+prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)

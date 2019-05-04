@@ -83,10 +83,10 @@ function keysToEnglish (object) {
   return newObject
 }
 
-
 function noteToAccount (note) {
   // Sorted by ascending importance
   // I.e. later keywords overwrite selection
+  /* eslint-disable quote-props */
   const mappings = {
     'paypal': 'paypal',
     'rewe': 'rewe',
@@ -127,7 +127,7 @@ function noteToAccount (note) {
     'ihk ': 'ihk',
     'etl ': 'etl',
     'lidl': 'lidl',
-    'caya': 'caya'
+    'caya': 'caya',
     'conrad electronic': 'conrad',
     'edeka': 'edeka',
     'auslandseinsatz': 'dkb:visa',
@@ -148,6 +148,7 @@ function noteToAccount (note) {
     'wikimedia deutschland': 'wikimedia',
     'mcpaper': 'mcpaper',
   }
+  /* eslint-enable quote-props */
   let account = note
 
   Object.entries(mappings)

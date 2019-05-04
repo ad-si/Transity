@@ -57,19 +57,20 @@ async function getBalance (options = {}) {
     .end()
 }
 
+const promptValues = [
+  {
+    type: 'input',
+    name: 'username',
+    message: 'MBS Username:',
+  },
+  {
+    type: 'password',
+    name: 'password',
+    message: 'MBS Password:',
+  },
+]
 
-prompt([
-    {
-      type: 'input',
-      name: 'username',
-      message: 'MBS Username:',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'MBS Password:',
-    },
-  ])
+prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)

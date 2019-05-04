@@ -1,5 +1,4 @@
 const fse = require('fs-extra')
-const path = require('path')
 
 const Nightmare = require('nightmare')
 const nightmareDownloadManager = require('nightmare-inline-download')
@@ -48,10 +47,10 @@ function normalizeAndPrint (filePathTemp) {
           .replace(/<br\s+\/>/g, '\n')
         const amount = transaction.amount + ' €'
         const sortedTransaction = {
-            utc: transaction['value-utc'] < transaction['entry-utc']
-              ? transaction['value-utc']
-              : transaction['entry-utc'],
-          }
+          utc: transaction['value-utc'] < transaction['entry-utc']
+            ? transaction['value-utc']
+            : transaction['entry-utc'],
+        }
 
         if (transaction['value-utc'] !== sortedTransaction.utc) {
           sortedTransaction['value-utc'] = transaction['value-utc']
@@ -65,29 +64,30 @@ function normalizeAndPrint (filePathTemp) {
 
         const transfersObj = transaction.amount.startsWith('-')
           ? {
-              transfers: [{
-                from: 'dkb:giro',
-                to: noteToAccount(note),
-                amount: amount.slice(1),
-              }]
-            }
+            transfers: [{
+              from: 'dkb:giro',
+              to: noteToAccount(note),
+              amount: amount.slice(1),
+            }],
+          }
           : {
-              transfers: [{
-                from: noteToAccount(note),
-                to: 'dkb:giro',
-                // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-                amount: transaction.amount === '0,00' ? '0 €' : amount,
-              }]
-            }
+            transfers: [{
+              from: noteToAccount(note),
+              to: 'dkb:giro',
+              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
+              amount: transaction.amount === '0,00' ? '0 €' : amount,
+            }],
+          }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
         delete newTransaction.amount
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
-      .sort((a, b) =>
+      .sort((transA, transB) =>
         // Oldest first
-        String(a.utc).localeCompare(String(b.utc), 'en')
+        String(transA.utc)
+          .localeCompare(String(transB.utc), 'en')
       )
 
     const yamlString = yaml
@@ -201,19 +201,19 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await
-    prompt([
-      {
-        type: 'input',
-        name: 'username',
-        message: 'DKB Username:',
-      },
-      {
-        type: 'password',
-        name: 'password',
-        message: 'DKB Password:',
-      },
-    ])
+  const promptValues = [
+    {
+      type: 'input',
+      name: 'username',
+      message: 'DKB Username:',
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'DKB Password:',
+    },
+  ]
+  const answers = await prompt(promptValues)
 
   return getTransactions({
     username: answers.username,

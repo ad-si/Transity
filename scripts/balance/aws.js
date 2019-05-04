@@ -80,19 +80,20 @@ async function getBalance (options = {}) {
     .end()
 }
 
+const prompValues = [
+  {
+    type: 'input',
+    name: 'username',
+    message: 'AWS Username:',
+  },
+  {
+    type: 'password',
+    name: 'password',
+    message: 'AWS Password:',
+  },
+]
 
-prompt([
-    {
-      type: 'input',
-      name: 'username',
-      message: 'AWS Username:',
-    },
-    {
-      type: 'password',
-      name: 'password',
-      message: 'AWS Password:',
-    },
-  ])
+prompt(prompValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)

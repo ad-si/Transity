@@ -1,5 +1,4 @@
 const fse = require('fs-extra')
-const path = require('path')
 
 const Nightmare = require('nightmare')
 const nightmareDownloadManager = require('nightmare-inline-download')
@@ -37,15 +36,13 @@ function normalizeAndPrint (filePathTemp) {
       .map(keysToEnglish)
       .reverse() // Now sorted ascending by value date
       .map(transaction => {
-        const sortedTransaction = Object.assign(
-            {
-              utc: transaction['value-utc'] < transaction['entry-utc']
-                ? transaction['value-utc']
-                : transaction['entry-utc'],
-              note: '',
-            },
-            transaction,
-          )
+        const newFields = {
+          utc: transaction['value-utc'] < transaction['entry-utc']
+            ? transaction['value-utc']
+            : transaction['entry-utc'],
+          note: '',
+        }
+        const sortedTransaction = Object.assign(newFields, transaction)
 
         if (sortedTransaction['value-utc'] === sortedTransaction.utc) {
           delete sortedTransaction['value-utc']
@@ -57,22 +54,22 @@ function normalizeAndPrint (filePathTemp) {
         const account = noteToAccount(transaction.to)
         const transfersObj = transaction.amount.startsWith('-')
           ? {
-              transfers: [{
-                from: 'mbs:giro',
-                to: account,
-                amount: transaction.amount.slice(1) + transaction.currency,
-              }],
-            }
+            transfers: [{
+              from: 'mbs:giro',
+              to: account,
+              amount: transaction.amount.slice(1) + transaction.currency,
+            }],
+          }
           : {
-              transfers: [{
-                from: account,
-                to: 'mbs:giro',
-                // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-                amount: transaction.amount === '0,00'
-                  ? 0
-                  : transaction.amount + transaction.currency,
-              }],
-            }
+            transfers: [{
+              from: account,
+              to: 'mbs:giro',
+              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
+              amount: transaction.amount === '0,00'
+                ? 0
+                : transaction.amount + transaction.currency,
+            }],
+          }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
         delete newTransaction.to
@@ -229,19 +226,19 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  const answers = await
-    prompt([
-      {
-        type: 'input',
-        name: 'username',
-        message: 'MBS Username:',
-      },
-      {
-        type: 'password',
-        name: 'password',
-        message: 'MBS Password:',
-      },
-    ])
+  const promptValues = [
+    {
+      type: 'input',
+      name: 'username',
+      message: 'MBS Username:',
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'MBS Password:',
+    },
+  ]
+  const answers = await prompt(promptValues)
 
   return getTransactions({
     username: answers.username,
