@@ -1,11 +1,14 @@
 const fse = require('fs-extra')
 
-const Nightmare = require('nightmare')
-const nightmareDownloadManager = require('nightmare-inline-download')
-const yaml = require('js-yaml')
-const tempy = require('tempy')
-const csvnorm = require('csvnorm')
 const converter = require('converter')
+const csvnorm = require('csvnorm')
+const inquirer = require('inquirer')
+const Nightmare = require('nightmare')
+const tempy = require('tempy')
+const yaml = require('js-yaml')
+
+const nightmareDownloadManager = require('nightmare-inline-download')
+const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 const {
   rmEmptyString,
