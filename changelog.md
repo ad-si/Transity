@@ -1,3 +1,24 @@
+# 0.5.0 (2019-05-04)
+
+- Deploy simple web version of Transity at [feram.io/transity] <!----> (5cc24f6)
+- Fix several typos and grammatical errors (0f670a7)
+
+[feram.io/transity]: https://www.feram.io/transity
+
+
+# 0.4.2 (2019-04-26)
+
+- Only add relevant files to npm package (1c9dc47)
+- Update dependencies (83992a7)
+
+
+# 0.4.1 (2019-04-26)
+
+- Simplify installation by pre-building Transity
+    and only delivering the built files in the npm package (459d3c0)
+- Add a changelog (c33e03b)
+
+
 # 0.4.0 (2019-04-25)
 
 - Add scripts to retrieve the balance and transactions
