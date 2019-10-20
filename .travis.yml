@@ -3,7 +3,7 @@ node_js: stable
 
 # Necessary to improve build time according to
 # https://github.com/purescript/purescript/issues/1880
-dist: trusty
+dist: bionic
 sudo: required
 
 script:
