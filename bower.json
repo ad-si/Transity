@@ -1,0 +1,39 @@
+{
+    "name": "purescript-transity",
+    "license": [
+        "GPL-3.0-or-later"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/feramhq/transity"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-ansi": "^v5.0.0",
+        "purescript-argonaut-codecs": "^v6.0.2",
+        "purescript-bigints": "^v4.0.0",
+        "purescript-console": "^v4.2.0",
+        "purescript-debug": "^v4.0.0",
+        "purescript-effect": "^v2.0.1",
+        "purescript-either": "^v4.1.1",
+        "purescript-format": "^v4.0.0",
+        "purescript-formatters": "^v4.0.1",
+        "purescript-js-date": "^v6.0.0",
+        "purescript-node-buffer": "^v6.0.0",
+        "purescript-node-fs": "^v5.0.1",
+        "purescript-node-process": "^v7.0.0",
+        "purescript-ordered-collections": "^v1.6.1",
+        "purescript-prelude": "^v4.1.1",
+        "purescript-psci-support": "^v4.0.0",
+        "purescript-rationals": "^v5.0.0",
+        "purescript-result": "^v1.0.3",
+        "purescript-spec": "^v4.0.1",
+        "purescript-strings": "^v4.0.1",
+        "purescript-yaml-next": "^v2.0.0"
+    }
+}

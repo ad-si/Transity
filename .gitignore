@@ -1,4 +1,5 @@
 /.spago
+/bower_components
 /docs-dev
 /generated-docs
 /node_modules
