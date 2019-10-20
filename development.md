@@ -6,13 +6,13 @@ Install dependencies:
 
 ```shell
 npm install
-npx psc-package install
+spago install
 ```
 
 Build project:
 
 ```shell
-npx pulp build
+spago build
 ```
 
 Make `transity` executable available in your path:
@@ -28,7 +28,7 @@ will now be available via the linked `transity` executable.
 ## Test
 
 ```shell
-npx pulp --watch test
+spago test --watch
 ```
 
 
@@ -37,8 +37,8 @@ npx pulp --watch test
 Generate and serve the Pursuit documentation with:
 
 ```sh
-pulp docs -- --format html
-cd generated-docs
+spago docs
+cd generated-docs/html
 python3 -m http.server 1222
 ```
 
@@ -53,21 +53,6 @@ markdown-toc -i readme.md
 ```
 
 [markdown-toc]: https://github.com/jonschlinkert/markdown-toc
-
-
-### Add Documentation File to Local Pursuit
-
-**Not working. Format seems wrong,
-but can't find code in pulp where it gets changed**
-
-```sh
-bower list --json --offline > resolutions.json
-psc-publish --manifest bower.json --resolutions resolutions.json
-```
-
-```sh
-mv resolutions.json ../pursuit/data/verified/transity
-```
 
 
 ## Generate Screenshots

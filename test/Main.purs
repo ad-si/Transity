@@ -28,7 +28,7 @@ import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Effect (Effect)
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, launchAff_)
 import Partial.Unsafe (unsafePartial)
 import Test.Fixtures
 import Test.Spec
@@ -36,11 +36,10 @@ import Test.Spec
   , it
   -- , itOnly
   )
-import Test.Spec.Assertions (fail, shouldEqual)
-import Test.Spec.Assertions.Aff (expectError)
+import Test.Spec.Assertions (expectError, fail, shouldEqual)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (run)
+import Test.Spec.Runner (runSpec)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -119,7 +118,7 @@ compareChar actual expected =
 
 
 main :: Effect Unit
-main = run [consoleReporter] do
+main = launchAff_ $ runSpec [consoleReporter] do
   describe "Utils" do
     describe "digitsToRational" do
       it "converts 137 to 137/1" do

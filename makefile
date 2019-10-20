@@ -10,36 +10,42 @@ changelog.md: .git
 		--output-unreleased
 
 
-docs: output
+index.js: src
+	spago bundle-module
+
+
+docs: output index.js
 	npx parcel build webapp/index.html \
-	    --public-url /transity \
+		--public-url /transity \
 		--no-source-maps \
 		--out-dir $@
 
 
-output: src package.json package-lock.json psc-package.json .pulp-cache
+docs-dev: output index.js
+	npx parcel build webapp/index.html \
+		--no-source-maps \
+		--out-dir $@
 
-.pulp-cache: .psc-package
-	npx pulp build
 
-.psc-package: node_modules
-	npx psc-package install
+output: src package.json package-lock.json packages.dhall spago.dhall node_modules
+	spago build
 
-node_modules:
+
+node_modules: package.json package-lock.json
 	npm install
 
 
 .PHONY: test
 test: output
-	npx pulp test
+	spago test
 
 
 .PHONY: clean
 clean:
 	-rm -rf \
-		.psc-package \
-		.psci_modules \
-		.pulp-cache \
+		.cache \
+		.spago \
 		docs \
+		docs-dev \
 		node_modules \
 		output

@@ -1,8 +1,6 @@
-/node_modules/
-/.pulp-cache/
-/output/
-/generated-docs/
-/.psc-package/
-/.psc*
-/.purs*
-/.psa*
+/.spago
+/bower_components
+/docs-dev
+/generated-docs
+/node_modules
+/output
