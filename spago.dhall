@@ -26,4 +26,6 @@
     ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
+, license = "GPL-3.0-or-later"
+, repository = "https://github.com/feramhq/transity"
 }
