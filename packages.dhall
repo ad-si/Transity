@@ -4,7 +4,7 @@ let upstream =
 let overrides = {=}
 
 let additions =
-      { yaml =
+      { yaml-next =
           { dependencies =
               [ "argonaut-codecs"
               , "argonaut-core"
