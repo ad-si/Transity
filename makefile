@@ -35,6 +35,10 @@ node_modules: package.json package-lock.json
 	npm install
 
 
+readme.md:
+	npx markdown-toc -i $@
+
+
 .PHONY: test
 test: output
 	spago test

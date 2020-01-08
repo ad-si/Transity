@@ -91,9 +91,10 @@ function normalizeAndPrint (filePathTemp) {
       )
 
     const yamlString = yaml
-      .dump(transactions)
-      .replace(/^- /gm, '\n-\n  ')
-      .replace(/^([\w- ]+): '(.+)'$/gm, '$1: $2')
+      .dump({transactions})
+      .replace(/^  - /gm, '\n  -\n    ')
+      .replace(/^  ([\w- ]+): '(.+)'$/gm, '  $1: $2')
+      .replace(/utc: ([0-9TZ:.-]+)$/gm, "utc: '$1'")
 
     console.info(yamlString)
   })

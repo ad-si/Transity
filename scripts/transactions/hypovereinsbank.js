@@ -39,14 +39,21 @@ function normalizeAndPrint (filePathTemp) {
       .map(keysToEnglish)
       .map(transaction => {
         const currency = transaction.currency.replace('EUR', '€')
-        const sortedTransaction = Object.assign(
-          {
-            utc: transaction.utc,
-            'entry-utc': transaction['entry-utc'],
-            note: transaction.note,
-          },
-          transaction,
-        )
+        const sortedTransaction = {
+          utc: transaction['value-utc'] < transaction['entry-utc']
+            ? transaction['value-utc']
+            : transaction['entry-utc'],
+        }
+
+        if (transaction['value-utc'] !== sortedTransaction.utc) {
+          sortedTransaction['value-utc'] = transaction['value-utc']
+        }
+        if (transaction['entry-utc'] !== sortedTransaction.utc) {
+          sortedTransaction['entry-utc'] = transaction['entry-utc']
+        }
+
+        sortedTransaction.note = transaction.note
+
         const transfersObj = transaction.amount.startsWith('-')
           ? {
             transfers: [{
@@ -77,9 +84,10 @@ function normalizeAndPrint (filePathTemp) {
       })
 
     const yamlString = yaml
-      .dump(transactions)
-      .replace(/^- /gm, '\n-\n  ')
-      .replace(/^([\w- ]+): '(.+)'$/gm, '$1: $2')
+      .dump({transactions})
+      .replace(/^  - /gm, '\n  -\n    ')
+      .replace(/^  ([\w- ]+): '(.+)'$/gm, '  $1: $2')
+      .replace(/utc: ([0-9TZ:.-]+)$/gm, "utc: '$1'")
 
     console.info(yamlString)
   })
@@ -123,9 +131,8 @@ async function downloadRange (options = {}) {
 
     .insert(endInputSelector, '')
     .insert(endInputSelector, toDdotMdotYYYY(endDate))
-
     .click('#showtransactions')
-
+    .wait(25000) // Time to enter TAN
 
   log(`Download CSV file to ${filePathTemp}`)
   return await nightmare
@@ -198,8 +205,8 @@ async function main () {
     username: answers.username,
     password: answers.password,
     shallShowBrowser: true,
-    numberOfDays: 100,
-    // startDate: new Date('2016-01-01'),
+    numberOfDays: 80,
+    // startDate: new Date('2019-03-01'),
   })
 }
 

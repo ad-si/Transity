@@ -25,6 +25,9 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 - [Installation](#installation)
 - [License](#license)
 - [Usage](#usage)
+  * [Check Order of Entries](#check-order-of-entries)
+  * [Retrieving Data from Banks](#retrieving-data-from-banks)
+    + [Script Usage](#script-usage)
 - [Journal File Format](#journal-file-format)
 - [Plotting](#plotting)
 - [Import from Ledger CLI](#import-from-ledger-cli)
@@ -33,11 +36,13 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   * [Why is it written in PureScript?](#why-is-it-written-in-purescript)
   * [Why is it not written in Haskell?](#why-is-it-not-written-in-haskell)
 - [Comparison with Hledger](#comparison-with-hledger)
+  * [Syntax](#syntax)
   * [Reporting](#reporting)
   * [Missing features](#missing-features)
+  * [Performance](#performance)
 - [Ideas](#ideas)
   * [Entry / Value Date](#entry--value-date)
-  * [Syntax](#syntax)
+  * [Syntax](#syntax-1)
 - [Related](#related)
 
 <!-- tocstop -->
@@ -174,13 +179,52 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 />
 
 
-### Check Order
+### Check Order of Entries
 
 Check if all entries are in a chronological order
 
 ```sh
-ag --nonumbers "    utc:" journals/main.yaml | tr -d "\'" | sort -c
+ag --nonumbers "^    utc:" journals/main.yaml | tr -d "\'" | sort -c
 ```
+
+
+### Retrieving Data from Banks
+
+Transity includes a few scripts located at [./scripts](./scripts) to
+automate a Chrome browser to download data.
+It supports downloading CSV files of all
+transactions and converting them to journal
+files and retrieving the current account balance:
+
+Currently supported accounts for transactions:
+
+- [DKB Visa Card](https://dkb.de)
+- [DKB Giro Account](https://dkb.de)
+- [HypoVereinsbank](https://www.hypovereinsbank.de)
+- [MBS](https://mbs.de)
+
+Currently supported accounts for balances:
+
+- [AWS](https://aws.amazon.com)
+- [DKB](https://dkb.de)
+- [Fidor](https://fidor.de)
+- [Finvesto](https://finvesto.de)
+- [HypoVereinsbank](https://www.hypovereinsbank.de)
+- [MBS](https://mbs.de)
+- [PayPal](https://paypal.com)
+- [Deutsche Post Petty Cash](https://portokasse.deutschepost.de)
+
+Contributions are very welcome!
+
+
+#### Script Usage
+
+```sh
+node scripts/transactions/hypovereinsbank.js > transactions.yaml
+```
+
+This will prompt you for your credentials and afterwards automate
+a headless Chrome instance to download and convert the data.
 
 
 ## Journal File Format

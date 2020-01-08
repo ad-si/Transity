@@ -93,9 +93,9 @@ function normalizeAndPrint (filePathTemp) {
       )
 
     const yamlString = yaml
-      .dump(transactions)
-      .replace(/^- /gm, '\n-\n  ')
-      .replace(/^([\w- ]+): '(.+)'$/gm, '$1: $2')
+      .dump({transactions})
+      .replace(/^  - /gm, '\n-\n  ')
+      .replace(/^  ([\w- ]+): '(.+)'$/gm, '$1: $2')
 
     console.info(yamlString)
   })

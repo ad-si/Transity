@@ -63,6 +63,9 @@ function keysToEnglish (object) {
         .replace('Buchungsdatum', 'entry-utc')
         .replace('Buchungstag', 'entry-utc')
         .replace('Buchungstext', 'type')
+        .replace('Datum', 'date')
+        .replace('Depotnummer', 'depot-id')
+        .replace('Fondswährung (FW)', 'fond-currency')
         .replace('Gläubiger-ID', 'creditor-id')
         .replace('Glaeubiger ID', 'creditor-id')
         .replace('Info', 'info')
@@ -77,6 +80,8 @@ function keysToEnglish (object) {
         .replace('Verwendungszweck', 'note')
         .replace('Waehrung', 'currency')
         .replace('Wertstellung', 'value-utc')
+        .replace('Zahlungsbetrag in ZW', 'amount')
+        .replace('Zahlungswährung (ZW)', 'currency')
 
       newObject[newKey] = entry[1]
     })
@@ -122,6 +127,7 @@ function noteToAccount (note) {
     'saturn electro': 'saturn',
     'dropscan': 'dropscan',
     'google ireland limited': 'google',
+    'jimmy joy': 'jimmy_joy',
 
     // German
     'ihk ': 'ihk',
@@ -147,6 +153,11 @@ function noteToAccount (note) {
     'finanzamt': 'tax_office',
     'wikimedia deutschland': 'wikimedia',
     'mcpaper': 'mcpaper',
+    'atmosfair': 'atmosfair',
+    'qthority': 'qthority',
+    'musikhaus thomann': 'thomann',
+    'hansemerkur speziale kv': 'hansemerkur',
+    'zwanzigeins e.v.': 'zwanzigeins',
   }
   /* eslint-enable quote-props */
   let account = note
