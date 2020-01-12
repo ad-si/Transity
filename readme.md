@@ -132,8 +132,7 @@ Thanks a lot for your support!
 
 For including Transity in proprietary closed source products, please contact me!
 
-[cliapp.store/apps/transity]: https://cliapp.store/apps/transity
-[GitHub Support page](https://github.com/sponsors/ad-si)
+[GitHub Support page]: https://github.com/sponsors/ad-si
 
 
 ## Usage
