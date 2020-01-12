@@ -30,7 +30,7 @@
     "tui"
   ],
   "author": "Adrian Sieber",
-  "license": "GPL-3.0-or-later",
+  "license": "AGPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "https://github.com/feramhq/transity.git"

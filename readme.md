@@ -107,19 +107,33 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 ## Installation
 
-Go to [cliapp.store/apps/transity] to receive Transity.
+Transity is distributed as a JavaScript bundle and can therefore
+be installed via [npm](https://npmjs.com):
+
+```sh
+npm install --global transity
+```
 
 
 ## License
 
-Transity is licensed under GPL-3.0-or-later and
-can be used free of charge at non-profits and for evaluation.
-For long-term usage, however, please make sure to purchase a license
-at [cliapp.store/apps/transity].
+While Transity is licensed under the AGPL-3.0-or-later
+and can therefore be used free of charge,
+I hope you will acknowledge the work and effort
+it takes to maintain and improve this software
+and make a donation via my [GitHub Support page].
 
-For including Transity in proprietary closed source products, please contact me.
+If you find Transity valuable and/or use it regularly this should
+be a small nuisance for you, but it would mean the world for me!
+It would mean that I can spend more time on this project
+and bring it to the next level!
+
+Thanks a lot for your support!
+
+For including Transity in proprietary closed source products, please contact me!
 
 [cliapp.store/apps/transity]: https://cliapp.store/apps/transity
+[GitHub Support page](https://github.com/sponsors/ad-si)
 
 
 ## Usage
