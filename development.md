@@ -15,6 +15,12 @@ Build project:
 spago build
 ```
 
+Build and run:
+
+```shell
+spago run --node-args 'balance test/test.yaml'
+```
+
 Make `transity` executable available in your path:
 
 ```shell

@@ -7,7 +7,9 @@
     "transity": "cli/main.js"
   },
   "scripts": {
-    "prepublishOnly": "spago build && npm test",
+    "minify": "uglifyjs --compress --mangle --output=index.js index.js",
+    "bundle": "spago bundle-module && npm run minify",
+    "prepublishOnly": "npm test && npm run bundle",
     "test": "spago test && npm run lint-js",
     "lint-js": "eslint --max-warnings=0 --ignore-path=.gitignore scripts"
   },
@@ -15,9 +17,9 @@
     "test": "tests"
   },
   "files": [
-    "/cli",
-    "/output",
-    "/scripts"
+    "index.js",
+    "/scripts",
+    "!.DS_Store"
   ],
   "keywords": [
     "accounting",
@@ -55,7 +57,8 @@
     "markdown-toc": "^1.2.0",
     "parcel": "^1.12.4",
     "purescript": "^0.13.3",
-    "spago": "^0.10.0"
+    "spago": "^0.10.0",
+    "uglify-js": "^3.7.6"
   },
   "eslintConfig": {
     "extends": "eslint-config-javascript"

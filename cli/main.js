@@ -1,5 +1,5 @@
 #! /usr/bin/env node
 
-const Main = require('../output/Main')
+const transity = require('../index.js')
 
-Main.main()
+transity.main()
