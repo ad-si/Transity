@@ -7,7 +7,7 @@ dist: bionic
 sudo: required
 
 script:
-  - make test
+  - npm run prepublishOnly
   - npm link
   - transity balance examples/journal.yaml
 
