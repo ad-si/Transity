@@ -128,6 +128,8 @@ function noteToAccount (note) {
     'dropscan': 'dropscan',
     'google ireland limited': 'google',
     'jimmy joy': 'jimmy_joy',
+    'wecircberlin': 'circ',
+    'lime ride': 'lime',
 
     // German
     'ihk ': 'ihk',
@@ -155,9 +157,12 @@ function noteToAccount (note) {
     'mcpaper': 'mcpaper',
     'atmosfair': 'atmosfair',
     'qthority': 'qthority',
+    'nosh good taste': 'nosh',
     'musikhaus thomann': 'thomann',
+    'fratellis frankfurt': 'fratellis_frankfurt',
     'hansemerkur speziale kv': 'hansemerkur',
     'zwanzigeins e.v.': 'zwanzigeins',
+    'tier de': 'tier',
   }
   /* eslint-enable quote-props */
   let account = note
