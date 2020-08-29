@@ -54,6 +54,7 @@ gplot               Code and data for gnuplot impulse diagram
                     to visualize transfers of all accounts
 gplot-cumul         Code and data for cumuluative gnuplot step chart
                     to visualize balance of all accounts
+version             Print currently used version
 """
 
 
@@ -146,22 +147,28 @@ loadAndExec currentDir (Tuple command filePathRel) = do
 main :: Effect Unit
 main = do
   arguments <- argv
-  currentDir <- cwd
 
-  let
-    result = (parseArguments arguments) <#> (loadAndExec currentDir)
+  if (arguments !! 2) == Just "version"
+  then do
+    log "0.7.0"
+    exit 1
+  else do
+    currentDir <- cwd
 
-  execution <- case result of
-    Ok output -> output
-    Error message -> pure (Error message)
+    let
+      result = (parseArguments arguments) <#> (loadAndExec currentDir)
 
-  case execution of
-    Ok output -> log output
-    Error message -> do
-      error (if config.colorState == ColorYes
-        then withGraphics (foreground Red) message
-        else message)
-      exit 1
+    execution <- case result of
+      Ok output -> output
+      Error message -> pure (Error message)
+
+    case execution of
+      Ok output -> log output
+      Error message -> do
+        error (if config.colorState == ColorYes
+          then withGraphics (foreground Red) message
+          else message)
+        exit 1
 
 
 -- TODO: Use Monad transformers
