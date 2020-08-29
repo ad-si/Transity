@@ -131,7 +131,10 @@ async function downloadRange (options = {}) {
     .insert(endInputSelector, toDdotMdotYYYY(endDate))
 
     .click('.bcontinue input[type=submit]')
-    .refresh() // Necessary to update the list
+    .wait(options.numberOfDays > 90 ? 25000 : 0)  // Time to enter TAN
+
+
+  throw new Error('Test')
 
 
   const optionId = await nightmare
@@ -243,13 +246,18 @@ async function main () {
   ]
   const answers = await prompt(promptValues)
 
-  return getTransactions({
-    username: answers.username,
-    password: answers.password,
-    shallShowBrowser: true,
-    numberOfDays: 100,
-    // startDate: new Date('2016-01-01'),
-  })
+  try {
+    getTransactions({
+      username: answers.username,
+      password: answers.password,
+      shallShowBrowser: true,
+      numberOfDays: 90,  // More than 90 days trigger a tan prompt
+      // startDate: new Date('2016-01-01'),
+    })
+  }
+  catch (error) {
+    console.error(error)
+  }
 }
 
 

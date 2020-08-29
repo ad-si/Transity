@@ -163,6 +163,7 @@ function noteToAccount (note) {
     'hansemerkur speziale kv': 'hansemerkur',
     'zwanzigeins e.v.': 'zwanzigeins',
     'tier de': 'tier',
+    'zalando': 'zalando',
   }
   /* eslint-enable quote-props */
   let account = note
@@ -179,5 +180,5 @@ function noteToAccount (note) {
       }
     })
 
-  return account
+  return account || '_todo_'
 }
