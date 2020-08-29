@@ -1,6 +1,6 @@
 module Transity.Data.Ledger where
 import Prelude
-  ( class Show, class Eq, bind, compare, identity, map, pure, show
+  ( class Show, class Eq, bind, compare, identity, map, pure, show, discard
   , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
   )
 
@@ -297,17 +297,38 @@ subtractTransfer balanceMap transfer  =
 showBalance :: ColorFlag -> Ledger -> String
 showBalance colorFlag (Ledger ledger) =
   let
+    balanceMap :: Map.Map String (Map.Map Commodity Amount)
     balanceMap = foldr (flip addTransaction) Map.empty ledger.transactions
+
+    balancesArray :: Array (Tuple String (Map.Map Commodity Amount))
     balancesArray = balanceMap
       # (Map.toUnfoldable :: BalanceMap ->
           Array (Tuple Account.Id CommodityMap))
+
     normAccId accId =
       replace (Pattern ":_default_") (Replacement "") accId
+
+    accWidthRecs ::
+      Array
+        { account :: Int
+        , commodity :: Int
+        , fraction :: Int
+        , integer :: Int
+        }
     accWidthRecs = balancesArray
       <#> (\(Tuple accId comMap) ->
               Account.toWidthRecord (normAccId accId) comMap)
+
+    widthRecord ::
+      { account :: Int
+      , commodity :: Int
+      , fraction :: Int
+      , integer :: Int
+      }
     widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
+
     marginLeft = 2
+
     showTuple (Tuple accId comMap) = (Account.showPrettyAligned
         colorFlag
         widthRecord { account = widthRecord.account + marginLeft }

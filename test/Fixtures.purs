@@ -110,7 +110,7 @@ transactionZero = Transaction
   { id: Nothing
   , utc: Nothing
   , note: Nothing
-  , receipt: Nothing
+  , files: []
   , transfers: []
   }
 
@@ -136,7 +136,7 @@ transactionSimple = Transaction
   { id: Just "abcxyz"
   , utc: stringToDateTime "2014-12-24"
   , note: Just "A short note about this transaction"
-  , receipt: Just "filepath/to/receipt.pdf"
+  , files: ["filepath/to/receipt.pdf"]
   , transfers: [ transferSimple ]
   }
 
@@ -164,9 +164,9 @@ transfers:
 transactionSimpleShowed :: String
 transactionSimpleShowed = """
   (Transaction
-    { id: (Just "abcxyz")
+    { files: []
+    , id: (Just "abcxyz")
     , note: (Just "A short note about this transaction")
-    , receipt: Nothing
     , transfers:
       [ """ <> transferSimpleShowed <> """
       ]
@@ -191,7 +191,7 @@ transactionSimpleB = Transaction
   { id: Just "defghi"
   , utc: stringToDateTime "2001-05-13"
   , note: Just "Another note"
-  , receipt: Just "filepath/to/another-receipt.pdf"
+  , files: ["filepath/to/another-receipt.pdf"]
   , transfers: [ transferSimpleB ]
   }
 
@@ -200,7 +200,7 @@ transactionSimpleBShowed = """
   (Transaction
     { id: (Just "defghi")
     , note: (Just "Another note")
-    , receipt: (Just "filepath/to/another-receipt.pdf")
+    , files: ["filepath/to/another-receipt.pdf"]
     , transfers:
       [ """ <> transferSimpleBShowed <> """
       ]

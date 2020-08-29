@@ -1,22 +1,29 @@
 module Main where
 
-import Prelude (Unit, bind, discard, pure, (#), ($), (<#>), (<>))
+import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
 import Data.Array ((!!))
 import Data.Eq ((==))
+import Data.Foldable (foldMap)
 import Data.Result (Result(..), note)
+import Data.String (Pattern(..), indexOf)
+import Data.Traversable (for_)
 import Data.Newtype (over)
 import Data.Tuple (Tuple(..))
+import Data.Maybe (Maybe(..))
 import Effect
 import Effect.Class.Console (log, error)
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Sync (readTextFile)
+import Node.FS.Async (exists)
 import Node.Path as Path
 import Node.Process (argv, cwd, exit)
-import Transity.Data.Ledger (Ledger)
+
+import Transity.Data.Ledger (Ledger(..))
 import Transity.Data.Ledger as Ledger
+import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
 import Transity.Utils (ColorFlag(..))
 
@@ -96,20 +103,44 @@ parseArguments arguments = do
   pure (Tuple commandName filePathArg)
 
 
+-- | Asynchronously logs all non existent referenced files
+checkFilePaths :: String -> Ledger -> Effect (Result String String)
+checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
+  let
+    files = foldMap (\(Transaction tact) -> tact.files) transactions
+
+  for_ files \filePathRel -> do
+    filePathAbs <- Path.resolve [ledgerFilePath] filePathRel
+    exists filePathAbs $ \doesExist ->
+      if doesExist
+      then pure unit
+      else
+        log $ withGraphics
+          (foreground Yellow)
+          ("Warning: \"" <> filePathAbs <> "\" does not exist")
+
+  pure $ Ok ""
+
+
 loadAndExec
   :: String
   -> Tuple String String
   -> Effect (Result String String)
-
 loadAndExec currentDir (Tuple command filePathRel) = do
   let resolve = Path.resolve [currentDir]
   filePathAbs <- resolve filePathRel
   ledgerFileContent <- readTextFile UTF8 filePathAbs
-  let
-    result = do
-      ledger <- Ledger.fromYaml ledgerFileContent
-      run command filePathRel ledger
-  pure result
+
+  case (Ledger.fromYaml ledgerFileContent) of
+    Error msg -> pure $ Error msg
+    Ok ledger -> do
+      let
+        journalDir =
+          if indexOf (Pattern "/dev/fd/") filePathAbs == Just 0
+          then currentDir
+          else Path.dirname filePathAbs
+      _ <- checkFilePaths journalDir ledger
+      pure $ run command filePathRel ledger
 
 
 main :: Effect Unit

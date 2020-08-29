@@ -312,7 +312,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
             expected = transactionSimpleShowed
               # wrapWithOk
               # rmWhitespace
-          actual `shouldEqual` expected
+          actual `shouldEqualString` expected
 
 
         it "converts a YAML string to a Transaction" do
@@ -324,7 +324,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
             expected = transactionSimpleShowed
               # wrapWithOk
               # rmWhitespace
-          actual `shouldEqual` expected
+          actual `shouldEqualString` expected
 
 
         it "pretty shows a transaction" do
@@ -636,7 +636,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
                     [(Transaction
                       { id: Nothing
                       , note: Nothing
-                      , receipt: Nothing
+                      , files: []
                       , transfers:
                           [ (Transfer
                               { amount: (Amount

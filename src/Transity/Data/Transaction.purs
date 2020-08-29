@@ -9,6 +9,7 @@ import Control.Monad.Except (runExcept)
 import Data.Argonaut.Core (toObject, Json)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Combinators (getFieldOptional, defaultField)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Foldable (fold)
@@ -34,7 +35,7 @@ newtype Transaction = Transaction
   { id :: Maybe String
   , utc :: Maybe DateTime
   , note :: Maybe String
-  , receipt :: Maybe String
+  , files :: Array String
   , transfers :: Array Transfer
   }
 
@@ -56,14 +57,14 @@ decodeJsonTransaction json = do
   id        <- object `getFieldMaybe` "id"
   utc       <- object `getFieldMaybe` "utc"
   note      <- object `getFieldMaybe` "note"
-  receipt   <- object `getFieldMaybe` "receipt"
+  files     <- fromEither $ object `getFieldOptional` "files" `defaultField` []
   transfers <- object `getObjField` "transfers"
 
   pure $ Transaction
     { id
     , utc: utc >>= stringToDateTime
     , note
-    , receipt
+    , files
     , transfers
     }
 
