@@ -18,13 +18,13 @@ docs: output index.js
 	npx parcel build webapp/index.html \
 		--public-url /transity \
 		--no-source-maps \
-		--out-dir $@
+		--dist-dir $@
 
 
 docs-dev: output index.js
 	npx parcel build webapp/index.html \
 		--no-source-maps \
-		--out-dir $@
+		--dist-dir $@
 
 
 output: src package.json package-lock.json packages.dhall spago.dhall node_modules

@@ -3,6 +3,7 @@
   "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
   "version": "0.7.0",
   "main": "output/Main/index.js",
+  "browser": "webapp/main.js",
   "bin": {
     "transity": "cli/main.js"
   },
