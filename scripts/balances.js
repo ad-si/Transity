@@ -90,7 +90,7 @@ async function main () {
     if (error.code === 'ENOENT') {
       console.warn(
         'Retrieve the environment.yaml file from gopass' +
-        'and add it to the project\'s root directory'
+        'and add it to the project\'s root directory',
       )
     }
     else {

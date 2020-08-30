@@ -51,7 +51,7 @@ async function getBalance (options = {}) {
         .textContent
         .replace(/\./g, '')
         .replace(/,/g, '.'),
-      '#financialStatus #summe-gruppe-0 strong span'
+      '#financialStatus #summe-gruppe-0 strong span',
     )
     .end()
 

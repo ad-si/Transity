@@ -75,7 +75,7 @@ async function getBalance (options = {}) {
         .textContent
         .replace(/\$([0-9,.]+)$/, '$1 $')
         .replace(/,/g, ''),
-      valueContainer
+      valueContainer,
     )
     .end()
 }

@@ -62,7 +62,7 @@ async function getBalance (options = {}) {
     .click('#btnNext')
     .wait(() => !document
       .getElementById('splitPassword').classList
-      .contains('hide')
+      .contains('hide'),
     )
 
   log('Enter password')
@@ -81,9 +81,9 @@ async function getBalance (options = {}) {
           .nodeValue
           .replace(/,(\d\d)\xa0(\w{3})(\n= .+\n)?/g, '.$1 $2')
           .replace('EUR', '€')
-          .replace('USD', '$')
+          .replace('USD', '$'),
         ),
-      '.multi-currency .currency-amt-newexp'
+      '.multi-currency .currency-amt-newexp',
     )
     .end()
 }

@@ -52,7 +52,7 @@ async function getBalance (options = {}) {
         .replace(/\./g, '')
         .replace(/,/g, '.'),
       '#eox_ContentPane_4_VermoegensuebersichtBody1_' +
-        'repeaterDepotsKonten_ctl02_lblBestandGesamt'
+        'repeaterDepotsKonten_ctl02_lblBestandGesamt',
     )
     .end()
 

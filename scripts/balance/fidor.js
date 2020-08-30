@@ -51,7 +51,7 @@ async function getBalance (options = {}) {
         .textContent
         .replace(/\./g, '')
         .replace(/,/g, '.'),
-      '.available-balance .main-amount'
+      '.available-balance .main-amount',
     )
     .end()
 }

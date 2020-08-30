@@ -42,7 +42,7 @@ async function getBalance (options = {}) {
     .evaluate(() => document
       .querySelector('#txtWalletBalance')
       .textContent
-      .replace(/,(\d\d)\xa0€$/, '.$1 €')
+      .replace(/,(\d\d)\xa0€$/, '.$1 €'),
     )
     .end()
 }

@@ -8,7 +8,6 @@ const chrono = require('chrono-node')
 const {
   rmEmptyString,
   keysToEnglish,
-  noteToAccount,
 } = require('../helpers.js')
 
 
@@ -36,11 +35,10 @@ function normalizeAndPrint (filePathTemp) {
           {
             utc: chrono
               .parseDate([
-                  transaction.Date,
-                  transaction.Time,
-                  transaction.TimeZone,
-                ].join(' ')
-              )
+                transaction.Date,
+                transaction.Time,
+                transaction.TimeZone,
+              ].join(' '))
               .toISOString()
               .replace('T', ' ')
               .replace('.000Z', ''),
@@ -50,28 +48,37 @@ function normalizeAndPrint (filePathTemp) {
         )
         const transfer = transaction.Gross.startsWith('-')
           ? {
-              from: '_todo_:paypal:' + transaction.Currency.toLowerCase().trim(),
-              to: transaction.Name
-                ? `${transaction.Name} <${transaction['To Email Address']}>`
-                : 'paypal',
-              amount: transaction.Gross.slice(1) + ' ' + currency,
-            }
+            from: '_todo_:paypal:' +
+              transaction.Currency
+                .toLowerCase()
+                .trim(),
+            to: transaction.Name
+              ? `${transaction.Name} <${transaction['To Email Address']}>`
+              : 'paypal',
+            amount: transaction.Gross.slice(1) + ' ' + currency,
+          }
           : {
-              from: transaction.Name
-                ? `${transaction.Name} <${transaction['From Email Address']}>`
-                : 'paypal',
-              to: '_todo_:paypal:' + transaction.Currency.toLowerCase().trim(),
-              amount: transaction.Gross + ' ' + currency,
-            }
+            from: transaction.Name
+              ? `${transaction.Name} <${transaction['From Email Address']}>`
+              : 'paypal',
+            to: '_todo_:paypal:' +
+              transaction.Currency
+                .toLowerCase()
+                .trim(),
+            amount: transaction.Gross + ' ' + currency,
+          }
 
         const newTransaction = Object.assign(
           sortedTransaction,
-          {transfers: [transfer]}
+          {transfers: [transfer]},
         )
 
         if (Number(transaction.Fee) !== 0) {
           newTransaction.transfers.push({
-            from: '_todo_:paypal:' + transaction.Currency.toLowerCase().trim(),
+            from: '_todo_:paypal:' +
+              transaction.Currency
+                .toLowerCase()
+                .trim(),
             to: 'paypal',
             amount: transaction.Fee.slice(1) + ' ' + currency,
             tags: ['fee'],

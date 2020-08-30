@@ -123,7 +123,7 @@ async function downloadRange (options = {}) {
       endDate
         .toISOString(10)
         .slice(0, 10)
-    }`
+    }`,
   )
   await nightmare
     .insert(startInputSelector, '')

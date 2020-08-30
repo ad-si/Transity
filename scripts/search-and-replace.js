@@ -17,7 +17,7 @@ async function searchAndReplace () {
     {
       delimiter: '\t',
       comment: '#',
-    }
+    },
   )
 
   records.forEach(pair => {

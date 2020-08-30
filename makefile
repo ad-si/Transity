@@ -42,6 +42,7 @@ readme.md:
 .PHONY: test
 test: output
 	spago test
+	npm run lint-js
 
 
 .PHONY: clean

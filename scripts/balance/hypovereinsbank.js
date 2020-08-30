@@ -52,7 +52,7 @@ async function getBalance (options = {}) {
         .replace(/\./g, '')
         .replace(/,/g, '.')
         .replace(/EUR/, ' €'),
-      '.startpagemoney'
+      '.startpagemoney',
     )
     .end()
 }

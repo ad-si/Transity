@@ -52,7 +52,7 @@ async function getBalance (options = {}) {
         .replace(/\./g, '')
         .replace(/,/g, '.')
         .replace(/EUR/, '€'),
-      '.mbf-finanzstatus .tablefooter .balance .offscreen'
+      '.mbf-finanzstatus .tablefooter .balance .offscreen',
     )
     .end()
 }

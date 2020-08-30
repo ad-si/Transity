@@ -71,7 +71,7 @@ function normalizeAndPrint (filePathTemp) {
       .sort((transA, transB) =>
         // Oldest first
         String(transA.utc)
-          .localeCompare(String(transB.utc), 'en')
+          .localeCompare(String(transB.utc), 'en'),
       )
 
     const yamlString = yaml

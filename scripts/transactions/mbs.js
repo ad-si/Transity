@@ -121,7 +121,7 @@ async function downloadRange (options = {}) {
       endDate
         .toISOString(10)
         .slice(0, 10)
-    }`
+    }`,
   )
   await nightmare
     .insert(startInputSelector, '')
@@ -134,9 +134,6 @@ async function downloadRange (options = {}) {
     .wait(options.numberOfDays > 90 ? 25000 : 0)  // Time to enter TAN
 
 
-  throw new Error('Test')
-
-
   const optionId = await nightmare
     .evaluate(
       (selector, done) => {
@@ -144,10 +141,10 @@ async function downloadRange (options = {}) {
           null,
           document
             .querySelector('.bpageselect select option:last-of-type')
-            .value
+            .value,
         )
       },
-      '.bpageselect select'
+      '.bpageselect select',
     )
 
   log(`Show all entries of option "${optionId}"`)
@@ -207,11 +204,11 @@ async function getTransactions (options = {}) {
   if (process.argv[2] === 'MT940') {
     const previousMonthLastDay = new Date(
       new Date()
-        .setUTCDate(0)
+        .setUTCDate(0),
     )
     const previousMonthFirstDay = new Date(
       new Date(previousMonthLastDay)
-        .setUTCDate(1)
+        .setUTCDate(1),
     )
 
     await downloadRange({
