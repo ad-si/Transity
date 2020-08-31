@@ -48,7 +48,7 @@ test: output
 .PHONY: clean
 clean:
 	-rm -rf \
-		.cache \
+		.parcel-cache \
 		.spago \
 		docs \
 		docs-dev \

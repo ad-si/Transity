@@ -4,20 +4,21 @@ import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Data.Array ((!!))
+import Data.Array ((!!), filter, concat, null, zip, length, cons, difference)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
+import Data.Maybe (Maybe(..))
+import Data.Newtype (over)
 import Data.Result (Result(..), note)
 import Data.String (Pattern(..), indexOf)
-import Data.Traversable (for_)
-import Data.Newtype (over)
-import Data.Tuple (Tuple(..))
-import Data.Maybe (Maybe(..))
-import Effect
+import Data.Traversable (for_, sequence)
+import Data.Tuple (Tuple(..), fst, snd)
+import Effect (Effect)
 import Effect.Class.Console (log, error)
 import Node.Encoding (Encoding(UTF8))
-import Node.FS.Sync (readTextFile)
 import Node.FS.Async (exists)
+import Node.FS.Stats (isFile, isDirectory)
+import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (argv, cwd, exit)
 
@@ -51,9 +52,12 @@ csv                 Entries, comma separated
 tsv                 Entries, tab separated
 entries-by-account  All individual deposits & withdrawals, grouped by account
 gplot               Code and data for gnuplot impulse diagram
-                    to visualize transfers of all accounts
+                      to visualize transfers of all accounts
 gplot-cumul         Code and data for cumuluative gnuplot step chart
-                    to visualize balance of all accounts
+                      to visualize balance of all accounts
+unused-files        Recursively list all files in a directory
+                      which are not referenced in the journal
+help                Print this help dialog
 version             Print currently used version
 """
 
@@ -95,15 +99,6 @@ run command filePathRel ledger =
     other -> Error ("\"" <> other <> "\" is not a valid command")
 
 
-parseArguments :: Array String -> Result String (Tuple String String)
-parseArguments arguments = do
-  commandName <- note usageString (arguments !! 2)
-  filePathArg <- note
-    ("No path to a ledger file was provided\n\n" <> usageString)
-    (arguments !! 3)
-  pure (Tuple commandName filePathArg)
-
-
 -- | Asynchronously logs all non existent referenced files
 checkFilePaths :: String -> Ledger -> Effect (Result String String)
 checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
@@ -111,7 +106,7 @@ checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
     files = foldMap (\(Transaction tact) -> tact.files) transactions
 
   for_ files \filePathRel -> do
-    filePathAbs <- Path.resolve [ledgerFilePath] filePathRel
+    let filePathAbs = Path.concat [ledgerFilePath, filePathRel]
     exists filePathAbs $ \doesExist ->
       if doesExist
       then pure unit
@@ -125,12 +120,11 @@ checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
 
 loadAndExec
   :: String
-  -> Tuple String String
+  -> Array String
   -> Effect (Result String String)
-loadAndExec currentDir (Tuple command filePathRel) = do
-  let resolve = Path.resolve [currentDir]
-  filePathAbs <- resolve filePathRel
-  ledgerFileContent <- readTextFile UTF8 filePathAbs
+loadAndExec currentDir [command, filePathRel] = do
+  let filePathAbs = Path.concat [currentDir, filePathRel]
+  ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
 
   case (Ledger.fromYaml ledgerFileContent) of
     Error msg -> pure $ Error msg
@@ -142,33 +136,95 @@ loadAndExec currentDir (Tuple command filePathRel) = do
           else Path.dirname filePathAbs
       _ <- checkFilePaths journalDir ledger
       pure $ run command filePathRel ledger
+loadAndExec currendDir _ =
+  pure $ Error "loadAndExec expects an array with length 2"
+
+
+errorAndExit :: String -> Effect Unit
+errorAndExit message = do
+  error (if config.colorState == ColorYes
+        then withGraphics (foreground Red) message
+        else message)
+  exit 1
+
+
+getAllFiles :: String -> Effect (Array String)
+getAllFiles directoryPath =
+  let
+    addFiles :: String -> Effect (Array String)
+    addFiles dirPath = do
+      entriesRel <- Sync.readdir dirPath
+      let entriesAbs = entriesRel <#> (\entry -> dirPath <> "/" <> entry)
+      statEntries <- sequence $ entriesAbs <#> Sync.stat
+
+      let
+        pathStatsTuples = zip entriesAbs statEntries
+        fileTuples = filter (\tuple -> isFile $ snd tuple) pathStatsTuples
+        dirTuples = filter (\tuple -> isDirectory $ snd tuple) pathStatsTuples
+        files = fileTuples <#> fst
+
+      if null dirTuples
+      then
+        pure $ files
+      else do
+        filesNested <- sequence $ dirTuples
+          <#> (\(Tuple dir dirStats) -> addFiles dir)
+        pure (concat $ cons files filesNested)
+  in
+    addFiles directoryPath
 
 
 main :: Effect Unit
 main = do
   arguments <- argv
 
-  if (arguments !! 2) == Just "version"
-  then do
-    log "0.7.0"
-    exit 1
-  else do
-    currentDir <- cwd
+  case [arguments !! 2, arguments !! 3, arguments !! 4] of
+    [Just "help",    Nothing, Nothing] -> log usageString
+    [Just "version", Nothing, Nothing] -> log "0.7.0"
 
-    let
-      result = (parseArguments arguments) <#> (loadAndExec currentDir)
+    [Just _,        Nothing, Nothing] ->
+      errorAndExit $ "No path to a ledger file was provided\n\n" <> usageString
 
-    execution <- case result of
-      Ok output -> output
-      Error message -> pure (Error message)
+    [Just "unused-files", Just filesDirPath, Just ledgerFilePath] -> do
+      ledgerFilePathAbs <- Path.resolve [] ledgerFilePath
+      ledgerFileContent <- Sync.readTextFile UTF8 ledgerFilePathAbs
 
-    case execution of
-      Ok output -> log output
-      Error message -> do
-        error (if config.colorState == ColorYes
-          then withGraphics (foreground Red) message
-          else message)
-        exit 1
+      case (Ledger.fromYaml ledgerFileContent) of
+        Error msg -> errorAndExit msg
+        Ok ledger@(Ledger {transactions}) -> do
+          currentDir <- cwd
+          let
+            journalDir =
+              if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0
+              then currentDir
+              else Path.dirname ledgerFilePathAbs
+          _ <- checkFilePaths journalDir ledger
+
+          filesDir <- Path.resolve [] filesDirPath
+          foundFiles <- getAllFiles filesDir
+          let
+            ledgerFilesRel = foldMap
+              (\(Transaction tact) -> tact.files)
+              transactions
+            ledgerFilesAbs = ledgerFilesRel <#> (\fileRel
+              -> Path.concat [Path.dirname ledgerFilePathAbs, fileRel])
+
+          for_ (difference foundFiles ledgerFilesAbs) $ \filePathAbs ->
+            log $ withGraphics
+              (foreground Yellow)
+              ("Warning: \"" <> filePathAbs
+                  <> "\" is not referenced in the journal")
+
+
+    [Just command, Just ledgerFilePath, Nothing] -> do
+      currentDir <- cwd
+      result <- loadAndExec currentDir [command, ledgerFilePath]
+
+      case result of
+        Ok output -> log output
+        Error message -> errorAndExit message
+
+    _ -> log usageString
 
 
 -- TODO: Use Monad transformers
