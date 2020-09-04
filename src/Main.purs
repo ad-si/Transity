@@ -1,10 +1,10 @@
 module Main where
 
-import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>))
+import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>), (/=))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Data.Array ((!!), filter, concat, null, zip, length, cons, difference)
+import Data.Array (concat, cons, difference, filter, null, zip, (!!))
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
 import Data.Maybe (Maybe(..))
@@ -154,7 +154,9 @@ getAllFiles directoryPath =
     addFiles :: String -> Effect (Array String)
     addFiles dirPath = do
       entriesRel <- Sync.readdir dirPath
-      let entriesAbs = entriesRel <#> (\entry -> dirPath <> "/" <> entry)
+      let
+        cleanEntriesRel = filter (_ /= ".DS_Store") entriesRel
+        entriesAbs = cleanEntriesRel <#> (\entry -> dirPath <> "/" <> entry)
       statEntries <- sequence $ entriesAbs <#> Sync.stat
 
       let
