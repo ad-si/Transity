@@ -106,7 +106,7 @@ checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
     files = foldMap (\(Transaction tact) -> tact.files) transactions
 
   for_ files \filePathRel -> do
-    let filePathAbs = Path.concat [ledgerFilePath, filePathRel]
+    filePathAbs <- Path.resolve [ledgerFilePath] filePathRel
     exists filePathAbs $ \doesExist ->
       if doesExist
       then pure unit
@@ -123,7 +123,7 @@ loadAndExec
   -> Array String
   -> Effect (Result String String)
 loadAndExec currentDir [command, filePathRel] = do
-  let filePathAbs = Path.concat [currentDir, filePathRel]
+  filePathAbs <- Path.resolve [currentDir] filePathRel
   ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
 
   case (Ledger.fromYaml ledgerFileContent) of
@@ -206,8 +206,8 @@ main = do
             ledgerFilesRel = foldMap
               (\(Transaction tact) -> tact.files)
               transactions
-            ledgerFilesAbs = ledgerFilesRel <#> (\fileRel
-              -> Path.concat [Path.dirname ledgerFilePathAbs, fileRel])
+          ledgerFilesAbs <- sequence $ ledgerFilesRel
+              <#> (\fileRel -> Path.resolve [journalDir] fileRel)
 
           for_ (difference foundFiles ledgerFilesAbs) $ \filePathAbs ->
             log $ withGraphics
