@@ -182,7 +182,7 @@ main = do
 
   case [arguments !! 2, arguments !! 3, arguments !! 4] of
     [Just "help",    Nothing, Nothing] -> log usageString
-    [Just "version", Nothing, Nothing] -> log "0.7.0"
+    [Just "version", Nothing, Nothing] -> log "0.8.0"
 
     [Just _,        Nothing, Nothing] ->
       errorAndExit $ "No path to a ledger file was provided\n\n" <> usageString

@@ -1,3 +1,44 @@
+# Changelog
+
+This changelog only contains user facing changes of the app itself.
+
+
+## 0.8.0 (2020-09-09)
+
+- Add CLI command to show version number ([5f9cc03])
+- Add csv2yaml scripts for MBS and PayPal ([d1b4840])
+- Add subcommand "unused-files" to list unreferenced files ([c107a9a])
+- Minor fixes and improvements for csv2yaml and transactions scripts ([202c3d4])
+- Minor improvements for retrieval scripts ([a1c6410])
+- Warn about non existent referenced files ([a6fbf8b])
+
+[5f9cc03]: https://github.com/feramhq/transity/commit/5f9cc03
+[d1b4840]: https://github.com/feramhq/transity/commit/d1b4840
+[c107a9a]: https://github.com/feramhq/transity/commit/c107a9a
+[202c3d4]: https://github.com/feramhq/transity/commit/202c3d4
+[a1c6410]: https://github.com/feramhq/transity/commit/a1c6410
+[a6fbf8b]: https://github.com/feramhq/transity/commit/a6fbf8b
+
+
+## 0.7.0 (2020-02-18)
+
+- Improve normalization of crawled transactions ([ac78c05])
+- Improve scripts for transactions loading & parsing ([c7c558e])
+- Switch to AGPL and improve wording of license documentation ([8dde588])
+
+[ac78c05]: https://github.com/feramhq/transity/commit/ac78c05
+[c7c558e]: https://github.com/feramhq/transity/commit/c7c558e
+[8dde588]: https://github.com/feramhq/transity/commit/8dde588
+
+
+## 0.6.0 (2019-10-20)
+
+- Add comparison between Transity and Hledger entries ([acf219b])
+- Add screenshots ([acf219b])
+
+[acf219b]: https://github.com/feramhq/transity/commit/acf219b
+
+
 # 0.5.0 (2019-05-04)
 
 - Deploy simple web version of Transity at [feram.io/transity] <!----> (5cc24f6)
