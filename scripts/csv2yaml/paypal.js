@@ -8,6 +8,8 @@ const chrono = require('chrono-node')
 const {
   rmEmptyString,
   keysToEnglish,
+  noteToAccount,
+  sanitizeYaml,
 } = require('../helpers.js')
 
 
@@ -46,21 +48,18 @@ function normalizeAndPrint (filePathTemp) {
           },
           transaction,
         )
+        const account = noteToAccount(transaction.Name)
         const transfer = transaction.Gross.startsWith('-')
           ? {
             from: '_todo_:paypal:' +
               transaction.Currency
                 .toLowerCase()
                 .trim(),
-            to: transaction.Name
-              ? `${transaction.Name} <${transaction['To Email Address']}>`
-              : 'paypal',
+            to: account ? account : 'paypal',
             amount: transaction.Gross.slice(1) + ' ' + currency,
           }
           : {
-            from: transaction.Name
-              ? `${transaction.Name} <${transaction['From Email Address']}>`
-              : 'paypal',
+            from: account ? account : 'paypal',
             to: '_todo_:paypal:' +
               transaction.Currency
                 .toLowerCase()
@@ -101,11 +100,7 @@ function normalizeAndPrint (filePathTemp) {
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
 
-    const yamlString = yaml
-      .dump({transactions})
-      .replace(/^ {2}- /gm, '\n  -\n    ')
-      .replace(/^([\w- ]+): '(.+)'$/gm, '$1: $2')
-      .replace(/utc: 20(.+)$/gm, 'utc: \'20$1\'')
+    const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
     console.info(yamlString)
   })

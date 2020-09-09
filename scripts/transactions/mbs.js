@@ -15,6 +15,7 @@ const {
   toDdotMdotYYYY,
   keysToEnglish,
   noteToAccount,
+  sanitizeYaml,
 } = require('../helpers.js')
 
 nightmareDownloadManager(Nightmare)
@@ -82,10 +83,7 @@ function normalizeAndPrint (filePathTemp) {
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
 
-    const yamlString = yaml
-      .dump({transactions})
-      .replace(/^ {2}- /gm, '\n-\n  ')
-      .replace(/^ {2}([\w- ]+): '(.+)'$/gm, '$1: $2')
+    const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
     console.info(yamlString)
   })

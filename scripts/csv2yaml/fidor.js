@@ -27,45 +27,34 @@ function normalizeAndPrint (filePathTemp) {
       .map(keysToEnglish)
       .reverse() // Now sorted ascending by value date
       .map(transaction => {
-        const newFields = {
-          utc: transaction['value-utc'] < transaction['entry-utc']
-            ? transaction['value-utc']
-            : transaction['entry-utc'],
-          note: '',
+        const currency = ' €'
+        const sortedTransaction = {
+          utc: transaction.date,
+          note: transaction.note + '\n' + transaction.note2,
         }
-        const sortedTransaction = Object.assign(newFields, transaction)
-
-        if (sortedTransaction['value-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['value-utc']
-        }
-        if (sortedTransaction['entry-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['entry-utc']
-        }
-
-        const account = noteToAccount(transaction.to) || '_todo_'
+        const account = noteToAccount(transaction.note) || '_todo_'
         const transfersObj = transaction.amount.startsWith('-')
           ? {
             transfers: [{
-              from: 'mbs:giro',
+              from: 'fidor:giro',
               to: account,
-              amount: transaction.amount.slice(1) + transaction.currency,
+              amount: transaction.amount.slice(1) + currency,
             }],
           }
           : {
             transfers: [{
               from: account,
-              to: 'mbs:giro',
-              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
+              to: 'fidor:giro',
+              // TODO: Remove when https://github.com/adius/csvnorm/issues/1
+              //       is solved
               amount: transaction.amount === '0,00'
                 ? 0
-                : transaction.amount + transaction.currency,
+                : transaction.amount + currency,
             }],
           }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
-        delete newTransaction.to
         delete newTransaction.amount
-        delete newTransaction.currency
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
@@ -76,6 +65,7 @@ function normalizeAndPrint (filePathTemp) {
   })
 
   csvnorm.default({
+    encoding: 'utf-8',
     readableStream: fse.createReadStream(filePathTemp),
     writableStream: csv2json,
   })

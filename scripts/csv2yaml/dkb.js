@@ -25,50 +25,55 @@ function normalizeAndPrint (filePathTemp) {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
-      .reverse() // Now sorted ascending by value date
       .map(transaction => {
-        const newFields = {
+        const note = transaction.note
+          .replace(/<br\s+\/>/g, '\n')
+        const amount = transaction.amount + ' €'
+        const sortedTransaction = {
           utc: transaction['value-utc'] < transaction['entry-utc']
             ? transaction['value-utc']
             : transaction['entry-utc'],
-          note: '',
-        }
-        const sortedTransaction = Object.assign(newFields, transaction)
-
-        if (sortedTransaction['value-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['value-utc']
-        }
-        if (sortedTransaction['entry-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['entry-utc']
         }
 
-        const account = noteToAccount(transaction.to) || '_todo_'
+        if (transaction['value-utc'] !== sortedTransaction.utc) {
+          sortedTransaction['value-utc'] = transaction['value-utc']
+        }
+        if (transaction['entry-utc'] !== sortedTransaction.utc) {
+          sortedTransaction['entry-utc'] = transaction['entry-utc']
+        }
+
+        sortedTransaction.type = transaction.type
+        sortedTransaction.note = note
+
         const transfersObj = transaction.amount.startsWith('-')
           ? {
             transfers: [{
-              from: 'mbs:giro',
-              to: account,
-              amount: transaction.amount.slice(1) + transaction.currency,
+              from: 'dkb:visa',
+              to: noteToAccount(note),
+              amount: amount.slice(1),
+              'original-amount': transaction['original-amount'],
             }],
           }
           : {
             transfers: [{
-              from: account,
-              to: 'mbs:giro',
+              from: noteToAccount(note),
+              to: 'dkb:visa',
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === '0,00'
-                ? 0
-                : transaction.amount + transaction.currency,
+              amount: transaction.amount === '0,00' ? '0 €' : amount,
+              'original-amount': transaction['original-amount'],
             }],
           }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
 
-        delete newTransaction.to
         delete newTransaction.amount
-        delete newTransaction.currency
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
+      .sort((transA, transB) =>
+        // Oldest first
+        String(transA.utc)
+          .localeCompare(String(transB.utc), 'en'),
+      )
 
     const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
@@ -76,7 +81,9 @@ function normalizeAndPrint (filePathTemp) {
   })
 
   csvnorm.default({
+    encoding: 'latin1',
     readableStream: fse.createReadStream(filePathTemp),
+    skipLinesStart: 6,
     writableStream: csv2json,
   })
 }

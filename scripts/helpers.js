@@ -4,8 +4,20 @@ module.exports = {
   prettyFormat,
   prettyPrint,
   rmEmptyString,
-  toDdotMdotYYYY,
+  sanitizeYaml,
   toDDdotMMdotYYYY,
+  toDdotMdotYYYY,
+}
+
+
+function sanitizeYaml (yaml) {
+  if (typeof yaml !== 'string') {
+    throw new Error('YAML must be passed as a string')
+  }
+  return yaml
+    .replace(/^ {2}- /gm, '\n  -\n    ')
+    .replace(/^ {2}([\w- ]+): '(.+)'$/gm, '  $1: $2')
+    .replace(/utc: ([0-9TZ:.-]+)$/gm, 'utc: \'$1\'')
 }
 
 
@@ -80,6 +92,7 @@ function keysToEnglish (object) {
         .replace('Verwendungszweck', 'note')
         .replace('Waehrung', 'currency')
         .replace('Wertstellung', 'value-utc')
+        .replace('Wert', 'amount')
         .replace('Zahlungsbetrag in ZW', 'amount')
         .replace('Zahlungswährung (ZW)', 'currency')
 
@@ -89,6 +102,9 @@ function keysToEnglish (object) {
 }
 
 function noteToAccount (note) {
+  // Remove misleading terms
+  note = note.replace('Apple Pay', '')
+
   // Sorted by ascending importance
   // I.e. later keywords overwrite selection
   /* eslint-disable quote-props */
@@ -98,11 +114,13 @@ function noteToAccount (note) {
     'amazon': 'amazon',
     'amazon prime': 'amazon:prime',
     'patreon': 'patreon',
+    'facebook': 'facebook',
     'google ireland limited cloud platform': 'google:cloud',
     'day night sports gmbh': 'day_night_sports',
     'spotify': 'spotify',
     'apple': 'apple',
     'itunes': 'apple:itunes',
+    'mozilla foundation': 'mozilla_foundation',
     'mozilla': 'mozilla',
     'namecheap': 'namecheap',
     'name-cheap': 'namecheap',
@@ -130,6 +148,14 @@ function noteToAccount (note) {
     'jimmy joy': 'jimmy_joy',
     'wecircberlin': 'circ',
     'lime ride': 'lime',
+    'lime electric': 'lime',
+    'bird rides': 'bird',
+    'google': 'google',
+    'free software foundation': 'free_software_foundation',
+    'landr audio': 'landr',
+    'mzla technologies': 'mzla_technologies',
+    'vodafone': 'vodafone',
+    'mailgun': 'mailgun',
 
     // German
     'ihk ': 'ihk',
@@ -159,11 +185,15 @@ function noteToAccount (note) {
     'qthority': 'qthority',
     'nosh good taste': 'nosh',
     'musikhaus thomann': 'thomann',
-    'fratellis frankfurt': 'fratellis_frankfurt',
+    'fratellis frankfurt': 'fratellis_ristorante',
+    'fratellis rist': 'fratellis_ristorante',
     'hansemerkur speziale kv': 'hansemerkur',
     'zwanzigeins e.v.': 'zwanzigeins',
     'tier de': 'tier',
     'zalando': 'zalando',
+    'hetzner online': 'hetzner',
+    'golem media': 'golem',
+    'pro rauchfrei': 'pro_rauchfrei',
   }
   /* eslint-enable quote-props */
   let account = note
@@ -180,5 +210,5 @@ function noteToAccount (note) {
       }
     })
 
-  return account || '_todo_'
+  return account
 }

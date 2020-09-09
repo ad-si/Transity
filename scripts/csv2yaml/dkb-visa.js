@@ -7,6 +7,7 @@ const {
   rmEmptyString,
   keysToEnglish,
   noteToAccount,
+  sanitizeYaml,
 } = require('../helpers.js')
 
 
@@ -74,11 +75,7 @@ function normalizeAndPrint (filePathTemp) {
           .localeCompare(String(transB.utc), 'en'),
       )
 
-    const yamlString = yaml
-      .dump({transactions})
-      .replace(/^ {2}- /gm, '\n  -\n    ')
-      .replace(/^([\w- ]+): '(.+)'$/gm, '$1: $2')
-      .replace(/utc: 20(.+)$/gm, 'utc: \'20$1\'')
+    const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
     console.info(yamlString)
   })

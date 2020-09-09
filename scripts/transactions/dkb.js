@@ -12,6 +12,7 @@ const {
   toDDdotMMdotYYYY,
   keysToEnglish,
   noteToAccount,
+  sanitizeYaml,
 } = require('../helpers.js')
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -90,11 +91,7 @@ function normalizeAndPrint (filePathTemp) {
           .localeCompare(String(transB.utc), 'en'),
       )
 
-    const yamlString = yaml
-      .dump({transactions})
-      .replace(/^ {2}- /gm, '\n  -\n    ')
-      .replace(/^ {2}([\w- ]+): '(.+)'$/gm, '  $1: $2')
-      .replace(/utc: ([0-9TZ:.-]+)$/gm, 'utc: \'$1\'')
+    const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
     console.info(yamlString)
   })

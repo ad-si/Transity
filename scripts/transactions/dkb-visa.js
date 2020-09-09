@@ -12,6 +12,7 @@ const {
   toDdotMdotYYYY,
   keysToEnglish,
   noteToAccount,
+  sanitizeYaml,
 } = require('../helpers.js')
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -62,18 +63,19 @@ function normalizeAndPrint (filePathTemp) {
         sortedTransaction.type = transaction.type
         sortedTransaction.note = note
 
+        const account = noteToAccount(note)
         const transfersObj = transaction.amount.startsWith('-')
           ? {
             transfers: [{
               from: 'dkb:visa',
-              to: noteToAccount(note),
+              to: account,
               amount: amount.slice(1),
               'original-amount': transaction['original-amount'],
             }],
           }
           : {
             transfers: [{
-              from: noteToAccount(note),
+              from: account,
               to: 'dkb:visa',
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
               amount: transaction.amount === '0,00' ? '0 €' : amount,
@@ -92,10 +94,7 @@ function normalizeAndPrint (filePathTemp) {
           .localeCompare(String(transB.utc), 'en'),
       )
 
-    const yamlString = yaml
-      .dump({transactions})
-      .replace(/^ {2}- /gm, '\n-\n  ')
-      .replace(/^ {2}([\w- ]+): '(.+)'$/gm, '$1: $2')
+    const yamlString = sanitizeYaml(yaml.dump({transactions}))
 
     console.info(yamlString)
   })
