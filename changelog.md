@@ -39,7 +39,7 @@ This changelog only contains user facing changes of the app itself.
 [acf219b]: https://github.com/feramhq/transity/commit/acf219b
 
 
-# 0.5.0 (2019-05-04)
+## 0.5.0 (2019-05-04)
 
 - Deploy simple web version of Transity at [feram.io/transity] <!----> (5cc24f6)
 - Fix several typos and grammatical errors (0f670a7)
@@ -47,20 +47,20 @@ This changelog only contains user facing changes of the app itself.
 [feram.io/transity]: https://www.feram.io/transity
 
 
-# 0.4.2 (2019-04-26)
+## 0.4.2 (2019-04-26)
 
 - Only add relevant files to npm package (1c9dc47)
 - Update dependencies (83992a7)
 
 
-# 0.4.1 (2019-04-26)
+## 0.4.1 (2019-04-26)
 
 - Simplify installation by pre-building Transity
     and only delivering the built files in the npm package (459d3c0)
 - Add a changelog (c33e03b)
 
 
-# 0.4.0 (2019-04-25)
+## 0.4.0 (2019-04-25)
 
 - Add scripts to retrieve the balance and transactions
     from several German banks (097eb93, 204874e)
@@ -73,20 +73,20 @@ This changelog only contains user facing changes of the app itself.
 - Fix `npm install` by using psc-package instead of bower (5cada63)
 
 
-# 0.3.0 (2018-09-10)
+## 0.3.0 (2018-09-10)
 
 - Add command `transfers` (3ae89fc)
 - Add command `ledger-entries` to export to the ledger file format (4be8374)
 - Add commands `csv` and `tsv` to print entries in as CSV / TSV (8587e22)
 
 
-# 0.2.1 (2018-06-05)
+## 0.2.1 (2018-06-05)
 
 - Fix test command for CI, fix typos (ac81a8e)
 - Fix references (42f17b3)
 
 
-# 0.2.0 (2018-06-05)
+## 0.2.0 (2018-06-05)
 
 - Don't coerce invalid dates to 1970-01-01 (07f99f5)
 - Add `gplot` subcommands to allow piping to gnuplot (c25b445)
@@ -97,7 +97,7 @@ This changelog only contains user facing changes of the app itself.
 - Implement alignment of entries (bfa602f)
 
 
-# 0.1.0-alpha (2018-01-18)
+## 0.1.0-alpha (2018-01-18)
 
 - Indent entries in balance only as deep as necessary (bcc61a7)
 - Disallow accounts with empty ids, improve error messages (af22b62)
