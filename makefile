@@ -1,4 +1,4 @@
-all: docs
+all: index.js docs
 
 
 changelog.md: .git
@@ -11,10 +11,10 @@ changelog.md: .git
 
 
 index.js: src
-	spago bundle-module
+	npm run bundle
 
 
-docs: output index.js
+docs: output
 	npx parcel build webapp/index.html \
 		--public-url /transity \
 		--no-source-maps \
@@ -28,7 +28,7 @@ docs-dev: output index.js
 
 
 output: src package.json package-lock.json packages.dhall spago.dhall node_modules
-	spago build
+	npx --no-install spago build
 
 
 node_modules: package.json package-lock.json
@@ -41,13 +41,14 @@ readme.md:
 
 .PHONY: test
 test: output
-	spago test
+	npx --no-install spago test
 	npm run lint-js
 
 
 .PHONY: clean
 clean:
 	-rm -rf \
+		.cache \
 		.parcel-cache \
 		.spago \
 		docs \
