@@ -17,7 +17,7 @@ import Data.DateTime (DateTime)
 import Data.Foldable (all, find)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.HeytingAlgebra (not)
 import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
@@ -56,6 +56,8 @@ import Transity.Utils
   , widthRecordZero
   , ColorFlag(..)
   , bigIntToNumber
+  , stringifyJsonDecodeError
+  , resultWithJsonDecodeError
   )
 
 
@@ -73,7 +75,8 @@ instance showLedger :: Show Ledger where
   show = genericShow
 
 instance decodeLedger :: DecodeJson Ledger where
-  decodeJson json = toEither $ decodeJsonLedger json
+  decodeJson json = toEither $
+    resultWithJsonDecodeError $ decodeJsonLedger json
 
 
 decodeJsonLedger :: Json -> Result String Ledger
@@ -188,7 +191,7 @@ verifyLedgerBalances wholeLedger@(Ledger {transactions, entities}) =
 fromJson :: String -> Result String Ledger
 fromJson json = do
   jsonObj <- fromEither $ jsonParser json
-  ledger <- fromEither $ decodeJson jsonObj
+  ledger <- stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
   pure ledger
     >>= verifyAccounts
     >>= verifyLedgerBalances
@@ -207,7 +210,7 @@ fromYaml yaml =
         ( "Could not parse YAML: "
           <> fold (map renderForeignError error)
         )
-      Ok json -> fromEither $ decodeJson json
+      Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
   in
     unverified
       >>= verifyAccounts

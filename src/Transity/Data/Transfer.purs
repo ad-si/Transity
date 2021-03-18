@@ -15,7 +15,7 @@ import Data.BigInt (fromInt)
 import Data.DateTime (DateTime)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
@@ -35,6 +35,8 @@ import Transity.Utils
   , getFieldVerbose
   , stringToDateTime
   , ratioZero
+  , stringifyJsonDecodeError
+  , resultWithJsonDecodeError
   )
 
 
@@ -60,7 +62,8 @@ instance showTransfer :: Show Transfer where
   show = genericShow
 
 instance decodeTransfer :: DecodeJson Transfer where
-  decodeJson json = toEither $ decodeJsonTransfer json
+  decodeJson json =
+    toEither $ resultWithJsonDecodeError $ decodeJsonTransfer json
 
 
 decodeJsonTransfer :: Json -> Result String Transfer
@@ -71,8 +74,10 @@ decodeJsonTransfer json = do
   to <- object `getFieldVerbose` "to"
   amount <- object `getFieldVerbose` "amount"
 
-  utc <- fromEither $ object `getFieldOptional` "utc"
-  note <- fromEither $ object `getFieldOptional` "note"
+  utc <- stringifyJsonDecodeError $
+    fromEither $ object `getFieldOptional` "utc"
+  note <- stringifyJsonDecodeError $
+    fromEither $ object `getFieldOptional` "note"
 
   transfer <- verifyTransfer (stringify json) (Transfer
       { utc: utc >>= stringToDateTime
@@ -121,7 +126,7 @@ verifyTransfer json transfer@(Transfer transRec) =
 fromJson :: String -> Result String Transfer
 fromJson string = do
   json <- fromEither $ jsonParser string
-  transfer <- fromEither $ decodeJson json
+  transfer <- stringifyJsonDecodeError $ fromEither $ decodeJson json
   pure transfer
 
 
@@ -138,7 +143,7 @@ fromYaml yaml =
         ( "Could not parse YAML: "
           <> fold (map renderForeignError error)
         )
-      Ok json -> fromEither $ decodeJson json
+      Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
 
 
 showPretty :: Transfer -> String

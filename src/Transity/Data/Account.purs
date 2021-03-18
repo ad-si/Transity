@@ -6,12 +6,13 @@ import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
 import Data.Argonaut.Core (Json, toObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.Maybe (Maybe(Nothing), fromMaybe, maybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
 import Data.Result (Result(Ok, Error), toEither)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.String (length)
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount)
@@ -30,6 +31,7 @@ import Transity.Utils
   , getObjField
   , getFieldMaybe
   , ColorFlag(..)
+  , resultWithJsonDecodeError
   )
 
 
@@ -56,11 +58,15 @@ instance showAccount :: Show Account where
   show = genericShow
 
 instance decodeAccount :: DecodeJson Account where
-  decodeJson json = toEither $ decodeJsonAccount json
+  decodeJson json =
+    toEither $ resultWithJsonDecodeError $ decodeJsonAccount json
+
 
 decodeJsonAccount :: Json -> Result String Account
 decodeJsonAccount json = do
-  object       <- maybe (Error "Account is not an object") Ok (toObject json)
+  object       <- maybe
+    (Error $ "Account is not an object")
+    Ok (toObject json)
   id           <- object `getObjField` "id"
   commodityMap <- object `getFieldMaybe` "commodityMap"
   balances     <- object `getFieldMaybe` "balances"
@@ -69,6 +75,7 @@ decodeJsonAccount json = do
     , commodityMap: (fromMaybe commodityMapZero commodityMap)
     , balances
     }
+
 
 zero :: Account
 zero = Account

@@ -61,6 +61,8 @@ import Transity.Utils
   , ColorFlag(..)
   , stringToDateTime
   , ratioZero
+  , stringifyJsonDecodeError
+  , resultWithJsonDecodeError
   )
 
 
@@ -203,7 +205,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           let
             (result :: Result String Account) = do
               jsonObj <- fromEither $ jsonParser accountJson
-              fromEither $ decodeJson jsonObj
+              stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
             actual = result
               # show
               # rmWhitespace
@@ -338,7 +340,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           let
             result = do
               jsonObj <- fromEither $ jsonParser balanceJson
-              fromEither $ decodeJson jsonObj
+              stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
 
             actual = (result :: Result String Balance)
               # show

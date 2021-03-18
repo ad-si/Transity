@@ -14,7 +14,7 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
 import Data.Foldable (fold)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(Nothing), fromMaybe, maybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
@@ -25,8 +25,15 @@ import Text.Format (format, width)
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
-  ( getObjField, getFieldMaybe, stringToDateTime
-  , dateShowPretty, indentSubsequent, ColorFlag(..))
+  ( getObjField
+  , getFieldMaybe
+  , stringToDateTime
+  , dateShowPretty
+  , indentSubsequent
+  , ColorFlag(..)
+  , stringifyJsonDecodeError
+  , resultWithJsonDecodeError
+  )
 
 
 -- newtype FilePath = FilePath String
@@ -47,7 +54,8 @@ instance showTransaction :: Show Transaction where
   show = genericShow
 
 instance decodeTransaction :: DecodeJson Transaction where
-  decodeJson json = toEither $ decodeJsonTransaction json
+  decodeJson json = toEither $
+    resultWithJsonDecodeError $ decodeJsonTransaction json
 
 
 decodeJsonTransaction :: Json -> Result String Transaction
@@ -57,7 +65,8 @@ decodeJsonTransaction json = do
   id        <- object `getFieldMaybe` "id"
   utc       <- object `getFieldMaybe` "utc"
   note      <- object `getFieldMaybe` "note"
-  files     <- fromEither $ object `getFieldOptional` "files" `defaultField` []
+  files     <- stringifyJsonDecodeError $
+    fromEither $ object `getFieldOptional` "files" `defaultField` []
   transfers <- object `getObjField` "transfers"
 
   pure $ Transaction
@@ -72,7 +81,7 @@ decodeJsonTransaction json = do
 fromJson :: String -> Result String Transaction
 fromJson string = do
   json <- fromEither $ jsonParser string
-  transaction <- fromEither $ decodeJson json
+  transaction <- stringifyJsonDecodeError $ fromEither $ decodeJson json
   pure transaction
 
 
@@ -89,7 +98,7 @@ fromYaml yaml =
         ( "Could not parse YAML: "
           <> fold (map renderForeignError error)
         )
-      Ok json -> fromEither $ decodeJson json
+      Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
 
 
 toTransfers :: Array Transaction -> Array Transfer

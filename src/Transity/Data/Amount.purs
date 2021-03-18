@@ -4,13 +4,14 @@ where
 import Control.Bind (bind)
 import Data.Argonaut.Core (toString, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.Array (take)
 import Data.BigInt (BigInt)
 import Data.Boolean (otherwise)
 import Data.Eq (class Eq, (/=), (==))
 import Data.Function (($))
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
 import Data.Newtype
@@ -53,10 +54,10 @@ instance showCommodity :: Show Commodity where
 instance decodeCommodity :: DecodeJson Commodity where
   decodeJson json = toEither $ decodeJsonCommodity json
 
-decodeJsonCommodity :: Json -> Result String Commodity
+decodeJsonCommodity :: Json -> Result JsonDecodeError Commodity
 decodeJsonCommodity json =
   maybe
-    (Error "Commodity is not a string")
+    (Error $ TypeMismatch "Commodity is not a string")
     (\x -> Ok (Commodity x))
     (toString json)
 
@@ -86,20 +87,22 @@ instance decodeAmount :: DecodeJson Amount where
   decodeJson json = toEither $ decodeJsonAmount json
 
 
-parseAmount :: String -> Result String Amount
+parseAmount :: String -> Result JsonDecodeError Amount
 parseAmount string = do
   let amountFrags = split (Pattern " ") string
   case take 2 amountFrags of
     [value, currency] -> case digitsToRational value of
-      Nothing -> Error "Amount does not contain a valid value"
+      Nothing -> Error $ TypeMismatch "Amount does not contain a valid value"
       Just quantity ->
         Ok $ Amount quantity (Commodity currency)
-    _ -> Error "Amount does not contain a value and a commodity"
+    _ -> Error $ TypeMismatch "Amount does not contain a value and a commodity"
 
 
-decodeJsonAmount :: Json -> Result String Amount
+decodeJsonAmount :: Json -> Result JsonDecodeError Amount
 decodeJsonAmount json = do
-  amount <- maybe (Error "Amount is not a string") Ok (toString json)
+  amount <- maybe
+    (Error $ TypeMismatch "Amount is not a string")
+    Ok (toString json)
   parseAmount amount
 
 

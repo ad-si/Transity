@@ -10,6 +10,7 @@ import Ansi.Output (withGraphics, foreground)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getField, getFieldOptional)
+import Data.Argonaut.Decode.Error (printJsonDecodeError, JsonDecodeError(..))
 import Data.Array (elem, all, (!!))
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
@@ -47,21 +48,39 @@ parseToUnixTime :: String -> Maybe Number
 parseToUnixTime = parseToUnixTimeImpl >>> toMaybe
 
 
-getObjField :: forall a. DecodeJson a => Object Json -> String -> Result String a
+resultWithJsonDecodeError :: forall a.
+  Result String a -> Result JsonDecodeError a
+resultWithJsonDecodeError result =
+  case result of
+    Error str -> Error $ TypeMismatch str
+    Ok value -> Ok value
+
+
+stringifyJsonDecodeError :: forall a.
+  Result JsonDecodeError a -> Result String a
+stringifyJsonDecodeError result =
+  case result of
+    Error err -> Error $ printJsonDecodeError err
+    Ok value -> Ok value
+
+
+getObjField :: forall a. DecodeJson a
+  => Object Json -> String -> Result String a
 getObjField object name =
   let
     value = fromEither $ object `getField` name
   in
     case value of
-      Error error ->
-        Error $ "'" <> name <> "' could not be parsed: \n  " <> error
+      Error error -> Error $ "'" <> name
+                              <> "' could not be parsed: \n  "
+                              <> printJsonDecodeError error
       Ok success -> Ok success
 
 
 getFieldMaybe :: forall a. DecodeJson a
   => Object Json -> String -> Result String (Maybe a)
 getFieldMaybe object name =
-  fromEither $ getFieldOptional object name
+  stringifyJsonDecodeError $ fromEither $ getFieldOptional object name
 
 
 getFieldVerbose
@@ -73,8 +92,9 @@ getFieldVerbose object name =
   in
     case value of
       Error error -> Error $
-        "'" <> name <> "' could not be parsed in TODO " <>
-        {-(stringify object) <>-} " because of following error: \n  " <> error
+        "'" <> name <> "' could not be parsed in TODO "
+        <> {-(stringify object) <>-} " because of following error: \n  "
+        <> printJsonDecodeError error
       Ok success -> Ok success
 
 

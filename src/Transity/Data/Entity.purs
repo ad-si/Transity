@@ -12,7 +12,7 @@ import Data.Foldable (fold)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (values)
 import Data.Newtype (class Newtype)
@@ -26,6 +26,8 @@ import Transity.Utils
   , getFieldMaybe
   , stringToDateTime
   , dateShowPretty
+  , stringifyJsonDecodeError
+  , resultWithJsonDecodeError
   )
 
 
@@ -46,7 +48,7 @@ instance showEntity :: Show Entity where
   show = genericShow
 
 instance decodeEntity :: DecodeJson Entity where
-  decodeJson json = toEither $ decodeJsonEntity json
+  decodeJson json = toEither $ resultWithJsonDecodeError $ decodeJsonEntity json
 
 
 
@@ -74,7 +76,7 @@ decodeJsonEntity json = do
 fromJson :: String -> Result String Entity
 fromJson json = do
   jsonObj <- fromEither $ jsonParser json
-  fromEither $ decodeJson jsonObj
+  stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
 
 
 zero :: Entity
