@@ -1,8 +1,6 @@
 # Transity
 
 [![Build Status][]][travis]
-[![Join irc.freenode.net on IRCCloud][]][irccloud]
-[![Join the chat at https://gitter.im/feramhq/transity](https://badges.gitter.im/feramhq/transity.svg)](https://gitter.im/feramhq/transity?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
@@ -10,14 +8,19 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 [Build Status]: https://travis-ci.com/feramhq/transity.svg?token=ipYeEBNjb9wCxCwPq6aS&branch=master
 [travis]: https://travis-ci.com/feramhq/transity
 
-[Join irc.freenode.net on IRCCloud]: https://img.shields.io/badge/IRC-%23transity-1e72ff.svg?style=flat
-[irccloud]: https://www.irccloud.com/invite?channel=%23transity&amp;hostname=irc.freenode.net&amp;port=6697&amp;ssl=1
-
 <img
   src='images/screenshot-balance.svg'
   alt='Screenshot Balance'
   width='600'
 />
+
+For help please come visit us on one of the following sites:
+
+- [Reddit](https://www.reddit.com/r/Transity/)
+- [Matrix](matrix:r/transity:matrix.feram.io) (#transity:matrix.feram.io)
+- [Gitter](https://gitter.im/feramhq/transity)
+
+---
 
 <!-- toc -->
 
