@@ -1,44 +1,44 @@
-const fse = require('fs-extra')
-const yaml = require('js-yaml')
-const csvnorm = require('csvnorm')
-const converter = require('converter')
+const fse = require("fs-extra")
+const yaml = require("js-yaml")
+const csvnorm = require("csvnorm")
+const converter = require("converter")
 
 const {
   rmEmptyString,
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require('../helpers.js')
+} = require("../helpers.js")
 
 
 function normalizeAndPrint (filePathTemp) {
   const csv2json = converter({
-    from: 'csv',
-    to: 'json',
+    from: "csv",
+    to: "json",
   })
 
-  let jsonTemp = ''
-  csv2json.on('data', chunk => {
+  let jsonTemp = ""
+  csv2json.on("data", chunk => {
     jsonTemp += chunk
   })
-  csv2json.on('end', () => {
+  csv2json.on("end", () => {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
       .map(transaction => {
-        const currency = transaction.currency.replace('EUR', '€')
+        const currency = transaction.currency.replace("EUR", "€")
         const sortedTransaction = Object.assign(
           {
-            utc: transaction.utc || transaction['entry-utc'],
-            'entry-utc': transaction['entry-utc'],
+            utc: transaction.utc || transaction["entry-utc"],
+            "entry-utc": transaction["entry-utc"],
             note: transaction.note,
           },
           transaction,
         )
-        const transfersObj = transaction.amount.startsWith('-')
+        const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: 'hypo:giro',
+              from: "hypo:giro",
               to: noteToAccount(transaction.note),
               amount: transaction.amount.slice(1) + currency,
             }],
@@ -46,9 +46,9 @@ function normalizeAndPrint (filePathTemp) {
           : {
             transfers: [{
               from: noteToAccount(transaction.note),
-              to: 'hypo:giro',
+              to: "hypo:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === '0,00'
+              amount: transaction.amount === "0,00"
                 ? 0
                 : transaction.amount + currency,
             }],
@@ -57,11 +57,11 @@ function normalizeAndPrint (filePathTemp) {
 
         delete newTransaction.amount
         delete newTransaction.currency
-        if (newTransaction['entry-utc'] === newTransaction.utc) {
-          delete newTransaction['entry-utc']
+        if (newTransaction["entry-utc"] === newTransaction.utc) {
+          delete newTransaction["entry-utc"]
         }
-        if (newTransaction['value-utc'] === newTransaction.utc) {
-          delete newTransaction['value-utc']
+        if (newTransaction["value-utc"] === newTransaction.utc) {
+          delete newTransaction["value-utc"]
         }
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))

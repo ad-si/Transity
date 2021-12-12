@@ -1,37 +1,37 @@
-const path = require('path')
+const path = require("path")
 
-const fse = require('fs-extra')
-const yaml = require('js-yaml')
+const fse = require("fs-extra")
+const yaml = require("js-yaml")
 
-const getPaypalBalances = require('./getPaypalBalances')
+const getPaypalBalances = require("./getPaypalBalances")
 
 
-const envFilePath = path.resolve(__dirname, '../../environment.yaml')
+const envFilePath = path.resolve(__dirname, "../../environment.yaml")
 const accountMap = {
   aws: {
-    provider: 'aws',
-    url: 'aws.amazon.com',
-    getBalance: require('./getAwsBalance'),
+    provider: "aws",
+    url: "aws.amazon.com",
+    getBalance: require("./getAwsBalance"),
   },
   mbs: {
-    provider: 'mbs',
-    url: 'mbs.de',
-    getBalance: require('./getMbsBalance'),
+    provider: "mbs",
+    url: "mbs.de",
+    getBalance: require("./getMbsBalance"),
   },
   paypalEur: {
-    provider: 'paypal',
-    url: 'paypal.de/eur',
-    getBalance: getPaypalBalanceFunc('eur'),
+    provider: "paypal",
+    url: "paypal.de/eur",
+    getBalance: getPaypalBalanceFunc("eur"),
   },
   paypalUsd: {
-    provider: 'paypal',
-    url: 'paypal.de/usd',
-    getBalance: getPaypalBalanceFunc('usd'),
+    provider: "paypal",
+    url: "paypal.de/usd",
+    getBalance: getPaypalBalanceFunc("usd"),
   },
   deutschepost: {
-    provider: 'deutschepost',
-    url: 'portokasse.deutschepost.de',
-    getBalance: require('./getPostBalance'),
+    provider: "deutschepost",
+    url: "portokasse.deutschepost.de",
+    getBalance: require("./getPostBalance"),
   },
 }
 
@@ -54,7 +54,7 @@ function getPaypalBalanceFunc (commodity) {
 
 function prettyFormat (account, balance) {
   const paddingStart = 28
-  return account.padStart(paddingStart) + ': ' + balance
+  return account.padStart(paddingStart) + ": " + balance
 }
 
 function prettyPrint (account, balance) {
@@ -87,10 +87,10 @@ async function main () {
       })
   }
   catch (error) {
-    if (error.code === 'ENOENT') {
+    if (error.code === "ENOENT") {
       console.warn(
-        'Retrieve the environment.yaml file from gopass' +
-        'and add it to the project\'s root directory',
+        "Retrieve the environment.yaml file from gopass" +
+        "and add it to the project's root directory",
       )
     }
     else {

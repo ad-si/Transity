@@ -1,42 +1,42 @@
-const fse = require('fs-extra')
-const yaml = require('js-yaml')
-const csvnorm = require('csvnorm')
-const converter = require('converter')
+const fse = require("fs-extra")
+const yaml = require("js-yaml")
+const csvnorm = require("csvnorm")
+const converter = require("converter")
 
 const {
   rmEmptyString,
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require('../helpers.js')
+} = require("../helpers.js")
 
 
 function normalizeAndPrint (filePathTemp) {
   const csv2json = converter({
-    from: 'csv',
-    to: 'json',
+    from: "csv",
+    to: "json",
   })
 
-  let jsonTemp = ''
-  csv2json.on('data', chunk => {
+  let jsonTemp = ""
+  csv2json.on("data", chunk => {
     jsonTemp += chunk
   })
-  csv2json.on('end', () => {
+  csv2json.on("end", () => {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
       .reverse() // Now sorted ascending by value date
       .map(transaction => {
-        const currency = ' €'
+        const currency = " €"
         const sortedTransaction = {
           utc: transaction.date,
-          note: transaction.note + '\n' + transaction.note2,
+          note: transaction.note + "\n" + transaction.note2,
         }
-        const account = noteToAccount(transaction.note) || '_todo_'
-        const transfersObj = transaction.amount.startsWith('-')
+        const account = noteToAccount(transaction.note) || "_todo_"
+        const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: 'fidor:giro',
+              from: "fidor:giro",
               to: account,
               amount: transaction.amount.slice(1) + currency,
             }],
@@ -44,10 +44,10 @@ function normalizeAndPrint (filePathTemp) {
           : {
             transfers: [{
               from: account,
-              to: 'fidor:giro',
+              to: "fidor:giro",
               // TODO: Remove when https://github.com/adius/csvnorm/issues/1
               //       is solved
-              amount: transaction.amount === '0,00'
+              amount: transaction.amount === "0,00"
                 ? 0
                 : transaction.amount + currency,
             }],
@@ -65,7 +65,7 @@ function normalizeAndPrint (filePathTemp) {
   })
 
   csvnorm.default({
-    encoding: 'utf-8',
+    encoding: "utf-8",
     readableStream: fse.createReadStream(filePathTemp),
     writableStream: csv2json,
   })

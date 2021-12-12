@@ -1,9 +1,9 @@
-const assert = require('assert')
+const assert = require("assert")
 
-const inquirer = require('inquirer')
-const Nightmare = require('nightmare')
+const inquirer = require("inquirer")
+const Nightmare = require("nightmare")
 
-const {prettyPrint} = require('../helpers.js')
+const {prettyPrint} = require("../helpers.js")
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
@@ -22,7 +22,7 @@ async function getBalance (options = {}) {
   assert(username)
   assert(password)
 
-  if (isDevMode) return '1234.56 €'
+  if (isDevMode) return "1234.56 €"
 
   const nightmare = new Nightmare({show: showBrowser})
   const loginUrl = `https://www.amazon.com
@@ -49,23 +49,23 @@ async function getBalance (options = {}) {
     &accountPoolAlias=
     &forceMobileApp=0&language=EN_US&forceMobileLayout=0
     &email=${encodeURIComponent(username)}
-  `.replace(/\s/g, '')
+  `.replace(/\s/g, "")
   // URl above redirects to billing page.
   // FIXME: Find better way to login
   // const billingUrl = 'https://console.aws.amazon.com/billing/home#credits'
   const valueContainer =
-    '.awsui-table-container ' +
-    '> table > tbody > tr > td:nth-child(4) > span > span'
+    ".awsui-table-container " +
+    "> table > tbody > tr > td:nth-child(4) > span > span"
 
-  log('Open login URL')
+  log("Open login URL")
   await nightmare
     .goto(loginUrl)
-    .wait('#ap_password')
+    .wait("#ap_password")
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('#ap_password', password)
-    .click('#signInSubmit-input')
+    .insert("#ap_password", password)
+    .click("#signInSubmit-input")
     .wait(valueContainer)
 
   return await nightmare
@@ -73,8 +73,8 @@ async function getBalance (options = {}) {
       container => document
         .querySelector(container)
         .textContent
-        .replace(/\$([0-9,.]+)$/, '$1 $')
-        .replace(/,/g, ''),
+        .replace(/\$([0-9,.]+)$/, "$1 $")
+        .replace(/,/g, ""),
       valueContainer,
     )
     .end()
@@ -82,14 +82,14 @@ async function getBalance (options = {}) {
 
 const prompValues = [
   {
-    type: 'input',
-    name: 'username',
-    message: 'AWS Username:',
+    type: "input",
+    name: "username",
+    message: "AWS Username:",
   },
   {
-    type: 'password',
-    name: 'password',
-    message: 'AWS Password:',
+    type: "password",
+    name: "password",
+    message: "AWS Password:",
   },
 ]
 
@@ -97,7 +97,7 @@ prompt(prompValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)
-      prettyPrint('aws.amazon.com', balance)
+      prettyPrint("aws.amazon.com", balance)
       process.exit(0)
     }
     catch (error) {

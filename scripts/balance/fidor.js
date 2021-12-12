@@ -1,9 +1,9 @@
-const assert = require('assert')
+const assert = require("assert")
 
-const inquirer = require('inquirer')
-const Nightmare = require('nightmare')
+const inquirer = require("inquirer")
+const Nightmare = require("nightmare")
 
-const {prettyPrint} = require('../helpers.js')
+const {prettyPrint} = require("../helpers.js")
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
@@ -22,50 +22,50 @@ async function getBalance (options = {}) {
   assert(username)
   assert(password)
 
-  if (isDevMode) return '1234.56 €'
+  if (isDevMode) return "1234.56 €"
 
   const nightmare = new Nightmare({show: showBrowser})
-  const baseUrl = 'https://banking.fidor.de'
+  const baseUrl = "https://banking.fidor.de"
   const loginUrl = `${baseUrl}/login`
 
 
   log(`Open ${loginUrl}`)
   await nightmare
     .goto(loginUrl)
-    .wait('#new_user')
+    .wait("#new_user")
 
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('#user_email', username)
-    .insert('#user_password', password)
-    .click('button#login')
-    .wait('.available-balance')
+    .insert("#user_email", username)
+    .insert("#user_password", password)
+    .click("button#login")
+    .wait(".available-balance")
 
 
-  log('Retrieve current balance')
+  log("Retrieve current balance")
   return await nightmare
     .evaluate(
       selector => document
         .querySelector(selector)
         .textContent
-        .replace(/\./g, '')
-        .replace(/,/g, '.'),
-      '.available-balance .main-amount',
+        .replace(/\./g, "")
+        .replace(/,/g, "."),
+      ".available-balance .main-amount",
     )
     .end()
 }
 
 const promptValues = [
   {
-    type: 'input',
-    name: 'username',
-    message: 'Fidor Username:',
+    type: "input",
+    name: "username",
+    message: "Fidor Username:",
   },
   {
-    type: 'password',
-    name: 'password',
-    message: 'Fidor Password:',
+    type: "password",
+    name: "password",
+    message: "Fidor Password:",
   },
 ]
 
@@ -73,7 +73,7 @@ prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)
-      prettyPrint('fidor.de', balance)
+      prettyPrint("fidor.de", balance)
       process.exit(0)
     }
     catch (error) {

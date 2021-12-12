@@ -1,7 +1,7 @@
-const inquirer = require('inquirer')
-const Nightmare = require('nightmare')
+const inquirer = require("inquirer")
+const Nightmare = require("nightmare")
 
-const {prettyPrint} = require('../helpers.js')
+const {prettyPrint} = require("../helpers.js")
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
@@ -17,46 +17,46 @@ async function getBalance (options = {}) {
     isDevMode,
   } = options
 
-  if (isDevMode) return '1234.56 €'
+  if (isDevMode) return "1234.56 €"
 
   const nightmare = new Nightmare({show: showBrowser})
-  const baseUrl = 'https://portokasse.deutschepost.de'
+  const baseUrl = "https://portokasse.deutschepost.de"
 
 
   log(`Open ${baseUrl}`)
   await nightmare
     .goto(baseUrl)
-    .wait('#email')
+    .wait("#email")
 
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('#email', username)
-    .insert('#password', password)
-    .click('button.actionbutton[type=submit]')
-    .wait('#txtWalletBalance')
+    .insert("#email", username)
+    .insert("#password", password)
+    .click("button.actionbutton[type=submit]")
+    .wait("#txtWalletBalance")
 
 
-  log('Retrieve current balance')
+  log("Retrieve current balance")
   return await nightmare
     .evaluate(() => document
-      .querySelector('#txtWalletBalance')
+      .querySelector("#txtWalletBalance")
       .textContent
-      .replace(/,(\d\d)\xa0€$/, '.$1 €'),
+      .replace(/,(\d\d)\xa0€$/, ".$1 €"),
     )
     .end()
 }
 
 const promptValues = [
   {
-    type: 'input',
-    name: 'username',
-    message: 'Portokasse Username:',
+    type: "input",
+    name: "username",
+    message: "Portokasse Username:",
   },
   {
-    type: 'password',
-    name: 'password',
-    message: 'Portokasse Password:',
+    type: "password",
+    name: "password",
+    message: "Portokasse Password:",
   },
 ]
 
@@ -64,7 +64,7 @@ prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)
-      prettyPrint('portokasse.deutschepost.de', balance)
+      prettyPrint("portokasse.deutschepost.de", balance)
       process.exit(0)
     }
     catch (error) {

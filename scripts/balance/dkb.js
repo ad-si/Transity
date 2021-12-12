@@ -1,9 +1,9 @@
-const assert = require('assert')
+const assert = require("assert")
 
-const inquirer = require('inquirer')
-const Nightmare = require('nightmare')
+const inquirer = require("inquirer")
+const Nightmare = require("nightmare")
 
-const {prettyPrint} = require('../helpers.js')
+const {prettyPrint} = require("../helpers.js")
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
@@ -22,52 +22,52 @@ async function getBalance (options = {}) {
   assert(username)
   assert(password)
 
-  if (isDevMode) return '1234.56 €'
+  if (isDevMode) return "1234.56 €"
 
   const nightmare = new Nightmare({show: showBrowser})
-  const baseUrl = 'https://www.dkb.de'
+  const baseUrl = "https://www.dkb.de"
   const loginUrl = `${baseUrl}/banking`
 
 
   log(`Open ${loginUrl}`)
   await nightmare
     .goto(loginUrl)
-    .wait('#login')
+    .wait("#login")
 
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('#loginInputSelector', username)
-    .insert('#pinInputSelector', password)
-    .click('#buttonlogin')
-    .wait('#financialStatus')
+    .insert("#loginInputSelector", username)
+    .insert("#pinInputSelector", password)
+    .click("#buttonlogin")
+    .wait("#financialStatus")
 
 
-  log('Retrieve current balance')
+  log("Retrieve current balance")
   const balance = await nightmare
     .evaluate(
       selector => document
         .querySelector(selector)
         .textContent
-        .replace(/\./g, '')
-        .replace(/,/g, '.'),
-      '#financialStatus #summe-gruppe-0 strong span',
+        .replace(/\./g, "")
+        .replace(/,/g, "."),
+      "#financialStatus #summe-gruppe-0 strong span",
     )
     .end()
 
-  return balance + ' €'
+  return balance + " €"
 }
 
 const promptValues = [
   {
-    type: 'input',
-    name: 'username',
-    message: 'DKB Username:',
+    type: "input",
+    name: "username",
+    message: "DKB Username:",
   },
   {
-    type: 'password',
-    name: 'password',
-    message: 'DKB Password:',
+    type: "password",
+    name: "password",
+    message: "DKB Password:",
   },
 ]
 
@@ -75,7 +75,7 @@ prompt(promptValues)
   .then(async answers => {
     try {
       const balance = await getBalance(answers)
-      prettyPrint('dkb.de', balance)
+      prettyPrint("dkb.de", balance)
       process.exit(0)
     }
     catch (error) {

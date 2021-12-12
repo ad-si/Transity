@@ -1,13 +1,13 @@
-const fse = require('fs-extra')
+const fse = require("fs-extra")
 
-const converter = require('converter')
-const csvnorm = require('csvnorm')
-const inquirer = require('inquirer')
-const Nightmare = require('nightmare')
-const tempy = require('tempy')
-const yaml = require('js-yaml')
+const converter = require("converter")
+const csvnorm = require("csvnorm")
+const inquirer = require("inquirer")
+const Nightmare = require("nightmare")
+const tempy = require("tempy")
+const yaml = require("js-yaml")
 
-const nightmareDownloadManager = require('nightmare-inline-download')
+const nightmareDownloadManager = require("nightmare-inline-download")
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 const {
@@ -16,7 +16,7 @@ const {
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require('../helpers.js')
+} = require("../helpers.js")
 
 nightmareDownloadManager(Nightmare)
 
@@ -24,42 +24,42 @@ nightmareDownloadManager(Nightmare)
 
 function normalizeAndPrint (filePathTemp) {
   const csv2json = converter({
-    from: 'csv',
-    to: 'json',
+    from: "csv",
+    to: "json",
     // TODO: Use again when http://github.com/doowb/converter/issues/19 is fixed
     // to: 'yml',
   })
 
-  let jsonTemp = ''
-  csv2json.on('data', chunk => {
+  let jsonTemp = ""
+  csv2json.on("data", chunk => {
     jsonTemp += chunk
   })
-  csv2json.on('end', () => {
+  csv2json.on("end", () => {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
       .reverse() // Now sorted ascending by value date
       .map(transaction => {
         const newFields = {
-          utc: transaction['value-utc'] < transaction['entry-utc']
-            ? transaction['value-utc']
-            : transaction['entry-utc'],
-          note: '',
+          utc: transaction["value-utc"] < transaction["entry-utc"]
+            ? transaction["value-utc"]
+            : transaction["entry-utc"],
+          note: "",
         }
         const sortedTransaction = Object.assign(newFields, transaction)
 
-        if (sortedTransaction['value-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['value-utc']
+        if (sortedTransaction["value-utc"] === sortedTransaction.utc) {
+          delete sortedTransaction["value-utc"]
         }
-        if (sortedTransaction['entry-utc'] === sortedTransaction.utc) {
-          delete sortedTransaction['entry-utc']
+        if (sortedTransaction["entry-utc"] === sortedTransaction.utc) {
+          delete sortedTransaction["entry-utc"]
         }
 
         const account = noteToAccount(transaction.to)
-        const transfersObj = transaction.amount.startsWith('-')
+        const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: 'mbs:giro',
+              from: "mbs:giro",
               to: account,
               amount: transaction.amount.slice(1) + transaction.currency,
             }],
@@ -67,9 +67,9 @@ function normalizeAndPrint (filePathTemp) {
           : {
             transfers: [{
               from: account,
-              to: 'mbs:giro',
+              to: "mbs:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === '0,00'
+              amount: transaction.amount === "0,00"
                 ? 0
                 : transaction.amount + transaction.currency,
             }],
@@ -99,13 +99,13 @@ async function downloadRange (options = {}) {
   const {
     nightmare,
     filePathTemp,
-    type = 'CSV-CAMT-Format',
+    type = "CSV-CAMT-Format",
     startDate,
     endDate,
   } = options
 
-  const startInputSelector = '#zeitraumKalender input[type=text]:first-of-type'
-  const endInputSelector = '#zeitraumKalender input[type=text]:last-of-type'
+  const startInputSelector = "#zeitraumKalender input[type=text]:first-of-type"
+  const endInputSelector = "#zeitraumKalender input[type=text]:last-of-type"
   const log = process.env.NODE_DEBUG
     ? console.warn
     : () => {}
@@ -122,13 +122,13 @@ async function downloadRange (options = {}) {
     }`,
   )
   await nightmare
-    .insert(startInputSelector, '')
+    .insert(startInputSelector, "")
     .insert(startInputSelector, toDdotMdotYYYY(startDate))
 
-    .insert(endInputSelector, '')
+    .insert(endInputSelector, "")
     .insert(endInputSelector, toDdotMdotYYYY(endDate))
 
-    .click('.bcontinue input[type=submit]')
+    .click(".bcontinue input[type=submit]")
     .wait(options.numberOfDays > 90 ? 25000 : 0)  // Time to enter TAN
 
 
@@ -138,17 +138,17 @@ async function downloadRange (options = {}) {
         done(
           null,
           document
-            .querySelector('.bpageselect select option:last-of-type')
+            .querySelector(".bpageselect select option:last-of-type")
             .value,
         )
       },
-      '.bpageselect select',
+      ".bpageselect select",
     )
 
   log(`Show all entries of option "${optionId}"`)
   await nightmare
-    .select('.bpageselect select', optionId)
-    .click('.bpageselect input[type=submit]')
+    .select(".bpageselect select", optionId)
+    .click(".bpageselect input[type=submit]")
     .refresh() // Necessary to update the list
 
 
@@ -172,8 +172,8 @@ async function getTransactions (options = {}) {
   } = options
 
   const nightmare = new Nightmare({show: shallShowBrowser})
-  const baseUrl = 'https://www.mbs.de'
-  const filePathTemp = tempy.file({name: 'transactions.csv'})
+  const baseUrl = "https://www.mbs.de"
+  const filePathTemp = tempy.file({name: "transactions.csv"})
   const log = process.env.NODE_DEBUG
     ? console.warn
     : () => {}
@@ -182,24 +182,24 @@ async function getTransactions (options = {}) {
   log(`Open ${url}`)
   await nightmare
     .goto(url)
-    .wait('.loginlogout')
+    .wait(".loginlogout")
 
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('.loginlogout input[type=text]', username)
-    .insert('.loginlogout input[type=password]', password)
-    .click('input[value=Anmelden]')
-    .wait('.mbf-finanzstatus')
+    .insert(".loginlogout input[type=text]", username)
+    .insert(".loginlogout input[type=password]", password)
+    .click("input[value=Anmelden]")
+    .wait(".mbf-finanzstatus")
 
 
-  log('Go to transactions page')
+  log("Go to transactions page")
   await nightmare
     .goto(`${baseUrl}/de/home/onlinebanking/umsaetze/umsaetze.html`)
-    .wait('#zeitraumKalender')
+    .wait("#zeitraumKalender")
 
 
-  if (process.argv[2] === 'MT940') {
+  if (process.argv[2] === "MT940") {
     const previousMonthLastDay = new Date(
       new Date()
         .setUTCDate(0),
@@ -212,12 +212,12 @@ async function getTransactions (options = {}) {
     await downloadRange({
       nightmare,
       filePathTemp,
-      type: 'MT940-Format',
+      type: "MT940-Format",
       startDate: previousMonthFirstDay,
       endDate: previousMonthLastDay,
     })
 
-    console.info(await fse.readFile(filePathTemp, 'utf-8'))
+    console.info(await fse.readFile(filePathTemp, "utf-8"))
   }
   else {
     await downloadRange({nightmare, filePathTemp, startDate, endDate})
@@ -229,14 +229,14 @@ async function getTransactions (options = {}) {
 async function main () {
   const promptValues = [
     {
-      type: 'input',
-      name: 'username',
-      message: 'MBS Username:',
+      type: "input",
+      name: "username",
+      message: "MBS Username:",
     },
     {
-      type: 'password',
-      name: 'password',
-      message: 'MBS Password:',
+      type: "password",
+      name: "password",
+      message: "MBS Password:",
     },
   ]
   const answers = await prompt(promptValues)

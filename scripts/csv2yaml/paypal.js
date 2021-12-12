@@ -1,8 +1,8 @@
-const fse = require('fs-extra')
-const yaml = require('js-yaml')
-const csvnorm = require('csvnorm')
-const converter = require('converter')
-const chrono = require('chrono-node')
+const fse = require("fs-extra")
+const yaml = require("js-yaml")
+const csvnorm = require("csvnorm")
+const converter = require("converter")
+const chrono = require("chrono-node")
 
 
 const {
@@ -10,27 +10,27 @@ const {
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require('../helpers.js')
+} = require("../helpers.js")
 
 
 function normalizeAndPrint (filePathTemp) {
   const csv2json = converter({
-    from: 'csv',
-    to: 'json',
+    from: "csv",
+    to: "json",
   })
 
-  let jsonTemp = ''
-  csv2json.on('data', chunk => {
+  let jsonTemp = ""
+  csv2json.on("data", chunk => {
     jsonTemp += chunk
   })
-  csv2json.on('end', () => {
+  csv2json.on("end", () => {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
       .map(transaction => {
         const currency = transaction.Currency
-          .replace('EUR', '€')
-          .replace('USD', '$')
+          .replace("EUR", "€")
+          .replace("USD", "$")
           .trim()
 
         const sortedTransaction = Object.assign(
@@ -40,31 +40,31 @@ function normalizeAndPrint (filePathTemp) {
                 transaction.Date,
                 transaction.Time,
                 transaction.TimeZone,
-              ].join(' '))
+              ].join(" "))
               .toISOString()
-              .replace('T', ' ')
-              .replace('.000Z', ''),
+              .replace("T", " ")
+              .replace(".000Z", ""),
             note: transaction.Subject,
           },
           transaction,
         )
         const account = noteToAccount(transaction.Name)
-        const transfer = transaction.Gross.startsWith('-')
+        const transfer = transaction.Gross.startsWith("-")
           ? {
-            from: '_todo_:paypal:' +
+            from: "_todo_:paypal:" +
               transaction.Currency
                 .toLowerCase()
                 .trim(),
-            to: account ? account : 'paypal',
-            amount: transaction.Gross.slice(1) + ' ' + currency,
+            to: account ? account : "paypal",
+            amount: transaction.Gross.slice(1) + " " + currency,
           }
           : {
-            from: account ? account : 'paypal',
-            to: '_todo_:paypal:' +
+            from: account ? account : "paypal",
+            to: "_todo_:paypal:" +
               transaction.Currency
                 .toLowerCase()
                 .trim(),
-            amount: transaction.Gross + ' ' + currency,
+            amount: transaction.Gross + " " + currency,
           }
 
         const newTransaction = Object.assign(
@@ -74,13 +74,13 @@ function normalizeAndPrint (filePathTemp) {
 
         if (Number(transaction.Fee) !== 0) {
           newTransaction.transfers.push({
-            from: '_todo_:paypal:' +
+            from: "_todo_:paypal:" +
               transaction.Currency
                 .toLowerCase()
                 .trim(),
-            to: 'paypal',
-            amount: transaction.Fee.slice(1) + ' ' + currency,
-            tags: ['fee'],
+            to: "paypal",
+            amount: transaction.Fee.slice(1) + " " + currency,
+            tags: ["fee"],
           })
         }
 
@@ -94,8 +94,8 @@ function normalizeAndPrint (filePathTemp) {
         delete newTransaction.Date
         delete newTransaction.Time
         delete newTransaction.TimeZone
-        delete newTransaction['From Email Address']
-        delete newTransaction['To Email Address']
+        delete newTransaction["From Email Address"]
+        delete newTransaction["To Email Address"]
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
@@ -106,7 +106,7 @@ function normalizeAndPrint (filePathTemp) {
   })
 
   csvnorm.default({
-    dateFormat: 'dd/mm/yyyy',
+    dateFormat: "dd/mm/yyyy",
     readableStream: fse.createReadStream(filePathTemp),
     writableStream: csv2json,
   })

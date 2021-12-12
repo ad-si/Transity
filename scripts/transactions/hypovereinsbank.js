@@ -1,12 +1,12 @@
-const fse = require('fs-extra')
+const fse = require("fs-extra")
 
-const Nightmare = require('nightmare')
-const nightmareDownloadManager = require('nightmare-inline-download')
-const yaml = require('js-yaml')
-const tempy = require('tempy')
-const csvnorm = require('csvnorm')
-const converter = require('converter')
-const inquirer = require('inquirer')
+const Nightmare = require("nightmare")
+const nightmareDownloadManager = require("nightmare-inline-download")
+const yaml = require("js-yaml")
+const tempy = require("tempy")
+const csvnorm = require("csvnorm")
+const converter = require("converter")
+const inquirer = require("inquirer")
 
 const {
   rmEmptyString,
@@ -14,7 +14,7 @@ const {
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require('../helpers.js')
+} = require("../helpers.js")
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 
@@ -24,42 +24,42 @@ nightmareDownloadManager(Nightmare)
 
 function normalizeAndPrint (filePathTemp) {
   const csv2json = converter({
-    from: 'csv',
-    to: 'json',
+    from: "csv",
+    to: "json",
     // TODO: Use again when http://github.com/doowb/converter/issues/19 is fixed
     // to: 'yml',
   })
 
-  let jsonTemp = ''
-  csv2json.on('data', chunk => {
+  let jsonTemp = ""
+  csv2json.on("data", chunk => {
     jsonTemp += chunk
   })
-  csv2json.on('end', () => {
+  csv2json.on("end", () => {
     const transactions = JSON
       .parse(jsonTemp)
       .map(keysToEnglish)
       .map(transaction => {
-        const currency = transaction.currency.replace('EUR', '€')
+        const currency = transaction.currency.replace("EUR", "€")
         const sortedTransaction = {
-          utc: transaction['value-utc'] < transaction['entry-utc']
-            ? transaction['value-utc']
-            : transaction['entry-utc'],
+          utc: transaction["value-utc"] < transaction["entry-utc"]
+            ? transaction["value-utc"]
+            : transaction["entry-utc"],
         }
 
-        if (transaction['value-utc'] !== sortedTransaction.utc) {
-          sortedTransaction['value-utc'] = transaction['value-utc']
+        if (transaction["value-utc"] !== sortedTransaction.utc) {
+          sortedTransaction["value-utc"] = transaction["value-utc"]
         }
-        if (transaction['entry-utc'] !== sortedTransaction.utc) {
-          sortedTransaction['entry-utc'] = transaction['entry-utc']
+        if (transaction["entry-utc"] !== sortedTransaction.utc) {
+          sortedTransaction["entry-utc"] = transaction["entry-utc"]
         }
 
         sortedTransaction.note = transaction.note
 
         const account = noteToAccount(transaction.note)
-        const transfersObj = transaction.amount.startsWith('-')
+        const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: 'hypo:giro',
+              from: "hypo:giro",
               to: account,
               amount: transaction.amount.slice(1) + currency,
             }],
@@ -67,9 +67,9 @@ function normalizeAndPrint (filePathTemp) {
           : {
             transfers: [{
               from: account,
-              to: 'hypo:giro',
+              to: "hypo:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === '0,00'
+              amount: transaction.amount === "0,00"
                 ? 0
                 : transaction.amount + currency,
             }],
@@ -78,8 +78,8 @@ function normalizeAndPrint (filePathTemp) {
 
         delete newTransaction.amount
         delete newTransaction.currency
-        if (newTransaction['entry-utc'] === newTransaction.utc) {
-          delete newTransaction['entry-utc']
+        if (newTransaction["entry-utc"] === newTransaction.utc) {
+          delete newTransaction["entry-utc"]
         }
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
@@ -106,8 +106,8 @@ async function downloadRange (options = {}) {
     endDate,
   } = options
 
-  const startInputSelector = '#dateFrom_input'
-  const endInputSelector = '#dayTo_input'
+  const startInputSelector = "#dateFrom_input"
+  const endInputSelector = "#dayTo_input"
   const log = process.env.NODE_DEBUG
     ? console.warn
     : () => {}
@@ -124,17 +124,17 @@ async function downloadRange (options = {}) {
     }`,
   )
   await nightmare
-    .insert(startInputSelector, '')
+    .insert(startInputSelector, "")
     .insert(startInputSelector, toDdotMdotYYYY(startDate))
 
-    .insert(endInputSelector, '')
+    .insert(endInputSelector, "")
     .insert(endInputSelector, toDdotMdotYYYY(endDate))
-    .click('#showtransactions')
+    .click("#showtransactions")
     .wait(25000) // Time to enter TAN
 
   log(`Download CSV file to ${filePathTemp}`)
   return await nightmare
-    .click('a[title=CSV]')
+    .click("a[title=CSV]")
     .download(filePathTemp)
     .end()
 }
@@ -152,8 +152,8 @@ async function getTransactions (options = {}) {
   } = options
 
   const nightmare = new Nightmare({show: shallShowBrowser})
-  const baseUrl = 'https://my.hypovereinsbank.de'
-  const filePathTemp = tempy.file({name: 'hypovereinsbank-transactions.csv'})
+  const baseUrl = "https://my.hypovereinsbank.de"
+  const filePathTemp = tempy.file({name: "hypovereinsbank-transactions.csv"})
   const log = process.env.NODE_DEBUG
     ? console.warn
     : () => {}
@@ -162,21 +162,21 @@ async function getTransactions (options = {}) {
   log(`Open ${url}`)
   await nightmare
     .goto(url)
-    .wait('#loginPanel')
+    .wait("#loginPanel")
 
 
-  log('Log in')
+  log("Log in")
   await nightmare
-    .insert('#loginPanel #username', username)
-    .insert('#loginPanel #px2', password)
-    .click('#loginCommandButton')
-    .wait('.startpagemoney')
+    .insert("#loginPanel #username", username)
+    .insert("#loginPanel #px2", password)
+    .click("#loginCommandButton")
+    .wait(".startpagemoney")
 
 
-  log('Go to transactions page')
+  log("Go to transactions page")
   await nightmare
     .goto(`${baseUrl}/portal?view=/de/banking/konto/kontofuehrung/umsaetze.jsp`)
-    .wait('#dateFrom')
+    .wait("#dateFrom")
 
 
   await downloadRange({nightmare, filePathTemp, startDate, endDate})
@@ -187,14 +187,14 @@ async function getTransactions (options = {}) {
 async function main () {
   const promptValues = [
     {
-      type: 'input',
-      name: 'username',
-      message: 'HypoVereinsbank Username:',
+      type: "input",
+      name: "username",
+      message: "HypoVereinsbank Username:",
     },
     {
-      type: 'password',
-      name: 'password',
-      message: 'HypoVereinsbank Password:',
+      type: "password",
+      name: "password",
+      message: "HypoVereinsbank Password:",
     },
   ]
   const answers = await prompt(promptValues)
