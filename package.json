@@ -3,13 +3,13 @@
   "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
   "version": "0.8.0",
   "main": "output/Main/index.js",
-  "browser": "webapp/main.js",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "bin": {
     "transity": "cli/main.js"
   },
   "scripts": {
     "minify": "uglifyjs --compress --mangle --output index.js index.js",
-    "bundle": "spago bundle-module && npm run minify",
+    "bundle": "spago bundle-app && npm run minify",
     "prepublishOnly": "npm test && npm run bundle",
     "test": "spago test && npm run lint-js",
     "lint-js": "eslint --max-warnings=0 --ignore-path=.gitignore scripts"
@@ -39,30 +39,42 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
-    "big-integer": "^1.6.48",
-    "chrono-node": "^2.1.9",
+    "@swc/helpers": "^0.3.2",
+    "big-integer": "^1.6.51",
+    "chrono-node": "^2.3.4",
     "csvnorm": "^0.10.0",
-    "js-yaml": "^3.14.0"
+    "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "converter": "0.0.5",
-    "inquirer": "^7.3.3",
+    "inquirer": "^8.2.0",
     "nightmare": "^3.0.2",
     "nightmare-inline-download": "^0.2.2",
-    "tempy": "^1.0.0"
+    "tempy": "^2.0.0"
   },
   "devDependencies": {
-    "conventional-changelog-cli": "^2.1.0",
-    "cssnano": "^4.1.10",
+    "conventional-changelog-cli": "^2.1.1",
+    "cssnano": "^5.0.12",
     "eslint": "^8.4.1",
     "eslint-config-javascript": "^2.0.0",
     "markdown-toc": "^1.2.0",
-    "parcel": "^1.12.4",
-    "purescript": "^0.14.0",
-    "spago": "^0.19.1",
-    "uglify-js": "^3.11.4"
+    "parcel": "^2.0.1",
+    "purescript": "^0.14.5",
+    "spago": "^0.20.3",
+    "uglify-js": "^3.14.4"
   },
   "eslintConfig": {
     "extends": "eslint-config-javascript"
+  },
+  "targets": {
+    "docs": {
+      "distDir": "docs"
+    },
+    "docs-dev": {
+      "distDir": "docs-dev"
+    },
+    "library": {
+      "distDir": "."
+    }
   }
 }

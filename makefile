@@ -14,20 +14,25 @@ index.js: src
 	npm run bundle
 
 
+# The specified target is configured in package.json
 docs: output
 	npx parcel build webapp/index.html \
 		--public-url /transity \
 		--no-source-maps \
-		--out-dir $@
+		--target $@
 
 
+# Correct paths for assets during local development
+# Use e.g. Vercel's "serve" like this: `serve docs-dev`.
+# The specified target is configured in package.json.
 docs-dev: output index.js
 	npx parcel build webapp/index.html \
 		--no-source-maps \
-		--out-dir $@
+		--target $@
 
 
-output: src package.json package-lock.json packages.dhall spago.dhall node_modules
+output: src package.json package-lock.json \
+ packages.dhall spago.dhall node_modules
 	npx --no-install spago build
 
 
@@ -48,10 +53,10 @@ test: output
 .PHONY: clean
 clean:
 	-rm -rf \
-		.cache \
 		.parcel-cache \
 		.spago \
 		docs \
 		docs-dev \
+		index.js \
 		node_modules \
 		output
