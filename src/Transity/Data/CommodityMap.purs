@@ -36,7 +36,7 @@ fromAmounts =
 
 
 addAmountToMap :: CommodityMap -> Amount -> CommodityMap
-addAmountToMap commodityMap amount@(Amount value (Commodity commodity)) =
+addAmountToMap commodityMap amount@(Amount _ (Commodity commodity)) =
   Map.alter
     (\maybeValue -> case maybeValue of
       Nothing -> Just amount
@@ -47,7 +47,7 @@ addAmountToMap commodityMap amount@(Amount value (Commodity commodity)) =
 
 
 subtractAmountFromMap :: CommodityMap -> Amount -> CommodityMap
-subtractAmountFromMap commodityMap amount@(Amount value (Commodity commodity)) =
+subtractAmountFromMap commodityMap amount@(Amount _ (Commodity commodity)) =
   Map.alter
     (\maybeValue -> case maybeValue of
       Nothing -> Just (Amount.negate amount)

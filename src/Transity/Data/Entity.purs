@@ -116,7 +116,7 @@ toAccountsWithId (Entity entity) =
 
 -- | Map the entity's balance to an array of balancing transfers
 toTransfers :: Entity -> Array Transfer
-toTransfers entity@(Entity entityRec) =
+toTransfers entity =
   let
     accounts = toAccountsWithId entity
 

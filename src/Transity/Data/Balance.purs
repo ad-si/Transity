@@ -4,7 +4,6 @@ import Prelude (class Show, class Eq, bind, pure, ($), (<#>))
 
 import Data.Argonaut.Core (Json, toObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.DateTime (DateTime)
 import Data.Maybe (maybe)
 import Data.Result (Result(Ok, Error), toEither, note)

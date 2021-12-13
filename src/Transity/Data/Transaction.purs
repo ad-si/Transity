@@ -115,7 +115,7 @@ toTransfers transactions =
 
 
 showTransfersWithDate :: ColorFlag -> Transaction -> String
-showTransfersWithDate colorFlag (Transaction transac) =
+showTransfersWithDate _ (Transaction transac) =
   transac.transfers
     <#> (\(Transfer transf) -> Transfer (transf
             { utc = if transf.utc /= Nothing
