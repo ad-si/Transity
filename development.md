@@ -61,6 +61,12 @@ markdown-toc -i readme.md
 [markdown-toc]: https://github.com/jonschlinkert/markdown-toc
 
 
+## XLSX Generation
+
+Check out https://stackoverflow.com/q/18334314/1850340 for an explanation
+of the XML fields.
+
+
 ## Generate Screenshots
 
 Use [asciinema] to generate the terminal recording:

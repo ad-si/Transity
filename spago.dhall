@@ -16,6 +16,7 @@
   , "foreign-object"
   , "format"
   , "formatters"
+  , "functions"
   , "lists"
   , "maybe"
   , "newtype"

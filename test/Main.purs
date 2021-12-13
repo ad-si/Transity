@@ -1,5 +1,7 @@
 module Test.Main where
 
+import Prelude (Unit)
+
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Decode (decodeJson)
@@ -26,7 +28,7 @@ import Data.String.Regex (replace)
 import Data.String.Regex.Flags (global)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..))
-import Data.Unit (Unit, unit)
+import Data.Unit (unit)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Partial.Unsafe (unsafePartial)
@@ -62,8 +64,8 @@ import Transity.Utils
   , stringToDateTime
   , ratioZero
   , stringifyJsonDecodeError
-  , resultWithJsonDecodeError
   )
+import Transity.Xlsx (entriesAsXlsx, writeToZip, FileEntry(..))
 
 
 rmWhitespace :: String -> String
@@ -176,6 +178,25 @@ main = launchAff_ $ runSpec [consoleReporter] do
         -- This would fail with a range overflow
         -- if Ints instead of BigInt were used
         (Just $ digitsToRational digits) `shouldEqual` (Just bigIntRatio)
+
+
+  describe "Xlsx" do
+    it "writes files to a ZIP archive" do
+      writeToZip
+        (Just "test/_deletable_.zip")
+        [ FileEntry
+            { path: "path/to/file"
+            , content: "Some file content"
+            }
+        ]
+      pure unit
+
+    it "creates an XLSX file" do
+      let files = entriesAsXlsx ledger
+      writeToZip
+        (Just "test/_deletable_.xlsx")
+        files
+      pure unit
 
 
   describe "Transity" do

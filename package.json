@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@swc/helpers": "^0.3.2",
+    "archiver": "^5.3.0",
     "big-integer": "^1.6.51",
     "chrono-node": "^2.3.4",
     "csvnorm": "^0.10.0",

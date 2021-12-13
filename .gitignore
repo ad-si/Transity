@@ -5,3 +5,4 @@
 /generated-docs
 /node_modules
 /output
+/test/_deletable_*

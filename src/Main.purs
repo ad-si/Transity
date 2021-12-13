@@ -1,6 +1,6 @@
 module Main where
 
-import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>), (/=))
+import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>), (/=), (>))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
@@ -10,11 +10,12 @@ import Data.Foldable (foldMap)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
 import Data.Result (Result(..), note)
-import Data.String (Pattern(..), indexOf)
+import Data.String (Pattern(..), indexOf, length)
 import Data.Traversable (for_, sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Class.Console (log, error)
+import Effect.Aff (launchAff_)
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Async (exists)
 import Node.FS.Stats (isFile, isDirectory)
@@ -27,7 +28,7 @@ import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
 import Transity.Utils (ColorFlag(..))
-
+import Transity.Xlsx (writeToZip, entriesAsXlsx)
 
 type Config = { colorState :: ColorFlag }
 
@@ -48,8 +49,9 @@ transactions        All transactions and their transfers
 transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals, space separated
 ledger-entries      All entries in Ledger format
-csv                 Entries, comma separated
-tsv                 Entries, tab separated
+csv                 Transfers, comma separated (printed to stdout)
+tsv                 Transfers, tab separated (printed to stdout)
+xlsx                XLSX file with all transfers (printed to stdout)
 entries-by-account  All individual deposits & withdrawals, grouped by account
 gplot               Code and data for gnuplot impulse diagram
                       to visualize transfers of all accounts
@@ -101,7 +103,7 @@ run command filePathRel ledger =
 
 -- | Asynchronously logs all non existent referenced files
 checkFilePaths :: String -> Ledger -> Effect (Result String String)
-checkFilePaths ledgerFilePath wholeLedger@(Ledger {transactions}) = do
+checkFilePaths ledgerFilePath (Ledger {transactions}) = do
   let
     files = foldMap (\(Transaction tact) -> tact.files) transactions
 
@@ -135,8 +137,17 @@ loadAndExec currentDir [command, filePathRel] = do
           then currentDir
           else Path.dirname filePathAbs
       _ <- checkFilePaths journalDir ledger
-      pure $ run command filePathRel ledger
-loadAndExec currendDir _ =
+
+      case command of
+        "xlsx" -> do
+          launchAff_ $ writeToZip
+            Nothing  -- Means stdout
+            (entriesAsXlsx ledger)
+          pure (Ok "")
+        _ ->
+          pure $ run command filePathRel ledger
+
+loadAndExec _ _ =
   pure $ Error "loadAndExec expects an array with length 2"
 
 
@@ -170,7 +181,7 @@ getAllFiles directoryPath =
         pure $ files
       else do
         filesNested <- sequence $ dirTuples
-          <#> (\(Tuple dir dirStats) -> addFiles dir)
+          <#> (\(Tuple dir _) -> addFiles dir)
         pure (concat $ cons files filesNested)
   in
     addFiles directoryPath
@@ -223,7 +234,9 @@ main = do
       result <- loadAndExec currentDir [command, ledgerFilePath]
 
       case result of
-        Ok output -> log output
+        Ok output -> if length output > 0
+          then log output
+          else pure unit
         Error message -> errorAndExit message
 
     _ -> log usageString
