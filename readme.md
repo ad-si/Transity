@@ -1,12 +1,7 @@
 # Transity
 
-[![Build Status][]][travis]
-
 The plain text accounting tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
-
-[Build Status]: https://travis-ci.com/feramhq/transity.svg?token=ipYeEBNjb9wCxCwPq6aS&branch=master
-[travis]: https://travis-ci.com/feramhq/transity
 
 <img
   src='images/screenshot-balance.svg'
