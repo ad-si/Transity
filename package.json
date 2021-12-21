@@ -9,7 +9,7 @@
   },
   "scripts": {
     "minify": "uglifyjs --compress --mangle --output index.js index.js",
-    "bundle": "spago bundle-app && npm run minify",
+    "bundle": "spago bundle-module && npm run minify",
     "prepublishOnly": "npm test && npm run bundle",
     "test": "spago test && npm run lint-js",
     "lint-js": "eslint --max-warnings=0 --ignore-path=.gitignore scripts"
