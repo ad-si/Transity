@@ -1,12 +1,12 @@
 module Test.Main where
 
-import Prelude (Unit)
+import Prelude (Unit, (==))
 
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (zipWith)
+import Data.Array (zipWith, find)
 import Data.BigInt (BigInt, fromInt, fromString)
 import Data.Eq ((/=))
 import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
@@ -197,6 +197,18 @@ main = launchAff_ $ runSpec [consoleReporter] do
         (Just "test/_deletable_.xlsx")
         files
       pure unit
+
+    it "HTML escapes content in XML files" do
+      let
+        files = entriesAsXlsx ledger
+        sheetMb = find
+          (\(FileEntry file) -> file.path == "xl/worksheets/sheet1.xml")
+          files
+
+      case sheetMb of
+        Nothing -> fail "Does not contain a sheet"
+        Just (FileEntry sheet) ->
+          sheet.content `shouldContain` "special chars like &lt; and &amp;"
 
 
   describe "Transity" do
@@ -499,7 +511,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
               , from: "john:wallet"
               , to: "anna"
               , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
-              , note: Just "A little note"
+              , note: Just "A note with special chars like < and &"
               }
             expected = fromFoldable
               [ Tuple "anna:_default_" $ fromFoldable

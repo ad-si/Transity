@@ -1,19 +1,25 @@
 module Transity.Xlsx where
 
-import Prelude
-  ( class Eq, bind, map, max, pure, show, Unit
-  , (#), ($), (+), (-), (/), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>)
-  )
+import Prelude (Unit, bind, pure, (#), ($), (<#>), (<>), (==), show)
 
-import Data.Array (sort)
+import Control.Alt ((<|>))
+import Data.Array (sortBy, concat)
 import Data.Function.Uncurried (Fn3, runFn3)
-import Data.Maybe (Maybe(..))
-import Data.String (joinWith)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (unwrap)
+import Data.Ord (compare)
+import Data.String (joinWith, Pattern(..), Replacement(..), replace)
+import Data.Traversable (sequence)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
 
-import Transity.Data.Ledger (Ledger, getEntries)
-
+import Transity.Data.Amount as Amount
+import Transity.Data.Amount (Amount(..))
+import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transaction (Transaction(..))
+import Transity.Data.Ledger (Ledger(..), entitiesToInitialTransfers)
+import Transity.Utils (bigIntToNumber, utcToIsoString)
+import Debug
 
 newtype FileEntry = FileEntry
   { path :: String
@@ -29,22 +35,132 @@ writeToZip outPath files = fromEffectFnAff $
   runFn3 writeToZipImpl Nothing outPath files
 
 
+newtype SheetRow = SheetRow
+  { utc :: String
+  , account :: String
+  , amount :: String
+  , commodity :: String
+  , note :: String
+  , files :: Array String
+  }
+
+
+getSheetRows :: Ledger -> Maybe (Array SheetRow)
+getSheetRows (Ledger {transactions, entities}) = do
+  let
+    getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
+    getCmdty (Amount _ commodity ) = unwrap commodity
+
+    splitTransfer :: Transfer -> Maybe (Array SheetRow)
+    splitTransfer (Transfer tfer) =
+      let
+        fromAmnt = Amount.negate tfer.amount
+
+        getFromAndTo :: String -> Array SheetRow
+        getFromAndTo date =
+          [ SheetRow
+              { utc: date
+              , account: tfer.from
+              , amount: getQunty fromAmnt
+              , commodity: getCmdty fromAmnt
+              , note: fromMaybe "" tfer.note
+              , files: []
+              }
+          , SheetRow
+              { utc: date
+              , account: tfer.to
+              , amount: getQunty tfer.amount
+              , commodity: getCmdty tfer.amount
+              , note: fromMaybe "" tfer.note
+              , files: []
+              }
+          ]
+      in
+        (tfer.utc <#> utcToIsoString) <#> getFromAndTo
+
+  splitted <- do
+    transactions
+    <#> (\(Transaction tact) -> tact.transfers
+      <#> (\(Transfer tfer) -> Transfer (tfer { utc = tfer.utc <|> tact.utc })))
+    # concat
+    <#> splitTransfer
+    # sequence
+
+  let
+    initialEntries = entitiesToInitialTransfers entities <#>
+      \(Transfer t) ->
+          let isoString = fromMaybe "INVALID DATE" $ t.utc <#> utcToIsoString
+          in
+            [ SheetRow
+              { utc: isoString
+              , account: replace (Pattern ":_default_") (Replacement "") t.from
+              , amount: getQunty t.amount
+              , commodity: getCmdty t.amount
+              , note: fromMaybe "" t.note
+              , files: []
+              }
+            ]
+
+  pure $ (splitted <> initialEntries) # concat
+
+
+escapeHtml :: String -> String
+escapeHtml unsafeStr =
+  unsafeStr
+   # replace (Pattern "&") (Replacement "&amp;")
+   # replace (Pattern "<") (Replacement "&lt;")
+   # replace (Pattern ">") (Replacement "&gt;")
+   # replace (Pattern "\"") (Replacement "&quot;")
+   # replace (Pattern "'") (Replacement "&#039;")
+
+
 entriesAsXml :: Ledger -> Maybe String
 entriesAsXml ledger = do
-  entries <- getEntries ledger
+  sheetRows <- getSheetRows ledger
 
-  pure $ entries
-    # sort
-    <#> (\cells -> "<row>\n"
-      <> (cells
-        <#> (\cell ->
-                "  <c t=\"inlineStr\"><is><t>"
-                <> cell
-                <> "</t></is></c>"
-            )
-        # joinWith "\n")
-      <> "\n</row>")
-    # joinWith "\n"
+  let
+    wrapValue dataType val =
+      if dataType == "inlineStr"
+      then
+        "<c t=\"inlineStr\"><is><t>"
+        <> escapeHtml val
+        <> "</t></is></c>"
+      else
+        "<c t=\"" <> dataType <> "\"><v>"
+        <> escapeHtml val
+        <> "</v></c>"
+
+    wrapStr = wrapValue "inlineStr"
+
+    headerRow :: String
+    headerRow =
+      "<row>\n"
+        <> (wrapStr "Timestamp (UTC)")
+        <> (wrapStr "Account")
+        <> (wrapStr "Amount")
+        <> (wrapStr "Commodity")
+        <> (wrapStr "Note")
+        <> (wrapStr "Files")
+        <> "\n"
+        <> "</row>"
+
+    dataRows :: String
+    dataRows = sheetRows
+      # sortBy (\(SheetRow rowRecA) (SheetRow rowRecB) ->
+          compare rowRecA.utc rowRecB.utc)
+      <#> (\(SheetRow rowRec) ->
+        "<row>\n"
+        <> (wrapStr (rowRec.utc <> "Z"))
+        <> (wrapStr rowRec.account)
+        <> (wrapValue "n" rowRec.amount)
+        <> (wrapStr rowRec.commodity)
+        <> (wrapStr rowRec.note)
+        <> (wrapStr $ joinWith ", " rowRec.files)
+        <> "\n"
+        <> "</row>")
+      # joinWith "\n"
+
+  pure $ headerRow <> dataRows
 
 
 contentTypesContent :: String

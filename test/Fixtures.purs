@@ -35,7 +35,7 @@ transferSimple = Transfer
   , from: "john:giro"
   , to: "evil-corp"
   , amount: Amount (fromInt 15 % fromInt 1) (Commodity "€")
-  , note: Just "A little note"
+  , note: Just "A note with special chars like < and &"
   }
 
 transferSimpleJson :: String
@@ -45,7 +45,7 @@ transferSimpleJson = """
   "from": "john:giro",
   "to": "evil-corp",
   "amount": "15 €",
-  "note": "A little note"
+  "note": "A note with special chars like < and &"
 }
 """
 
@@ -55,7 +55,7 @@ utc: '2014-12-24'
 from: john:giro
 to: evil-corp
 amount: 15 €
-note: A little note
+note: A note with special chars like < and &
 """
 
 transferSimpleShowed :: String
@@ -63,7 +63,7 @@ transferSimpleShowed = """
 (Transfer
   { amount: (Amount fromString "15" % fromString "1" (Commodity "€"))
   , from: "john:giro"
-  , note: (Just "A little note")
+  , note: (Just "A note with special chars like < and &")
   , to: "evil-corp"
   , utc: (Just (DateTime
       (Date (Year 2014) December (Day 24))
@@ -76,7 +76,7 @@ transferSimplePretty :: String
 transferSimplePretty = "\
   \2014-12-24 00:00 \
   \|       john:giro ->       evil-corp :    15    €          \
-  \| A little note\n\
+  \| A note with special chars like < and &\n\
   \" -- Fix syntax highlighting: "
 
 transferSimpleB :: Transfer
