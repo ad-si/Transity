@@ -10,7 +10,7 @@ changelog.md: .git
 		--output-unreleased
 
 
-index.js: src
+index.js: src node_modules
 	npm run bundle
 
 
@@ -37,7 +37,7 @@ output: src package.json package-lock.json \
 
 
 node_modules: package.json package-lock.json
-	npm install
+	if test ! -d $@; then npm install; fi
 
 
 readme.md:
