@@ -12,7 +12,7 @@ getBalance journal = do
   let
     result = do
       ledger <- Ledger.fromYaml journal
-      pure $ Ledger.showBalance ColorNo ledger
+      pure $ Ledger.showBalance Ledger.BalanceAll ColorNo ledger
 
   case result of
     Ok output -> output

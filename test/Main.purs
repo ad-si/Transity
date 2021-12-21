@@ -51,7 +51,7 @@ import Transity.Data.CommodityMap (CommodityMap, isCommodityMapZero)
 import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.Entity as Entity
-import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
@@ -777,7 +777,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
             (shouldBeOk do
               actual <- transactionNoAccount
                 # Ledger.fromYaml
-                # map (Ledger.showBalance ColorNo)
+                # map (Ledger.showBalance BalanceAll ColorNo)
               expected <- Ok transactionNoAccountPretty
               actual `testEqualityTo` expected
             )
@@ -787,13 +787,19 @@ main = launchAff_ $ runSpec [consoleReporter] do
           (Ledger.showPretty ledger) `shouldEqualString` ledgerPretty
 
 
+        it "pretty shows the balance of owner" do
+          (Ledger.showBalance (BalanceOnly "john") ColorNo ledger)
+            `shouldEqualString` ledgerBalanceOwner
+
+
         it "pretty shows the balance of all accounts" do
-          (Ledger.showBalance ColorNo ledger) `shouldEqualString` ledgerBalance
+          (Ledger.showBalance BalanceAll ColorNo ledger)
+            `shouldEqualString` ledgerBalanceAll
 
 
         it "supports multiple transactions on one account" do
           let
-            actual = Ledger.showBalance ColorNo ledgerMultiTrans
+            actual = Ledger.showBalance BalanceAll ColorNo ledgerMultiTrans
 
           actual `shouldEqualString` ledgerBalanceMultiTrans
 

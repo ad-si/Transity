@@ -1,7 +1,7 @@
 module Transity.Data.Ledger where
 import Prelude
   ( class Show, class Eq, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
+  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=), (<<<)
   )
 
 import Control.Alt ((<|>))
@@ -20,12 +20,19 @@ import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.HeytingAlgebra (not)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
+import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
-import Data.String (joinWith, split, Pattern(..), Replacement(..), replace)
+import Data.String
+  ( joinWith
+  , Pattern(..)
+  , replace
+  , Replacement(..)
+  , split
+  , stripPrefix
+  )
 import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
@@ -77,6 +84,17 @@ instance showLedger :: Show Ledger where
 instance decodeLedger :: DecodeJson Ledger where
   decodeJson json = toEither $
     resultWithJsonDecodeError $ decodeJsonLedger json
+
+
+data BalanceFilter
+  = BalanceOnly String
+  | BalanceOnlyOwner
+  | BalanceAll
+
+
+startsWith :: String -> String -> Boolean
+startsWith prefix testString =
+  isJust $ stripPrefix (Pattern prefix) testString
 
 
 decodeJsonLedger :: Json -> Result String Ledger
@@ -297,16 +315,31 @@ subtractTransfer balanceMap transfer  =
   in balanceMap `addTransfer` transferNegated
 
 
-showBalance :: ColorFlag -> Ledger -> String
-showBalance colorFlag (Ledger ledger) =
+showBalance :: BalanceFilter -> ColorFlag -> Ledger -> String
+showBalance balFilter colorFlag (Ledger ledger) =
   let
     balanceMap :: Map.Map String (Map.Map Commodity Amount)
     balanceMap = foldr (flip addTransaction) Map.empty ledger.transactions
+
+    mapToEmpty
+      :: Tuple String (Map.Map Commodity Amount)
+      -> String
+      -> Tuple String (Map.Map Commodity Amount)
+    mapToEmpty accTuple@(Tuple accId _) account =
+      if accId == account || (accId # startsWith (account <> ":"))
+      then accTuple
+      else (Tuple "" Map.empty)
 
     balancesArray :: Array (Tuple String (Map.Map Commodity Amount))
     balancesArray = balanceMap
       # (Map.toUnfoldable :: BalanceMap ->
           Array (Tuple Account.Id CommodityMap))
+      <#> (\accTuple -> case balFilter of
+              BalanceAll -> accTuple
+              BalanceOnlyOwner -> mapToEmpty accTuple (ledger.owner)
+              BalanceOnly account -> mapToEmpty accTuple account
+          )
+      # Array.filter (\accTuple -> accTuple /= (Tuple "" Map.empty))
 
     normAccId accId =
       replace (Pattern ":_default_") (Replacement "") accId

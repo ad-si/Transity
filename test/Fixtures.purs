@@ -480,8 +480,13 @@ ledgerPretty = """Journal for "John Doe"
     """ <> transferSimplePretty <> "    \n"
 
 
-ledgerBalance :: String
-ledgerBalance = ""
+ledgerBalanceOwner :: String
+ledgerBalanceOwner = ""
+  <> "  john:giro  -15 €\n"
+
+
+ledgerBalanceAll :: String
+ledgerBalanceAll = ""
   <> "  evil-corp   15 €\n"
   <> "  john:giro  -15 €\n"
 

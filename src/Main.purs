@@ -23,7 +23,7 @@ import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (argv, cwd, exit)
 
-import Transity.Data.Ledger (Ledger(..))
+import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
@@ -44,7 +44,8 @@ Usage: transity <command> <path/to/journal.yaml>
 
 Command             Description
 ------------------  ------------------------------------------------------------
-balance             Simple balance of all accounts
+balance             Simple balance of the owner's accounts
+balance-all         Simple balance of all accounts
 transactions        All transactions and their transfers
 transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals, space separated
@@ -74,7 +75,8 @@ utcError =
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
-    "balance"            -> Ok $ Ledger.showBalance ColorYes ledger
+    "balance"            -> Ok $ Ledger.showBalance BalanceOnlyOwner ColorYes ledger
+    "balance-all"        -> Ok $ Ledger.showBalance BalanceAll ColorYes ledger
     -- "balance-on"         -> Ok $ Ledger.showBalanceOn dateMaybe ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
