@@ -61,13 +61,14 @@
 ;       - id: giro
 
 
-2013-12-31 Salary
+
+2013-12-31 Anna | Salary
   ; 12:00
   anna  500 €
   good-inc
 
 
-2014-04-22 Purchase of evil machine
+2014-04-22 Evil Corp | Purchase of evil machine
   ; 2014-02-17
   evil-corp  300 €
   anna  -300 €
@@ -76,42 +77,50 @@
   evil-corp  -1 evil_machine
 
 
-2014-12-24 Money for evil deal
+2014-12-24 John | Money for evil deal
   expenses:evil-corp  15 €
   assets:john:giro
 
-2015-01-04 Christmas Gifts
+
+2015-01-04 Anna | Christmas Gifts
   ; 17:05
   expenses:anna  33.95 €
   assets:john:wallet
 
-2015-01-05
+
+2015-01-05 John
   assets:john:wallet  100 €
   income:good-inc
 
-2015-01-07 Financial support
+
+2015-01-07 John | Financial support
   assets:john:giro  100 €
   income:ben
 
-2015-01-07 Financial support in Dollar
+
+2015-01-07 John | Financial support in Dollar
   assets:john:giro  50 $
   income:ben
 
-2015-03-07 Financial support in Bitcoin
+
+2015-03-07 John | Financial support in Bitcoin
   assets:john:giro  1.432592 BTC
   income:ben
 
-2015-07-05
+
+2015-07-05 Grocery Shop
   ; 17:13
   grocery-shop  11.97 €
   anna
 
-2015-12-30 End of year bonus
+
+2015-12-30 Anna | End of year bonus
   ; 14:00
   anna  220 €
   good-inc
 
-2016-03-14 Yummy bread
+
+2016-03-14 Bakery | Yummy bread
   ; 08:43
   bakery  7.29 €
   anna
