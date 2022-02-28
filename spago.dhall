@@ -28,7 +28,6 @@
   , "ordered-collections"
   , "partial"
   , "prelude"
-  , "psci-support"
   , "rationals"
   , "result"
   , "spec"
