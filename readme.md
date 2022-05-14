@@ -74,7 +74,9 @@ For help please come visit us on one of the following sites:
 - [ ] Meta data for all entities (transactions, accounts, entities, …)
 - [x] Verifies sole use of predefined entities
 - [x] Checks match with verification balances
-- [ ] Duplicate detection
+- Features for duplicates
+  - [ ] Print list of possible duplicates
+  - [ ] Label an entry explicitly as a duplicate to store it in several places
 - [ ] Syntax checking in addition to syntax highlighting
 - [ ] CSV import
 - [ ] Link to receipt file

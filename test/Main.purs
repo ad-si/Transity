@@ -444,7 +444,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
           (rmWhitespace $ show transfers) `shouldEqualString` (rmWhitespace """
               [(Transfer
                   { amount: (Amount
-                              fromString "100" % fromString "1"
+                              (fromString "100") % (fromString "1")
                               (Commodity "€"))
                   , from: "John:wallet"
                   , note: Nothing

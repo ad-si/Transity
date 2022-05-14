@@ -4,7 +4,6 @@ const Nightmare = require("nightmare")
 const nightmareDownloadManager = require("nightmare-inline-download")
 const yaml = require("js-yaml")
 const tempy = require("tempy")
-const csvnorm = require("csvnorm")
 const converter = require("converter")
 const inquirer = require("inquirer")
 
@@ -27,7 +26,8 @@ function rmEmptyString (key, value) {
 }
 
 
-function normalizeAndPrint (filePathTemp) {
+async function normalizeAndPrint (filePathTemp) {
+  const csvnorm = await import("csvnorm")
   const csv2json = converter({
     from: "csv",
     to: "json",

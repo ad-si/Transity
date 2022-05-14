@@ -6,19 +6,19 @@ Install dependencies:
 
 ```shell
 npm install
-spago install
+npx spago install
 ```
 
 Build project:
 
 ```shell
-spago build
+npx spago build
 ```
 
 Build and run:
 
 ```shell
-spago run --node-args 'balance test/test.yaml'
+npx spago run --exec-args 'balance test/test.yaml'
 ```
 
 Make `transity` executable available in your path:
@@ -34,7 +34,7 @@ will now be available via the linked `transity` executable.
 ## Test
 
 ```shell
-spago test --watch
+npx spago test --watch
 ```
 
 
@@ -43,7 +43,7 @@ spago test --watch
 Generate and serve the Pursuit documentation with:
 
 ```sh
-spago docs
+npx spago docs
 cd generated-docs/html
 python3 -m http.server 1222
 ```

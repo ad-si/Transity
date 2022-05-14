@@ -1,6 +1,11 @@
 all: index.js docs
 
 
+.PHONY: build
+build:
+	spago build
+
+
 changelog.md: .git
 	# git config changelog.format '- %s (%h)'
 	# git changelog

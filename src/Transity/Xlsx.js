@@ -1,9 +1,8 @@
-const fs = require("fs")
-const archiver = require("archiver")
+import fs from "fs"
+import archiver from "archiver"
 
 
-exports.writeToZipImpl = (nothing, outPathMaybe, files) => {
-
+export function writeToZipImpl (nothing, outPathMaybe, files) {
   return function (onError, onSuccess) {
     const output = outPathMaybe === nothing
       ? process.stdout

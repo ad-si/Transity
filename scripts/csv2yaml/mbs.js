@@ -1,6 +1,5 @@
 const fse = require("fs-extra")
 const yaml = require("js-yaml")
-const csvnorm = require("csvnorm")
 const converter = require("converter")
 
 const {
@@ -11,7 +10,8 @@ const {
 } = require("../helpers.js")
 
 
-function normalizeAndPrint (filePathTemp) {
+async function normalizeAndPrint (filePathTemp) {
+  const csvnorm = await import("csvnorm")
   const csv2json = converter({
     from: "csv",
     to: "json",

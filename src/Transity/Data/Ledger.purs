@@ -1,7 +1,7 @@
 module Transity.Data.Ledger where
 import Prelude
   ( class Show, class Eq, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=), (<<<)
+  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
   )
 
 import Control.Alt ((<|>))

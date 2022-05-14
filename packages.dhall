@@ -1,10 +1,26 @@
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.5-20220224/packages.dhall sha256:67cc3d4f0e8fb72bb1413ba94ddd72a3ceb0783eb725e3b22ad7568b3b581163
+      https://github.com/purescript/package-sets/releases/download/psc-0.15.0-20220513/packages.dhall
+        sha256:1ed784f37ae6131d99acd542d058d5ce39954ccaacc3adba5cc7cf1549d2bffa
 
 let overrides = {=}
 
-let additions =
-      { yaml-next =
+let additions = {
+      , format =
+        { dependencies =
+          [ "control"
+          , "effect"
+          , "integers"
+          , "maybe"
+          , "numbers"
+          , "prelude"
+          , "strings"
+          , "test-unit"
+          , "unfoldable"
+          ]
+        , repo = "https://github.com/feramhq/purescript-format"
+        , version = "3b0fc6c74f439fc3ad7fc7c88fc6f73b083f82e2"
+        }
+      , yaml-next =
         { dependencies =
           [ "argonaut-codecs"
           , "argonaut-core"
@@ -18,7 +34,7 @@ let additions =
           , "unsafe-coerce"
           ]
         , repo = "https://github.com/archaeron/purescript-yaml-next"
-        , version = "v3.0.0"
+        , version = "cd4833a32458e06ebb4338c3e00f98723c681891"
         }
       }
 

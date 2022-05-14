@@ -61,7 +61,7 @@ note: A note with special chars like < and &
 transferSimpleShowed :: String
 transferSimpleShowed = """
 (Transfer
-  { amount: (Amount fromString "15" % fromString "1" (Commodity "€"))
+  { amount: (Amount (fromString "15") % (fromString "1") (Commodity "€"))
   , from: "john:giro"
   , note: (Just "A note with special chars like < and &")
   , to: "evil-corp"
@@ -91,7 +91,7 @@ transferSimpleB = Transfer
 transferSimpleBShowed :: String
 transferSimpleBShowed = """
 (Transfer
-  { amount: (Amount fromString "7" % fromString "1" (Commodity "USD"))
+  { amount: (Amount (fromString "7") % (fromString "1") (Commodity "USD"))
   , from: "carlos:wallet"
   , note: (Just "Bought some flowers")
   , to: "flower-power"
@@ -287,9 +287,15 @@ balanceShowed = """
     (Date (Year 2017) April (Day 2))
     (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0)))
   (fromFoldable
-    [ (Tuple (Commodity "$") (Amount fromString "-8" % fromString "1" (Commodity "$")))
-    , (Tuple (Commodity "BTC") (Amount fromString "9" % fromString "1" (Commodity "BTC")))
-    , (Tuple (Commodity "€") (Amount fromString "7" % fromString "1" (Commodity "€")))
+    [ (Tuple (Commodity "$") (Amount
+        (fromString "-8") % (fromString "1")
+        (Commodity "$")))
+    , (Tuple (Commodity "BTC") (Amount
+        (fromString "9") % (fromString "1")
+        (Commodity "BTC")))
+    , (Tuple (Commodity "€") (Amount
+        (fromString "7") % (fromString "1")
+        (Commodity "€")))
     ]))
 """
 
@@ -344,7 +350,10 @@ accountShowed = """
           (fromFoldable
             [(Tuple
                 (Commodity "€")
-                (Amount fromString "100" % fromString "1" (Commodity "€")))]))
+                (Amount
+                  (fromString "100") % (fromString "1")
+                  (Commodity "€")
+                ))]))
       , (Balance
           (DateTime
             (Date (Year 2014) May (Day 1))
@@ -353,11 +362,11 @@ accountShowed = """
             [ (Tuple
                 (Commodity "evil_machine")
                 (Amount
-                    fromString "1" % fromString "1"
+                    (fromString "1") % (fromString "1")
                     (Commodity "evil_machine")))
             , (Tuple
                 (Commodity "€")
-                (Amount fromString "200" % fromString "1" (Commodity "€")))
+                (Amount (fromString "200") % (fromString "1") (Commodity "€")))
             ]))
       ])
   , commodityMap: (fromFoldable [])
@@ -393,7 +402,7 @@ entityShowed = """
                   [ (Tuple
                       (Commodity "€")
                       (Amount
-                        fromString "100" % fromString "1"
+                        (fromString "100") % (fromString "1")
                         (Commodity "€")))
                   ]))
             , (Balance
@@ -404,12 +413,12 @@ entityShowed = """
                   [ (Tuple
                       (Commodity "evil_machine")
                       (Amount
-                        fromString "1" % fromString "1"
+                        (fromString "1") % (fromString "1")
                         (Commodity "evil_machine")))
                   , (Tuple
                       (Commodity "€")
                       (Amount
-                        fromString "200" % fromString "1"
+                        (fromString "200") % (fromString "1")
                         (Commodity "€")))
                   ]))
             ])

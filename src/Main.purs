@@ -9,7 +9,7 @@ import Data.Eq ((==))
 import Data.Foldable (foldMap)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
-import Data.Result (Result(..), note)
+import Data.Result (Result(..), note, isOk, fromEither)
 import Data.String (Pattern(..), indexOf, length)
 import Data.Traversable (for_, sequence)
 import Data.Tuple (Tuple(..), fst, snd)
@@ -17,7 +17,7 @@ import Effect (Effect)
 import Effect.Class.Console (log, error)
 import Effect.Aff (launchAff_)
 import Node.Encoding (Encoding(UTF8))
-import Node.FS.Async (exists)
+import Node.FS.Async (stat)
 import Node.FS.Stats (isFile, isDirectory)
 import Node.FS.Sync as Sync
 import Node.Path as Path
@@ -111,8 +111,8 @@ checkFilePaths ledgerFilePath (Ledger {transactions}) = do
 
   for_ files \filePathRel -> do
     filePathAbs <- Path.resolve [ledgerFilePath] filePathRel
-    exists filePathAbs $ \doesExist ->
-      if doesExist
+    stat filePathAbs $ \statsResult ->
+      if isOk $ fromEither statsResult
       then pure unit
       else
         log $ withGraphics

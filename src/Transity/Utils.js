@@ -1,3 +1,3 @@
-exports.parseToUnixTimeImpl = function (dateString) {
+export function parseToUnixTimeImpl (dateString) {
   return Date.parse(dateString) || null
 }

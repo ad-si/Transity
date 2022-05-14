@@ -9,7 +9,7 @@
   },
   "scripts": {
     "minify": "uglifyjs --compress --mangle --output index.js index.js",
-    "bundle": "spago bundle-module && npm run minify",
+    "bundle": "spago bundle-module --platform=node && npm run minify",
     "prepublishOnly": "npm test && npm run bundle",
     "test": "spago test && npm run lint-js",
     "lint-js": "eslint --max-warnings=0 --ignore-path=.gitignore scripts"
@@ -39,32 +39,36 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
-    "@swc/helpers": "^0.3.6",
-    "archiver": "^5.3.0",
+    "@swc/helpers": "^0.3.13",
+    "archiver": "^5.3.1",
     "big-integer": "^1.6.51",
-    "chrono-node": "^2.3.7",
-    "csvnorm": "^0.10.0",
+    "chrono-node": "^2.3.8",
+    "csvnorm": "^1.1.0",
     "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "converter": "0.0.5",
-    "inquirer": "^8.2.0",
+    "inquirer": "^8.2.4",
     "nightmare": "^3.0.2",
     "nightmare-inline-download": "^0.2.2",
-    "tempy": "^2.0.0"
+    "tempy": "^3.0.0"
   },
   "devDependencies": {
     "conventional-changelog-cli": "^2.2.2",
-    "cssnano": "^5.0.17",
-    "eslint": "^8.10.0",
+    "cssnano": "^5.1.7",
+    "esbuild": "^0.14.39",
+    "eslint": "^8.15.0",
     "eslint-config-javascript": "^2.0.0",
     "markdown-toc": "^1.2.0",
-    "parcel": "^2.3.2",
-    "purescript": "^0.14.7",
-    "spago": "^0.20.7",
-    "uglify-js": "^3.15.2"
+    "parcel": "^2.5.0",
+    "purescript": "^0.15.0",
+    "spago": "^0.20.9",
+    "uglify-js": "^3.15.5"
   },
   "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": "2022"
+    },
     "extends": "eslint-config-javascript"
   },
   "targets": {
