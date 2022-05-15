@@ -6,6 +6,8 @@ import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
 import Data.Argonaut.Core (Json, toObject)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Maybe (Maybe(Nothing), fromMaybe, maybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
@@ -55,6 +57,9 @@ derive newtype instance eqAccount :: Eq Account
 
 instance showAccount :: Show Account where
   show = genericShow
+
+instance encodeAccount :: EncodeJson Account where
+  encodeJson a = genericEncodeJson a
 
 instance decodeAccount :: DecodeJson Account where
   decodeJson json =

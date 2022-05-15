@@ -4,7 +4,9 @@ import Prelude (Unit, (==))
 
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
+import Data.Argonaut.Core (stringify)
 import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith, find)
 import Data.BigInt (BigInt, fromInt, fromString)
@@ -36,6 +38,7 @@ import Test.Fixtures
 import Test.Spec
   ( describe
   , it
+  , pending'
   -- , itOnly
   )
 import Test.Spec.Assertions (expectError, fail, shouldEqual)
@@ -246,6 +249,17 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # wrapWithOk
               # rmWhitespace
           actual `shouldEqualString` expected
+
+        pending' "encodes an Account as JSON" do
+          stringify (encodeJson Account.zero)
+            `shouldEqualString`
+            rmWhitespace """
+              {
+                "id": "",
+                "commodityMap": [],
+                "balances": null
+              }
+            """
 
         it "can add an amount to a commodity map" do
           let
@@ -797,6 +811,12 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
         it "pretty shows a ledger" do
           (Ledger.showPretty ledger) `shouldEqualString` ledgerPretty
+
+
+        it "pretty shows all accounts" do
+          (ledgerEntities # Ledger.showEntities # rmWhitespace)
+            `shouldEqualString`
+            (rmWhitespace ledgerEntitiesShowed)
 
 
         it "pretty shows the balance of owner" do

@@ -6,12 +6,14 @@ import Data.BigInt (fromInt)
 import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
+import Data.Newtype (wrap, unwrap)
 import Data.Rational ((%))
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
 import Transity.Data.Amount (Amount(..), Commodity(Commodity))
 import Transity.Data.Account (Account(..))
 import Transity.Data.Balance (Balance(..))
+import Transity.Data.Entity as Entity
 import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.Ledger (Ledger(..), BalanceMap)
 import Transity.Data.Transaction (Transaction(..))
@@ -254,6 +256,25 @@ ledgerMultiTrans = Ledger
       , transactionSimpleB
       ]
   }
+
+
+ledgerEntities :: Ledger
+ledgerEntities = Ledger
+  { owner: "John Doe"
+  , entities: Just
+      [ wrap $ (unwrap Entity.zero) { id = "Anna" }
+      , wrap $ (unwrap Entity.zero) { id = "Bob" }
+      ]
+  , transactions: []
+  }
+
+
+ledgerEntitiesShowed :: String
+ledgerEntitiesShowed = """
+  entities:
+    - id: Anna
+    - id: Bob
+"""
 
 
 ledgerJson :: String

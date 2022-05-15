@@ -4,6 +4,7 @@
   , "ansi"
   , "argonaut-codecs"
   , "argonaut-core"
+  , "argonaut-generic"
   , "arrays"
   , "bigints"
   , "console"

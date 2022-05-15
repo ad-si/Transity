@@ -2,9 +2,11 @@ module Transity.Data.Amount
 where
 
 import Control.Bind (bind)
-import Data.Argonaut.Core (toString, Json)
+import Data.Argonaut.Core (toString, fromString, Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Error (JsonDecodeError(..))
+import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Array (take)
 import Data.BigInt (BigInt)
 import Data.Boolean (otherwise)
@@ -51,6 +53,9 @@ derive newtype instance ordCommodity :: Ord Commodity
 instance showCommodity :: Show Commodity where
   show = genericShow
 
+instance encodeCommodity :: EncodeJson Commodity where
+  encodeJson a = genericEncodeJson a
+
 instance decodeCommodity :: DecodeJson Commodity where
   decodeJson json = toEither $ decodeJsonCommodity json
 
@@ -82,6 +87,9 @@ instance monoidAmount :: Monoid Amount where
 
 instance showAmount :: Show Amount where
   show = genericShow
+
+instance encodeAmount :: EncodeJson Amount where
+  encodeJson _ = fromString "TODO" -- genericEncodeJson a
 
 instance decodeAmount :: DecodeJson Amount where
   decodeJson json = toEither $ decodeJsonAmount json

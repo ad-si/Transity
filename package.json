@@ -3,6 +3,7 @@
   "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
   "version": "0.8.0",
   "main": "output/Main/index.js",
+  "type": "module",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "bin": {
     "transity": "cli/main.js"
@@ -54,16 +55,24 @@
     "tempy": "^3.0.0"
   },
   "devDependencies": {
+    "assert": "^2.0.0",
+    "browserify-zlib": "^0.2.0",
+    "constants-browserify": "^1.0.0",
     "conventional-changelog-cli": "^2.2.2",
     "cssnano": "^5.1.7",
     "esbuild": "^0.14.39",
     "eslint": "^8.15.0",
     "eslint-config-javascript": "^2.0.0",
+    "events": "^3.3.0",
     "markdown-toc": "^1.2.0",
     "parcel": "^2.5.0",
+    "path-browserify": "^1.0.1",
+    "process": "^0.11.10",
     "purescript": "^0.15.0",
     "spago": "^0.20.9",
-    "uglify-js": "^3.15.5"
+    "stream-browserify": "^3.0.0",
+    "uglify-js": "^3.15.5",
+    "util": "^0.12.4"
   },
   "eslintConfig": {
     "parserOptions": {

@@ -3,7 +3,7 @@ all: index.js docs
 
 .PHONY: build
 build:
-	spago build
+	npx spago build
 
 
 changelog.md: .git
@@ -15,8 +15,11 @@ changelog.md: .git
 		--output-unreleased
 
 
+# TODO: Fix after dynamic requires of "fs" are supported
 index.js: src node_modules
-	npm run bundle
+	npx spago bundle-app \
+		--platform=node \
+		--minify
 
 
 # The specified target is configured in package.json
@@ -38,7 +41,7 @@ docs-dev: output index.js
 
 output: src package.json package-lock.json \
  packages.dhall spago.dhall node_modules
-	npx --no-install spago build
+	npx spago build
 
 
 node_modules: package.json package-lock.json
@@ -51,7 +54,7 @@ readme.md:
 
 .PHONY: test
 test: output
-	npx --no-install spago test
+	npx spago test
 	npm run lint-js
 
 

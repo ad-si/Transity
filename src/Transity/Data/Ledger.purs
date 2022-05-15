@@ -7,8 +7,9 @@ import Prelude
 import Control.Alt ((<|>))
 import Control.Monad.Except (runExcept)
 import Control.Semigroupoid ((>>>))
-import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Core (toObject, Json, stringify)
 import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
@@ -29,6 +30,7 @@ import Data.String
   ( joinWith
   , Pattern(..)
   , replace
+  , replaceAll
   , Replacement(..)
   , split
   , stripPrefix
@@ -313,6 +315,52 @@ subtractTransfer :: BalanceMap -> Transfer -> BalanceMap
 subtractTransfer balanceMap transfer  =
   let transferNegated = negateTransfer transfer
   in balanceMap `addTransfer` transferNegated
+
+
+showEntities :: Ledger -> String
+showEntities (Ledger ledger) =
+  case ledger.entities of
+    Nothing ->
+      "Journal does not contain any entities"
+
+    Just entities ->
+      "entities:\n" <> (entities
+        <#> (\(Entity entity) ->
+                   "  - id: " <> entity.id <> "\n"
+                <> (if isJust entity.name
+                    then "    name: " <> fromMaybe "" entity.name <> "\n"
+                    else "")
+                <> (if isJust entity.note
+                    then "    note: " <> fromMaybe "" entity.note <> "\n"
+                    else "")
+                <> (if isJust entity.utc
+                    then "    utc: " <> (entity.utc <#> show # fromMaybe "")
+                      <> "\n"
+                    else "")
+                <> (if isJust entity.tags
+                    then "    tags: "
+                      <> (entity.tags
+                            <#> show
+                            # fromMaybe ""
+                            -- TODO: Can tags contain quote characters?
+                            # replaceAll (Pattern "\"") (Replacement "")
+                          )
+                      <> "\n"
+                    else "")
+                <> (if isJust entity.accounts
+                    then "    accounts: "
+                      <> (fromMaybe [] entity.accounts
+                            <#> (\(Account acc) -> "\n      - "
+                                    <> stringify (encodeJson acc)
+                                )
+                            # fold
+                          )
+                      <> "\n"
+                    else "")
+                <> "\n"
+            )
+        # fold
+        )
 
 
 showBalance :: BalanceFilter -> ColorFlag -> Ledger -> String

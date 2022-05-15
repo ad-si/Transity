@@ -1,15 +1,20 @@
 module Transity.Data.Balance where
 
-import Prelude (class Show, class Eq, bind, pure, ($), (<#>))
+import Prelude (class Show, class Eq, bind, pure, ($), (<#>), show)
 
-import Data.Argonaut.Core (Json, toObject)
+import Data.Argonaut.Core (Json, toObject, fromString, jsonEmptyArray)
+import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode.Class (class EncodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.DateTime (DateTime)
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (maybe)
 import Data.Result (Result(Ok, Error), toEither, note)
-import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Traversable (sequence)
+import Data.Tuple (Tuple(Tuple))
+import Foreign.Object as Object
 import Transity.Data.Amount (parseAmount)
 import Transity.Data.CommodityMap (CommodityMap, fromAmounts)
 import Transity.Utils
@@ -17,6 +22,7 @@ import Transity.Utils
   , stringToDateTime
   , resultWithJsonDecodeError
   , stringifyJsonDecodeError
+  , utcToIsoString
   )
 
 
@@ -29,8 +35,17 @@ derive instance eqBalance :: Eq Balance
 instance showBalance :: Show Balance where
   show = genericShow
 
+instance encodeBalance :: EncodeJson Balance where
+  encodeJson (Balance dateTime _ {- TODO: commodityMap -}) =
+    A.fromObject $ Object.fromFoldable
+      -- TODO: Hide seconds if 00
+      [ Tuple "utc" (fromString $ utcToIsoString dateTime)
+      , Tuple "amounts" jsonEmptyArray {- TODO: commodityMap -}
+      ]
+
 instance decodeBalance :: DecodeJson Balance where
-  decodeJson json = toEither $ resultWithJsonDecodeError $ decodeJsonBalance json
+  decodeJson json = toEither
+    $ resultWithJsonDecodeError $ decodeJsonBalance json
 
 
 decodeJsonBalance :: Json -> Result String Balance

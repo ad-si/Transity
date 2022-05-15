@@ -44,6 +44,7 @@ Usage: transity <command> <path/to/journal.yaml>
 
 Command             Description
 ------------------  ------------------------------------------------------------
+entities [WIP]      List all referenced entities
 balance             Simple balance of the owner's accounts
 balance-all         Simple balance of all accounts
 transactions        All transactions and their transfers
@@ -75,9 +76,12 @@ utcError =
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
-    "balance"            -> Ok $ Ledger.showBalance BalanceOnlyOwner ColorYes ledger
+    "entities"           -> Ok $ Ledger.showEntities ledger
+    "balance"            -> Ok $
+      Ledger.showBalance BalanceOnlyOwner ColorYes ledger
     "balance-all"        -> Ok $ Ledger.showBalance BalanceAll ColorYes ledger
-    -- "balance-on"         -> Ok $ Ledger.showBalanceOn dateMaybe ColorYes ledger
+    -- "balance-on"         -> Ok $
+    --   Ledger.showBalanceOn dateMaybe ColorYes ledger
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries  " " ledger
