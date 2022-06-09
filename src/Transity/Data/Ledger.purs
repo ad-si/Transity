@@ -324,43 +324,43 @@ showEntities (Ledger ledger) =
       "Journal does not contain any entities"
 
     Just entities ->
-      "entities:\n" <> (entities
-        <#> (\(Entity entity) ->
-                   "  - id: " <> entity.id <> "\n"
-                <> (if isJust entity.name
-                    then "    name: " <> fromMaybe "" entity.name <> "\n"
-                    else "")
-                <> (if isJust entity.note
-                    then "    note: " <> fromMaybe "" entity.note <> "\n"
-                    else "")
-                <> (if isJust entity.utc
-                    then "    utc: " <> (entity.utc <#> show # fromMaybe "")
-                      <> "\n"
-                    else "")
-                <> (if isJust entity.tags
-                    then "    tags: "
-                      <> (entity.tags
-                            <#> show
-                            # fromMaybe ""
-                            -- TODO: Can tags contain quote characters?
-                            # replaceAll (Pattern "\"") (Replacement "")
-                          )
-                      <> "\n"
-                    else "")
-                <> (if isJust entity.accounts
-                    then "    accounts: "
-                      <> (fromMaybe [] entity.accounts
-                            <#> (\(Account acc) -> "\n      - "
-                                    <> stringify (encodeJson acc)
-                                )
-                            # fold
-                          )
-                      <> "\n"
-                    else "")
-                <> "\n"
+      "entities:\n" <> (entities <#> showEntity # fold)
+
+
+showEntity :: Entity -> String
+showEntity (Entity entity) =
+  "  - id: " <> entity.id <> "\n"
+  <> (if isJust entity.name
+      then "    name: " <> fromMaybe "" entity.name <> "\n"
+      else "")
+  <> (if isJust entity.note
+      then "    note: " <> fromMaybe "" entity.note <> "\n"
+      else "")
+  <> (if isJust entity.utc
+      then "    utc: " <> (entity.utc <#> show # fromMaybe "")
+        <> "\n"
+      else "")
+  <> (if isJust entity.tags
+      then "    tags: "
+        <> (entity.tags
+              <#> show
+              # fromMaybe ""
+              -- TODO: Can tags contain quote characters?
+              # replaceAll (Pattern "\"") (Replacement "")
             )
-        # fold
-        )
+        <> "\n"
+      else "")
+  <> (if isJust entity.accounts
+      then "    accounts: "
+        <> (fromMaybe [] entity.accounts
+              <#> (\(Account acc) -> "\n      - "
+                      <> stringify (encodeJson acc)
+                  )
+              # fold
+            )
+        <> "\n"
+      else "")
+  <> "\n"
 
 
 showBalance :: BalanceFilter -> ColorFlag -> Ledger -> String
