@@ -329,38 +329,45 @@ showEntities (Ledger ledger) =
 
 showEntity :: Entity -> String
 showEntity (Entity entity) =
-  "  - id: " <> entity.id <> "\n"
-  <> (if isJust entity.name
-      then "    name: " <> fromMaybe "" entity.name <> "\n"
-      else "")
-  <> (if isJust entity.note
-      then "    note: " <> fromMaybe "" entity.note <> "\n"
-      else "")
-  <> (if isJust entity.utc
-      then "    utc: " <> (entity.utc <#> show # fromMaybe "")
-        <> "\n"
-      else "")
-  <> (if isJust entity.tags
-      then "    tags: "
-        <> (entity.tags
-              <#> show
-              # fromMaybe ""
-              -- TODO: Can tags contain quote characters?
-              # replaceAll (Pattern "\"") (Replacement "")
-            )
-        <> "\n"
-      else "")
-  <> (if isJust entity.accounts
-      then "    accounts: "
-        <> (fromMaybe [] entity.accounts
-              <#> (\(Account acc) -> "\n      - "
-                      <> stringify (encodeJson acc)
-                  )
-              # fold
-            )
-        <> "\n"
-      else "")
+  (entity.id # showId)
+  <> (entity.name <#> showName # fromMaybe "")
+  <> (entity.note <#> showNote # fromMaybe "")
+  <> (entity.utc <#> showUTC # fromMaybe "")
+  <> (entity.tags <#> showTags # fromMaybe "")
+  <> (entity.accounts <#> showAccounts # fromMaybe "")
   <> "\n"
+
+
+showId :: String -> String
+showId id = "  - id: " <> id <> "\n"
+
+
+showName :: String -> String
+showName name = "    name: " <> name <> "\n"
+
+
+showNote :: String -> String
+showNote note = "    note: " <> note <> "\n"
+
+
+showUTC :: DateTime -> String
+showUTC utc = "    utc: " <> (utc # show) <> "\n"
+
+
+showTags :: Array String -> String
+showTags tags = "    tags: " <> (
+  -- TODO: Can tags contain quote characters?
+  tags # show # replaceAll (Pattern "\"") (Replacement "")
+  ) <> "\n"
+
+
+showAccounts :: Array Account -> String
+showAccounts accounts =
+  "    accounts: " <> (accounts <#> showAccount # fold) <> "\n"
+
+
+showAccount :: Account -> String
+showAccount (Account acc) = "\n      - " <> stringify (encodeJson acc)
 
 
 showBalance :: BalanceFilter -> ColorFlag -> Ledger -> String
