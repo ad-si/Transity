@@ -1,12 +1,11 @@
 module Transity.Data.Balance where
 
-import Prelude (class Show, class Eq, bind, pure, ($), (<#>), show)
+import Prelude (class Show, class Eq, bind, pure, ($), (<#>))
 
 import Data.Argonaut.Core (Json, toObject, fromString, jsonEmptyArray)
 import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Encode.Class (class EncodeJson)
-import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (maybe)

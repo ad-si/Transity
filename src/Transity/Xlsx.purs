@@ -19,7 +19,7 @@ import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Ledger (Ledger(..), entitiesToInitialTransfers)
 import Transity.Utils (bigIntToNumber, utcToIsoString)
-import Debug
+
 
 newtype FileEntry = FileEntry
   { path :: String

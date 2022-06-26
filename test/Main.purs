@@ -64,6 +64,7 @@ import Transity.Utils
   ( digitsToRational
   , indentSubsequent
   , ColorFlag(..)
+  , SortOrder(..)
   , stringToDateTime
   , ratioZero
   , stringifyJsonDecodeError
@@ -814,7 +815,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
 
         it "pretty shows all accounts" do
-          (ledgerEntities # Ledger.showEntities # rmWhitespace)
+          (ledgerEntities # Ledger.showEntities CustomSort # rmWhitespace)
             `shouldEqualString`
             (rmWhitespace ledgerEntitiesShowed)
 

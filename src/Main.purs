@@ -27,7 +27,7 @@ import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
-import Transity.Utils (ColorFlag(..))
+import Transity.Utils (ColorFlag(..), SortOrder(..))
 import Transity.Xlsx (writeToZip, entriesAsXlsx)
 
 type Config = { colorState :: ColorFlag }
@@ -44,12 +44,13 @@ Usage: transity <command> <path/to/journal.yaml>
 
 Command             Description
 ------------------  ------------------------------------------------------------
-entities [WIP]      List all referenced entities
 balance             Simple balance of the owner's accounts
 balance-all         Simple balance of all accounts
 transactions        All transactions and their transfers
 transfers           All transfers with one transfer per line
 entries             All individual deposits & withdrawals, space separated
+entities            [WIP] List all referenced entities
+entities-sorted     [WIP] List all referenced entities sorted alphabetically
 ledger-entries      All entries in Ledger format
 csv                 Transfers, comma separated (printed to stdout)
 tsv                 Transfers, tab separated (printed to stdout)
@@ -76,7 +77,6 @@ utcError =
 run :: String -> String -> Ledger -> Result String String
 run command filePathRel ledger =
   case command of
-    "entities"           -> Ok $ Ledger.showEntities ledger
     "balance"            -> Ok $
       Ledger.showBalance BalanceOnlyOwner ColorYes ledger
     "balance-all"        -> Ok $ Ledger.showBalance BalanceAll ColorYes ledger
@@ -85,6 +85,8 @@ run command filePathRel ledger =
     "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
     "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
     "entries"            -> note utcError $ Ledger.showEntries  " " ledger
+    "entities"           -> Ok $ Ledger.showEntities CustomSort ledger
+    "entities-sorted"    -> Ok $ Ledger.showEntities Alphabetically ledger
     "ledger-entries"     -> Ok $ Ledger.entriesToLedger ledger
     "csv"                -> note utcError $ Ledger.showEntries  "," ledger
     "tsv"                -> note utcError $ Ledger.showEntries  "\t" ledger

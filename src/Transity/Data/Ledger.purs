@@ -35,6 +35,7 @@ import Data.String
   , split
   , stripPrefix
   )
+import Data.String.Common (toLower)
 import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
@@ -64,6 +65,7 @@ import Transity.Utils
   , dateShowPretty
   , widthRecordZero
   , ColorFlag(..)
+  , SortOrder(..)
   , bigIntToNumber
   , stringifyJsonDecodeError
   , resultWithJsonDecodeError
@@ -317,14 +319,21 @@ subtractTransfer balanceMap transfer  =
   in balanceMap `addTransfer` transferNegated
 
 
-showEntities :: Ledger -> String
-showEntities (Ledger ledger) =
+showEntities :: SortOrder -> Ledger -> String
+showEntities sortOrder (Ledger ledger) =
   case ledger.entities of
     Nothing ->
       "Journal does not contain any entities"
 
     Just entities ->
       "entities:\n" <> (entities
+        # (case sortOrder of
+              CustomSort -> identity
+              Alphabetically ->
+                sortBy (\(Entity entityA) (Entity entityB) ->
+                  compare (toLower entityA.id) (toLower entityB.id)
+                )
+          )
         <#> (\(Entity entity) ->
                    "  - id: " <> entity.id <> "\n"
                 <> (if isJust entity.name

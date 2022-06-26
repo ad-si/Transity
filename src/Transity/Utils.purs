@@ -42,6 +42,12 @@ data ColorFlag = ColorYes | ColorNo
 derive instance eqColorFlag :: Eq ColorFlag
 
 
+--| Flag to switch between different ways of sorting the output
+data SortOrder = CustomSort | Alphabetically
+
+derive instance eqSortOrder :: Eq SortOrder
+
+
 foreign import parseToUnixTimeImpl :: String -> Nullable Number
 
 parseToUnixTime :: String -> Maybe Number
