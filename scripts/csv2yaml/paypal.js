@@ -1,15 +1,14 @@
-const fse = require("fs-extra")
-const yaml = require("js-yaml")
-const converter = require("converter")
-const chrono = require("chrono-node")
+import fse from "fs-extra"
+import yaml from "js-yaml"
+import converter from "converter"
+import chrono from "chrono-node"
 
-
-const {
+import {
   rmEmptyString,
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require("../helpers.js")
+} from "../helpers.js"
 
 
 async function normalizeAndPrint (filePathTemp) {

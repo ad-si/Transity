@@ -1,18 +1,18 @@
-const fse = require("fs-extra")
+import fse from "fs-extra"
 
-const Nightmare = require("nightmare")
-const nightmareDownloadManager = require("nightmare-inline-download")
-const yaml = require("js-yaml")
-const tempy = require("tempy")
-const converter = require("converter")
-const inquirer = require("inquirer")
+import Nightmare from "nightmare"
+import nightmareDownloadManager from "nightmare-inline-download"
+import yaml from "js-yaml"
+import { temporaryFile } from "tempy"
+import converter from "converter"
+import inquirer from "inquirer"
 
-const {
+import {
   toDDdotMMdotYYYY,
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require("../helpers.js")
+} from "../helpers.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 

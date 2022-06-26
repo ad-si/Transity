@@ -1,16 +1,4 @@
-module.exports = {
-  keysToEnglish,
-  noteToAccount,
-  prettyFormat,
-  prettyPrint,
-  rmEmptyString,
-  sanitizeYaml,
-  toDDdotMMdotYYYY,
-  toDdotMdotYYYY,
-}
-
-
-function sanitizeYaml (yaml) {
+export function sanitizeYaml (yaml) {
   if (typeof yaml !== "string") {
     throw new Error("YAML must be passed as a string")
   }
@@ -21,25 +9,25 @@ function sanitizeYaml (yaml) {
 }
 
 
-function prettyFormat (account, balance) {
+export function prettyFormat (account, balance) {
   const paddingStart = 28
   return account.padStart(paddingStart) + ": " + balance
 }
 
 
-function prettyPrint (account, balance) {
+export function prettyPrint (account, balance) {
   console.info(prettyFormat(account, balance))
 }
 
 
-function rmEmptyString (key, value) {
+export function rmEmptyString (key, value) {
   return value === ""
     ? undefined
     : value
 }
 
 
-function toDdotMdotYYYY (date) {
+export function toDdotMdotYYYY (date) {
   return [
     date.getUTCDate(),
     date.getUTCMonth() + 1,
@@ -48,7 +36,7 @@ function toDdotMdotYYYY (date) {
 }
 
 
-function toDDdotMMdotYYYY (date) {
+export function toDDdotMMdotYYYY (date) {
   return [
     ("0" + String(date.getUTCDate())).slice(-2),
     ("0" + String(date.getUTCMonth() + 1)).slice(-2),
@@ -57,7 +45,7 @@ function toDDdotMMdotYYYY (date) {
 }
 
 
-function keysToEnglish (object) {
+export function keysToEnglish (object) {
   const newObject = {}
   Object.entries(object)
     .forEach(entry => {
@@ -101,7 +89,7 @@ function keysToEnglish (object) {
   return newObject
 }
 
-function noteToAccount (note) {
+export function noteToAccount (note = "") {
   // Remove misleading terms
   note = note.replace("Apple Pay", "")
 

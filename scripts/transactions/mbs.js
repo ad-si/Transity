@@ -1,24 +1,24 @@
-const fse = require("fs-extra")
+import fse from "fs-extra"
 
-const converter = require("converter")
-const inquirer = require("inquirer")
-const Nightmare = require("nightmare")
-const tempy = require("tempy")
-const yaml = require("js-yaml")
+import converter from "converter"
+import inquirer from "inquirer"
+import Nightmare from "nightmare"
+import { temporaryFile } from "tempy"
+import yaml from "js-yaml"
 
-const nightmareDownloadManager = require("nightmare-inline-download")
-const prompt = inquirer.createPromptModule({ output: process.stderr })
+import nightmareDownloadManager from "nightmare-inline-download"
 
-const {
+import {
   rmEmptyString,
   toDdotMdotYYYY,
   keysToEnglish,
   noteToAccount,
   sanitizeYaml,
-} = require("../helpers.js")
+} from "../helpers.js"
+
+const prompt = inquirer.createPromptModule({ output: process.stderr })
 
 nightmareDownloadManager(Nightmare)
-
 
 
 async function normalizeAndPrint (filePathTemp) {

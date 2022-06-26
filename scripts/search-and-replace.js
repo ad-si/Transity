@@ -1,6 +1,6 @@
-const fse = require("fs-extra")
-const path = require("path")
-const csvParse = require("csv-parse/lib/sync")
+import fse from "fs-extra"
+import path from "path"
+import csvParse from "csv-parse/lib/sync"
 
 async function searchAndReplace () {
   const replacementsFilePath = path.resolve(process.argv[2])

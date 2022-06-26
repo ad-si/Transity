@@ -1,9 +1,12 @@
-const path = require("path")
+import path from "path"
 
-const fse = require("fs-extra")
-const yaml = require("js-yaml")
+import fse from "fs-extra"
+import yaml from "js-yaml"
 
-const getPaypalBalances = require("./getPaypalBalances")
+import getPaypalBalances from "./getPaypalBalances"
+import getAwsBalance from "./getAwsBalance"
+import getMbsBalance from "./getMbsBalance"
+import getPostBalance from "./getPostBalance"
 
 
 const envFilePath = path.resolve(__dirname, "../../environment.yaml")
@@ -11,12 +14,12 @@ const accountMap = {
   aws: {
     provider: "aws",
     url: "aws.amazon.com",
-    getBalance: require("./getAwsBalance"),
+    getBalance: getAwsBalance,
   },
   mbs: {
     provider: "mbs",
     url: "mbs.de",
-    getBalance: require("./getMbsBalance"),
+    getBalance: getMbsBalance,
   },
   paypalEur: {
     provider: "paypal",
@@ -31,7 +34,7 @@ const accountMap = {
   deutschepost: {
     provider: "deutschepost",
     url: "portokasse.deutschepost.de",
-    getBalance: require("./getPostBalance"),
+    getBalance: getPostBalance,
   },
 }
 
