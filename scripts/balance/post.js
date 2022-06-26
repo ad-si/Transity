@@ -1,11 +1,12 @@
-const inquirer = require("inquirer")
-const Nightmare = require("nightmare")
+import inquirer from "inquirer"
+import Nightmare from "nightmare"
 
-const {prettyPrint} = require("../helpers.js")
+import {prettyPrint} from "../helpers.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
   ? console.warn
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   : () => {}
 
 

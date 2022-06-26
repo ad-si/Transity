@@ -117,6 +117,7 @@ async function downloadRange (options = {}) {
   const endInputSelector = "[name=toTransactionDate]"
   const log = process.env.NODE_DEBUG
     ? console.warn
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     : () => {}
 
   log(
@@ -166,6 +167,7 @@ async function getTransactions (options = {}) {
   const filePathTemp = temporaryFile({name: "dkb-transactions.csv"})
   const log = process.env.NODE_DEBUG
     ? console.warn
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     : () => {}
 
   const loginUrl = `${baseUrl}/banking`

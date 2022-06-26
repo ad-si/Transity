@@ -40,7 +40,7 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
-    "@swc/helpers": "^0.3.13",
+    "@swc/helpers": "^0.4.2",
     "archiver": "^5.3.1",
     "big-integer": "^1.6.51",
     "chrono-node": "^2.3.8",
@@ -49,7 +49,7 @@
   },
   "optionalDependencies": {
     "converter": "0.0.5",
-    "inquirer": "^8.2.4",
+    "inquirer": "^9.0.0",
     "nightmare": "^3.0.2",
     "nightmare-inline-download": "^0.2.2",
     "tempy": "^3.0.0"
@@ -59,19 +59,19 @@
     "browserify-zlib": "^0.2.0",
     "constants-browserify": "^1.0.0",
     "conventional-changelog-cli": "^2.2.2",
-    "cssnano": "^5.1.7",
-    "esbuild": "^0.14.39",
-    "eslint": "^8.15.0",
-    "eslint-config-javascript": "^2.0.0",
+    "cssnano": "^5.1.12",
+    "esbuild": "^0.14.47",
+    "eslint": "^8.18.0",
+    "eslint-config-javascript": "^2.1.0",
     "events": "^3.3.0",
     "markdown-toc": "^1.2.0",
-    "parcel": "^2.5.0",
+    "parcel": "^2.6.2",
     "path-browserify": "^1.0.1",
     "process": "^0.11.10",
-    "purescript": "^0.15.0",
+    "purescript": "^0.15.3",
     "spago": "^0.20.9",
     "stream-browserify": "^3.0.0",
-    "uglify-js": "^3.15.5",
+    "uglify-js": "^3.16.1",
     "util": "^0.12.4"
   },
   "eslintConfig": {
