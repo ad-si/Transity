@@ -173,7 +173,7 @@ async function getTransactions (options = {}) {
 
   const nightmare = new Nightmare({show: shallShowBrowser})
   const baseUrl = "https://www.mbs.de"
-  const filePathTemp = tempy.file({name: "transactions.csv"})
+  const filePathTemp = temporaryFile({name: "transactions.csv"})
   const log = process.env.NODE_DEBUG
     ? console.warn
     : () => {}

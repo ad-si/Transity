@@ -4,7 +4,7 @@ export function sanitizeYaml (yaml) {
   }
   return yaml
     .replace(/^ {2}- /gm, "\n  -\n    ")
-    .replace(/^ {2}([\w- ]+): '(.+)'$/gm, "  $1: $2")
+    .replace(/^ {2}([^:]+): '(.+)'$/gm, "  $1: $2")
     .replace(/utc: ([0-9TZ:.-]+)$/gm, "utc: '$1'")
 }
 
@@ -83,6 +83,10 @@ export function keysToEnglish (object) {
         .replace("Wert", "amount")
         .replace("Zahlungsbetrag in ZW", "amount")
         .replace("Zahlungswährung (ZW)", "currency")
+        .replace("Ref. Nr.", "id")
+        .replace("Anteile", "shares")
+        .replace("Kursdatum", "stock-price-date")
+        .replace("ISIN", "isin")
 
       newObject[newKey] = entry[1]
     })
@@ -144,6 +148,10 @@ export function noteToAccount (note = "") {
     "mzla technologies": "mzla_technologies",
     "vodafone": "vodafone",
     "mailgun": "mailgun",
+    "fontis publishing": "fontis_publishing",
+    "gumroad": "gumroad",
+    "uber payments": "uber",
+    "uptime robot": "uptime_robot",
 
     // German
     "ihk ": "ihk",
@@ -182,6 +190,10 @@ export function noteToAccount (note = "") {
     "hetzner online": "hetzner",
     "golem media": "golem",
     "pro rauchfrei": "pro_rauchfrei",
+    "new atlas": "new_atlas",
+    "media markt": "media_markt",
+    "trade republic": "trade_republic",
+    "simple communication": "simple_fax",
   }
   /* eslint-enable quote-props */
   let account = note
