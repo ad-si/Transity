@@ -1,14 +1,15 @@
 module Transity.Xlsx where
 
-import Prelude (Unit, bind, pure, (#), ($), (<#>), (<>), (==), show)
+import Prelude ((#), (<#>), (<>), ($), (==), bind, pure, show, Unit)
 
 import Control.Alt ((<|>))
-import Data.Array (sortBy, concat)
+import Data.Array (sortBy, concat, take, catMaybes)
+import Data.Foldable (fold, intercalate)
 import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Ord (compare)
-import Data.String (joinWith, Pattern(..), Replacement(..), replace)
+import Data.String (joinWith, Pattern(..), Replacement(..), replaceAll)
 import Data.Traversable (sequence)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
@@ -51,8 +52,10 @@ getSheetRows (Ledger {transactions, entities}) = do
     getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
 
-    splitTransfer :: Transfer -> Maybe (Array SheetRow)
-    splitTransfer (Transfer tfer) =
+    splitTransfer
+      :: { note :: Maybe String, files :: Array String, transfer :: Transfer }
+      -> Maybe (Array SheetRow)
+    splitTransfer { note: note , files: files, transfer: (Transfer tfer) } =
       let
         fromAmnt = Amount.negate tfer.amount
 
@@ -63,16 +66,20 @@ getSheetRows (Ledger {transactions, entities}) = do
               , account: tfer.from
               , amount: getQunty fromAmnt
               , commodity: getCmdty fromAmnt
-              , note: fromMaybe "" tfer.note
-              , files: []
+              , note: [note, tfer.note]
+                  # catMaybes
+                  # intercalate ", "
+              , files: files
               }
           , SheetRow
               { utc: date
               , account: tfer.to
               , amount: getQunty tfer.amount
               , commodity: getCmdty tfer.amount
-              , note: fromMaybe "" tfer.note
-              , files: []
+              , note: [note, tfer.note]
+                  # catMaybes
+                  # intercalate ", "
+              , files: files
               }
           ]
       in
@@ -81,7 +88,13 @@ getSheetRows (Ledger {transactions, entities}) = do
   splitted <- do
     transactions
     <#> (\(Transaction tact) -> tact.transfers
-      <#> (\(Transfer tfer) -> Transfer (tfer { utc = tfer.utc <|> tact.utc })))
+          <#> (\(Transfer tfer) ->
+                { note: tact.note
+                , files: tact.files
+                , transfer: Transfer (tfer { utc = tfer.utc <|> tact.utc })
+                }
+              )
+        )
     # concat
     <#> splitTransfer
     # sequence
@@ -93,7 +106,10 @@ getSheetRows (Ledger {transactions, entities}) = do
           in
             [ SheetRow
               { utc: isoString
-              , account: replace (Pattern ":_default_") (Replacement "") t.from
+              , account: replaceAll
+                  (Pattern ":_default_")
+                  (Replacement "")
+                  t.from
               , amount: getQunty t.amount
               , commodity: getCmdty t.amount
               , note: fromMaybe "" t.note
@@ -107,11 +123,11 @@ getSheetRows (Ledger {transactions, entities}) = do
 escapeHtml :: String -> String
 escapeHtml unsafeStr =
   unsafeStr
-   # replace (Pattern "&") (Replacement "&amp;")
-   # replace (Pattern "<") (Replacement "&lt;")
-   # replace (Pattern ">") (Replacement "&gt;")
-   # replace (Pattern "\"") (Replacement "&quot;")
-   # replace (Pattern "'") (Replacement "&#039;")
+   # replaceAll (Pattern "&") (Replacement "&amp;")
+   # replaceAll (Pattern "<") (Replacement "&lt;")
+   # replaceAll (Pattern ">") (Replacement "&gt;")
+   # replaceAll (Pattern "\"") (Replacement "&quot;")
+   # replaceAll (Pattern "'") (Replacement "&#039;")
 
 
 entriesAsXml :: Ledger -> Maybe String
@@ -119,16 +135,72 @@ entriesAsXml ledger = do
   sheetRows <- getSheetRows ledger
 
   let
+    -- Replace all \ with / for calculations to make it work cross platform
+    -- Remove "'file://" for LibreOffice
+    -- Should therefore work on macOS and Windows with Excel and LibreOffice
+    -- (Apple's Numbers does not support local file links at all)
+    hyperlinkFormula = """
+      =HYPERLINK(
+        SUBSTITUTE(
+          LEFT(
+            SUBSTITUTE(CELL("filename"), "\", "/"),
+            FIND(
+              "?",
+              SUBSTITUTE(
+                SUBSTITUTE(CELL("filename"), "\", "/"),
+                "/",
+                "?",
+                LEN(SUBSTITUTE(CELL("filename"), "\", "/"))
+                  - LEN(
+                      SUBSTITUTE(
+                        SUBSTITUTE(CELL("filename"), "\", "/"),
+                        "/",
+                        ""
+                      )
+                    )
+              )
+            )
+          ) & "{{ filename }}",
+          "'file://",
+          ""
+        ),
+        "{{ filename }}"
+      )
+      """
+
     wrapValue dataType val =
-      if dataType == "inlineStr"
-      then
-        "<c t=\"inlineStr\"><is><t>"
-        <> escapeHtml val
-        <> "</t></is></c>"
-      else
-        "<c t=\"" <> dataType <> "\"><v>"
-        <> escapeHtml val
-        <> "</v></c>"
+      case dataType of
+        "inlineStr" ->
+          "<c t=\"inlineStr\"><is><t>"
+          <> escapeHtml val
+          <> "</t></is></c>"
+
+        "formula" ->
+            "<c t=\"str\">"
+            <> (if val == ""
+                then ""
+                else
+                  ("<f>"
+                    <> (escapeHtml $ replaceAll
+                        (Pattern "{{ filename }}")
+                        (Replacement val )
+                        hyperlinkFormula)
+                    <> "</f>"
+                  )
+                )
+            <> "</c>"
+
+        _ ->
+          "<c t=\"" <> dataType <> "\"><v>"
+          <> escapeHtml val
+          <> "</v></c>"
+
+    -- This workaround is necessary
+    -- since there must only be one HYPERLINK per cell
+    -- TODO: Make it work for an unlimited number of files
+    limitTo4Files files =
+      take 4 (files <> ["", "", "", ""])
+
 
     wrapStr = wrapValue "inlineStr"
 
@@ -140,7 +212,10 @@ entriesAsXml ledger = do
         <> (wrapStr "Amount")
         <> (wrapStr "Commodity")
         <> (wrapStr "Note")
-        <> (wrapStr "Files")
+        <> (wrapStr "File 1")
+        <> (wrapStr "File 2")
+        <> (wrapStr "File 3")
+        <> (wrapStr "File 4")
         <> "\n"
         <> "</row>"
 
@@ -155,7 +230,10 @@ entriesAsXml ledger = do
         <> (wrapValue "n" rowRec.amount)
         <> (wrapStr rowRec.commodity)
         <> (wrapStr rowRec.note)
-        <> (wrapStr $ joinWith ", " rowRec.files)
+        <> (limitTo4Files rowRec.files
+              <#> wrapValue "formula"
+              # fold
+            )
         <> "\n"
         <> "</row>")
       # joinWith "\n"

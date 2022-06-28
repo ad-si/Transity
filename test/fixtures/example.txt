@@ -1,0 +1,1 @@
+Just an example file to test HYPERLINKs in XLSX files.

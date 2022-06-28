@@ -138,7 +138,8 @@ transactionSimple = Transaction
   { id: Just "abcxyz"
   , utc: stringToDateTime "2014-12-24"
   , note: Just "A short note about this transaction"
-  , files: ["filepath/to/receipt.pdf"]
+  -- Used for testing HYPERLINKs in XLSX files
+  , files: ["fixtures/example.txt"]
   , transfers: [ transferSimple ]
   }
 
