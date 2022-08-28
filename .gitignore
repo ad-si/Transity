@@ -1,6 +1,7 @@
 /.parcel-cache
 /.spago
 /bower_components
+/docs
 /docs-dev
 /generated-docs
 /node_modules

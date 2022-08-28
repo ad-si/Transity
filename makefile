@@ -31,7 +31,7 @@ index.js: src node_modules
 # The specified target is configured in package.json
 docs: output
 	npx parcel build webapp/index.html \
-		--public-url /transity \
+		--public-url /Transity \
 		--no-source-maps \
 		--target $@
 
