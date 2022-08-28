@@ -153,6 +153,21 @@ dateShowPretty datetime =
   in
     Fmt.format formatter datetime
 
+dateShowPrettyLong :: DateTime -> String
+dateShowPrettyLong datetime =
+  let
+    formatter :: Fmt.Formatter
+    formatter = fromFoldable
+      [ Fmt.YearFull, (Fmt.Placeholder "-")
+      , Fmt.MonthTwoDigits, (Fmt.Placeholder "-")
+      , Fmt.DayOfMonthTwoDigits, (Fmt.Placeholder " ")
+      , Fmt.Hours24, (Fmt.Placeholder ":")
+      , Fmt.MinutesTwoDigits, (Fmt.Placeholder ":")
+      , Fmt.SecondsTwoDigits
+      ]
+  in
+    Fmt.format formatter datetime
+
 
 indentSubsequent :: Int -> String -> String
 indentSubsequent indentation string  =
