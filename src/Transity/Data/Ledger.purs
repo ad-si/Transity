@@ -405,7 +405,6 @@ showBalance balFilter colorFlag (Ledger ledger) =
               BalanceOnlyOwner -> mapToEmpty accTuple (ledger.owner)
               BalanceOnly account -> mapToEmpty accTuple account
           )
-      # Array.filter (\accTuple -> accTuple /= (Tuple "" Map.empty))
       -- Don't show commodities with an amount of 0
       <#> (\(Tuple accId comMap) ->
             Tuple accId (comMap # Map.mapMaybe (\amount ->
@@ -414,6 +413,7 @@ showBalance balFilter colorFlag (Ledger ledger) =
               else Just amount)
             )
           )
+      # Array.filter (\(Tuple _ comMap) -> comMap /= Map.empty)
 
     normAccId accId =
       replace (Pattern ":_default_") (Replacement "") accId
