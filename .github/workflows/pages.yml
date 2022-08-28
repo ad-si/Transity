@@ -40,6 +40,9 @@ jobs:
       - name: Build project and run tests
         run: make test
 
+      - name: Build docs
+        run: make docs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
