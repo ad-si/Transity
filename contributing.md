@@ -2,18 +2,11 @@
 
 ## Getting Started
 
-Install dependencies:
+Check out the `makefile` for all available tasks.
+By simply running `make` it will also print a short list of them.
 
-```shell
-npm install
-npx spago install
-```
 
-Build project:
-
-```shell
-npx spago build
-```
+**Additional helpful commands:**
 
 Build and run:
 
@@ -29,13 +22,6 @@ npm link
 
 All modifications to the source code (after building it)
 will now be available via the linked `transity` executable.
-
-
-## Test
-
-```shell
-npx spago test --watch
-```
 
 
 ## Documentation

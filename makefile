@@ -64,6 +64,12 @@ test: output
 	npm run lint-js
 
 
+.PHONY: test-watch
+test-watch: output
+	npm run lint-js
+	npx spago test --watch
+
+
 .PHONY: clean
 clean:
 	-rm -rf \
