@@ -46,7 +46,7 @@ async function normalizeAndPrint (filePathTemp) {
         const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: "mbs:giro",
+              from: "_todo_:mbs:giro",
               to: account,
               amount: transaction.amount.slice(1) + transaction.currency,
             }],
@@ -54,7 +54,7 @@ async function normalizeAndPrint (filePathTemp) {
           : {
             transfers: [{
               from: account,
-              to: "mbs:giro",
+              to: "_todo_:mbs:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
               amount: transaction.amount === "0,00"
                 ? 0

@@ -27,7 +27,7 @@ async function normalizeAndPrint (filePathTemp) {
       .parse(jsonTemp)
       .map(keysToEnglish)
       .map(transaction => {
-        const currency = transaction.Currency
+        const currency = transaction.currency
           .replace("EUR", "€")
           .replace("USD", "$")
           .trim()
@@ -36,34 +36,34 @@ async function normalizeAndPrint (filePathTemp) {
           {
             utc: chrono
               .parseDate([
-                transaction.Date,
-                transaction.Time,
-                transaction.TimeZone,
+                transaction.date,
+                transaction.time,
+                transaction.timezone,
               ].join(" "))
               .toISOString()
               .replace("T", " ")
               .replace(".000Z", ""),
-            note: transaction.Subject,
+            note: transaction.subject,
           },
           transaction,
         )
-        const account = noteToAccount(transaction.Name)
-        const transfer = transaction.Gross.startsWith("-")
+        const account = noteToAccount(transaction.name)
+        const transfer = transaction.gross.startsWith("-")
           ? {
             from: "_todo_:paypal:" +
-              transaction.Currency
+              transaction.currency
                 .toLowerCase()
                 .trim(),
             to: account ? account : "paypal",
-            amount: transaction.Gross.slice(1) + " " + currency,
+            amount: transaction.gross.slice(1) + " " + currency,
           }
           : {
             from: account ? account : "paypal",
             to: "_todo_:paypal:" +
-              transaction.Currency
+              transaction.currency
                 .toLowerCase()
                 .trim(),
-            amount: transaction.Gross + " " + currency,
+            amount: transaction.gross + " " + currency,
           }
 
         const newTransaction = Object.assign(
@@ -71,30 +71,30 @@ async function normalizeAndPrint (filePathTemp) {
           {transfers: [transfer]},
         )
 
-        if (Number(transaction.Fee) !== 0) {
+        if (Number(transaction.fee) !== 0) {
           newTransaction.transfers.push({
             from: "_todo_:paypal:" +
-              transaction.Currency
+              transaction.currency
                 .toLowerCase()
                 .trim(),
             to: "paypal",
-            amount: transaction.Fee.slice(1) + " " + currency,
+            amount: transaction.fee.slice(1) + " " + currency,
             tags: ["fee"],
           })
         }
 
-        delete newTransaction.Subject
-        delete newTransaction.Name
-        delete newTransaction.Balance
-        delete newTransaction.Gross
-        delete newTransaction.Net
-        delete newTransaction.Fee
-        delete newTransaction.Currency
-        delete newTransaction.Date
-        delete newTransaction.Time
-        delete newTransaction.TimeZone
-        delete newTransaction["From Email Address"]
-        delete newTransaction["To Email Address"]
+        delete newTransaction.subject
+        delete newTransaction.name
+        delete newTransaction.balance
+        delete newTransaction.gross
+        delete newTransaction.net
+        delete newTransaction.fee
+        delete newTransaction.currency
+        delete newTransaction.date
+        delete newTransaction.time
+        delete newTransaction.timezone
+        delete newTransaction.from_email_address
+        delete newTransaction.to_email_address
 
         return JSON.parse(JSON.stringify(newTransaction, rmEmptyString))
       })
