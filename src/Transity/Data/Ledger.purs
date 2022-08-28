@@ -24,6 +24,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
+import Data.Ratio ((%))
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
 import Data.String
@@ -43,7 +44,7 @@ import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
-import Transity.Data.Amount (Amount(..), Commodity)
+import Transity.Data.Amount (Amount(..), Commodity, isZero)
 import Transity.Data.Amount as Amount
 import Transity.Data.CommodityMap
   ( CommodityMap
@@ -397,6 +398,14 @@ showBalance balFilter colorFlag (Ledger ledger) =
               BalanceOnly account -> mapToEmpty accTuple account
           )
       # Array.filter (\accTuple -> accTuple /= (Tuple "" Map.empty))
+      -- Don't show commodities with an amount of 0
+      <#> (\(Tuple accId comMap) ->
+            Tuple accId (comMap # Map.mapMaybe (\amount ->
+              if isZero amount
+              then Nothing
+              else Just amount)
+            )
+          )
 
     normAccId accId =
       replace (Pattern ":_default_") (Replacement "") accId
