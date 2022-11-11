@@ -104,18 +104,20 @@ fromYaml yaml =
 toTransfers :: Array Transaction -> Array Transfer
 toTransfers transactions =
   transactions
-    <#> (\(Transaction transac) -> transac.transfers
-            <#> (\(Transfer transf) -> Transfer (transf
-                  { utc = if transf.utc /= Nothing
-                          then transf.utc
-                          else transac.utc
-                  }
-              )))
+    <#> transactionTransfers
     # fold
 
 
 showTransfersWithDate :: ColorFlag -> Transaction -> String
-showTransfersWithDate _ (Transaction transac) =
+showTransfersWithDate _ transac =
+  transac
+    # transactionTransfers
+    <#> Transfer.showPrettyColorized
+    # fold
+
+
+transactionTransfers :: Transaction -> Array Transfer
+transactionTransfers (Transaction transac) =
   transac.transfers
     <#> (\(Transfer transf) -> Transfer (transf
             { utc = if transf.utc /= Nothing
@@ -123,8 +125,6 @@ showTransfersWithDate _ (Transaction transac) =
                     else transac.utc
             }
         ))
-    <#> Transfer.showPrettyColorized
-    # fold
 
 
 showPretty :: Transaction -> String
