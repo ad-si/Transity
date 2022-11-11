@@ -13,7 +13,7 @@ import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getFieldOptional, defaultField)
 import Data.Argonaut.Parser (jsonParser)
 import Data.DateTime (DateTime)
-import Data.Foldable (fold)
+import Data.Foldable (foldMap)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe, fromMaybe, maybe)
@@ -97,24 +97,20 @@ fromYaml yaml =
     case result of
       Error error -> Error
         ( "Could not parse YAML: "
-          <> fold (map renderForeignError error)
+          <> foldMap renderForeignError error
         )
       Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
 
 
 toTransfers :: Array Transaction -> Array Transfer
-toTransfers transactions =
-  transactions
-    <#> transactionTransfers
-    # fold
+toTransfers = foldMap transactionTransfers
 
 
 showTransfersWithDate :: ColorFlag -> Transaction -> String
 showTransfersWithDate _ transac =
   transac
     # transactionTransfers
-    <#> Transfer.showPrettyColorized
-    # fold
+    # foldMap Transfer.showPrettyColorized
 
 
 transactionTransfers :: Transaction -> Array Transfer
@@ -132,7 +128,7 @@ showPretty = showPrettyAligned ColorNo
 showPrettyAligned :: ColorFlag -> Transaction -> String
 showPrettyAligned colorFlag (Transaction tact) =
   let
-    transfersPretty = map
+    transfersPretty = foldMap
       (Transfer.showPrettyAligned colorFlag 15 15 5 3 10)
       tact.transfers
     offsetDate = 16
@@ -142,5 +138,5 @@ showPrettyAligned colorFlag (Transaction tact) =
     fromMaybe (" " `power` offsetDate) (map dateShowPretty tact.utc)
     <> " | " <> format (width 30) (fromMaybe "NO NOTE" tact.note)
     <> fromMaybe "" (map addId tact.id)
-    <> indentSubsequent offsetIndentation ("\n" <> fold transfersPretty)
+    <> indentSubsequent offsetIndentation ("\n" <> transfersPretty)
     <> "\n"
