@@ -1,0 +1,74 @@
+package:
+  name: transity
+  dependencies:
+    - aff
+    - ansi
+    - argonaut-codecs
+    - argonaut-core
+    - argonaut-generic
+    - arrays
+    - console
+    - control
+    - datetime
+    - debug
+    - effect
+    - foldable-traversable
+    - foreign
+    - foreign-object
+    - format
+    - formatters
+    - functions
+    - js-bigints
+    - lists
+    - maybe
+    - newtype
+    - node-buffer
+    - node-fs
+    - node-path
+    - node-process
+    - nullable
+    - ordered-collections
+    - partial
+    - prelude
+    - rationals
+    - result
+    - strings
+    - transformers
+    - tuples
+    - unfoldable
+    - yaml-next
+  tests:
+    main: Main.purs
+    dependencies:
+      - spec
+workspace:
+  package_set:
+    registry: 47.12.0
+  extra_packages:
+    format:
+      git: https://github.com/feramhq/purescript-format
+      ref: 3b0fc6c74f439fc3ad7fc7c88fc6f73b083f82e2
+      dependencies:
+        - control
+        - effect
+        - integers
+        - maybe
+        - numbers
+        - prelude
+        - strings
+        - test-unit
+        - unfoldable
+    yaml-next:
+      git: https://github.com/archaeron/purescript-yaml-next
+      ref: cd4833a32458e06ebb4338c3e00f98723c681891
+      dependencies:
+        - argonaut-codecs
+        - argonaut-core
+        - console
+        - effect
+        - foreign
+        - functions
+        - ordered-collections
+        - psci-support
+        - spec
+        - unsafe-coerce

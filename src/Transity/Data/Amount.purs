@@ -8,25 +8,26 @@ import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Array (take)
-import Data.BigInt (BigInt)
 import Data.Boolean (otherwise)
 import Data.Eq (class Eq, (/=), (==))
 import Data.Function (($))
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
 import Data.Newtype
 import Data.Ord (class Ord)
-import Data.Rational (Ratio)
+import Data.Rational (Rational)
+import Data.Rational (toNumber) as Rational
 import Data.Result (Result(..), toEither)
 import Data.Ring ((-))
 import Data.Ring (negate) as Ring
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Semiring ((+))
 import Data.Show (class Show)
+import Data.Show.Generic (genericShow)
 import Data.String (Pattern(..), length, split)
 import Data.Tuple (Tuple(..))
+
 import Transity.Utils
   ( digitsToRational
   , padEnd
@@ -35,7 +36,6 @@ import Transity.Utils
   , WidthRecord
   , widthRecordZero
   , ColorFlag(..)
-  , bigIntToNumber
   , ratioZero
   )
 
@@ -70,7 +70,7 @@ decodeJsonCommodity json =
 --| E.g. "20 €", "10 cows", or "20 minutes"
 --| `amount = Amount (fromInt 20) (Commodity "€")
 
-data Amount = Amount (Ratio BigInt) Commodity
+data Amount = Amount Rational Commodity
 
 derive instance genericAmount :: Generic Amount _
 derive instance eqAmount :: Eq Amount
@@ -133,7 +133,7 @@ isZero (Amount quantity _) =
 toWidthRecord :: Amount -> WidthRecord
 toWidthRecord (Amount quantity (Commodity commodity)) =
   let
-    Tuple intPart fracPart = lengthOfNumParts (bigIntToNumber quantity)
+    Tuple intPart fracPart = lengthOfNumParts (Rational.toNumber quantity)
   in
     widthRecordZero
       { integer = intPart
@@ -153,6 +153,6 @@ showPretty = showPrettyAligned ColorNo 0 0 0
 
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> Amount -> String
 showPrettyAligned colorFlag intWid fracWid comWid (Amount val (Commodity com)) =
-  alignNumber colorFlag intWid fracWid (bigIntToNumber val)
+  alignNumber colorFlag intWid fracWid (Rational.toNumber val)
   <> " "
   <> padEnd comWid com

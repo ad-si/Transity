@@ -1,6 +1,6 @@
 module ApproxRatio where
 
--- import Data.BigInt
+-- import JS.BigInt
 --
 -- TODO: Implement (cloned from Haskell's approxRational)
 -- simplest x y =

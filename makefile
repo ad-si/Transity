@@ -45,8 +45,23 @@ docs-dev: output index.js
 		--target $@
 
 
-output: src package.json package-lock.json \
- packages.dhall spago.dhall node_modules
+.PHONY: bundle-spago
+bundle-spago:
+	npx spago bundle-module --platform=node
+
+.PHONY: minify
+minify:
+	npx uglifyjs \
+		--compress \
+		--mangle \
+		--output index.js \
+		index.js
+
+.PHONY: bundle
+bundle: minify bundle-spago
+
+
+output: src spago.yaml node_modules
 	npx spago build
 
 
@@ -58,15 +73,24 @@ readme.md:
 	npx markdown-toc -i $@
 
 
-.PHONY: test
-test: output
-	npx spago test
-	npm run lint-js
+##### TESTING ######
 
+.PHONY: lint-js
+lint-js:
+	npx eslint \
+		--max-warnings 0 \
+		--ignore-path .gitignore \
+		scripts
+
+.PHONY: test-spago
+test-spago:
+	npx spago test
+
+.PHONY: test
+test: lint-js test-spago
 
 .PHONY: test-watch
-test-watch: output
-	npm run lint-js
+test-watch: lint-js output
 	npx spago test --watch
 
 

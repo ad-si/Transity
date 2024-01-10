@@ -9,6 +9,7 @@ import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Ord (compare)
+import Data.Rational (toNumber) as Rational
 import Data.String (joinWith, Pattern(..), Replacement(..), replaceAll)
 import Data.Traversable (sequence)
 import Effect.Aff (Aff)
@@ -19,7 +20,7 @@ import Transity.Data.Amount (Amount(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Ledger (Ledger(..), entitiesToInitialTransfers)
-import Transity.Utils (bigIntToNumber, utcToIsoString)
+import Transity.Utils (utcToIsoString)
 
 
 newtype FileEntry = FileEntry
@@ -49,7 +50,7 @@ newtype SheetRow = SheetRow
 getSheetRows :: Ledger -> Maybe (Array SheetRow)
 getSheetRows (Ledger {transactions, entities}) = do
   let
-    getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
+    getQunty (Amount quantity _ ) = show $ Rational.toNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
 
     splitTransfer

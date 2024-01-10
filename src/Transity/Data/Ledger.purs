@@ -1,4 +1,5 @@
 module Transity.Data.Ledger where
+
 import Prelude
   ( class Show, class Eq, bind, compare, identity, map, pure, show
   , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
@@ -24,6 +25,7 @@ import Data.Map as Map
 import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
 import Data.Monoid (power)
 import Data.Newtype (unwrap)
+import Data.Rational as Rational
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
 import Data.String
@@ -41,6 +43,7 @@ import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
+
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity, isZero)
@@ -67,7 +70,6 @@ import Transity.Utils
   , widthRecordZero
   , ColorFlag(..)
   , SortOrder(..)
-  , bigIntToNumber
   , stringifyJsonDecodeError
   , resultWithJsonDecodeError
   )
@@ -456,7 +458,7 @@ showBalance balFilter colorFlag (Ledger ledger) =
 getEntries :: Ledger -> Maybe (Array (Array String))
 getEntries (Ledger {transactions, entities}) = do
   let
-    getQunty (Amount quantity _ ) = show $ bigIntToNumber quantity
+    getQunty (Amount quantity _ ) = show $ Rational.toNumber quantity
     getCmdty (Amount _ commodity ) = unwrap commodity
 
     splitTransfer :: Transfer -> Maybe (Array (Array String))

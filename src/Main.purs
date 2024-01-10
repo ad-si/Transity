@@ -1,6 +1,9 @@
 module Main where
 
-import Prelude (Unit, bind, discard, pure, unit, (#), ($), (<#>), (<>), (/=), (>))
+import Prelude (
+  Unit, bind, discard, pure, unit,
+  (#), ($), (<#>), (<>), (/=), (>)
+)
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
@@ -14,14 +17,15 @@ import Data.String (Pattern(..), indexOf, length)
 import Data.Traversable (for_, sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
-import Effect.Class.Console (log, error)
 import Effect.Aff (launchAff_)
+import Effect.Class.Console (log)
+import Effect.Exception (throw)
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Async (stat)
 import Node.FS.Stats (isFile, isDirectory)
 import Node.FS.Sync as Sync
 import Node.Path as Path
-import Node.Process (argv, cwd, exit)
+import Node.Process (argv, cwd)
 
 import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
@@ -161,10 +165,9 @@ loadAndExec _ _ =
 
 errorAndExit :: String -> Effect Unit
 errorAndExit message = do
-  error (if config.colorState == ColorYes
+  throw (if config.colorState == ColorYes
         then withGraphics (foreground Red) message
         else message)
-  exit 1
 
 
 getAllFiles :: String -> Effect (Array String)
