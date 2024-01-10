@@ -48,16 +48,16 @@ async function normalizeAndPrint (filePathTemp) {
         const transfersObj = transaction.amount.startsWith("-")
           ? {
             transfers: [{
-              from: "dkb:visa",
-              to: noteToAccount(note),
+              from: "dkb:giro",
+              to: noteToAccount(transaction.from) || noteToAccount(note),
               amount: amount.slice(1),
               "original-amount": transaction["original-amount"],
             }],
           }
           : {
             transfers: [{
-              from: noteToAccount(note),
-              to: "dkb:visa",
+              from: noteToAccount(transaction.from) || noteToAccount(note),
+              to: "dkb:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
               amount: transaction.amount === "0,00" ? "0 €" : amount,
               "original-amount": transaction["original-amount"],
