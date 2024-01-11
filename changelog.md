@@ -1,6 +1,22 @@
 # Changelog
 
-This changelog only contains user facing changes of the app itself.
+This changelog only contains user facing changes of the app.
+
+
+## [WIP] 0.9.0
+
+- Don't list commodities with an amount of 0 in `balance` command
+- Show only owner's balance with `balance`
+- Add new subcommand `balance-all`
+- Add subcommand `entities` to list all entities
+- Add subcommand `entities-sorted` to list all entities sorted by name
+- Add initial support for exporting transfers to an XLSX (Excel) file
+- Use GitHub Action for CI (testing and deploying website)
+- Use new JS backed version of BigInt
+- Upgrade to PureScript 0.15
+- Upgrade to new PureScript based version of Spago
+- Upgrade all Spago and npm dependencies
+- FIX: Correctly filter accounts with an empty commodity map
 
 
 ## 0.8.0 (2020-09-09)
