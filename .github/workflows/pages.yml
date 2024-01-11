@@ -37,6 +37,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Cargo
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Nickel
+        run: cargo install nickel-lang-cli
+
       - name: Build project and run tests
         run: make test
 
