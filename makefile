@@ -8,7 +8,7 @@ all: changelog.md readme.md index.js docs output
 
 
 .PHONY: build
-build: | node_modules
+build: src/CliSpec/JsonEmbed.purs | node_modules
 	npx spago build
 
 
@@ -21,7 +21,7 @@ changelog.md: .git | node_modules
 		--output-unreleased
 
 
-index.js: $(wildcard src/**/*) spago.yaml | node_modules
+index.js: $(wildcard src/**/*) src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
 	npx spago bundle \
 		--platform node \
 		--minify
@@ -90,14 +90,14 @@ lint-js: | node_modules
 		scripts
 
 .PHONY: test-spago
-test-spago: | node_modules
+test-spago: src/CliSpec/JsonEmbed.purs | node_modules
 	npx spago test
 
 .PHONY: test
 test: lint-js test-spago
 
 .PHONY: test-watch
-test-watch: | node_modules
+test-watch: src/CliSpec/JsonEmbed.purs | node_modules
 	watchexec \
 		--exts purs \
 		'npx spago test'
