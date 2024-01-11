@@ -1,25 +1,34 @@
 module Main where
 
 import Prelude (
-  Unit, bind, discard, pure, unit,
-  (#), ($), (<#>), (<>), (/=), (>)
+  Unit, bind, discard, pure, unit, identity,
+  (#), ($), (<#>), (<>), (/=), (>), (>>=)
 )
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
+import Control.Plus (empty)
+import Data.Argonaut.Core as JSON
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Error (printJsonDecodeError)
+import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, cons, difference, filter, null, zip, (!!))
+import Data.Array (head, tail)
+import Data.Bifunctor (lmap)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (over)
-import Data.Result (Result(..), note, isOk, fromEither)
-import Data.String (Pattern(..), indexOf, length)
+import Data.Result (Result(..), result, note, isOk, fromEither)
+import Data.Show (show)
+import Data.String (Pattern(..), indexOf, length, split)
 import Data.Traversable (for_, sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
-import Effect.Class.Console (log)
+import Effect.Class.Console (log, warn)
 import Effect.Exception (throw)
+import Foreign.Object as Obj
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Async (stat)
 import Node.FS.Stats (isFile, isDirectory)
@@ -27,48 +36,17 @@ import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (argv, cwd)
 
+import CliSpec.JsonEmbed as CliSpec.JsonEmbed
+import CliSpec.Types ( CliSpec(..), CliArgument(..), CliArgPrim(..))
+import CliSpec (parseCliSpec, callCliApp)
 import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
+import Transity.Data.Config (Config, ColorFlag(..), config)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
-import Transity.Utils (ColorFlag(..), SortOrder(..))
+import Transity.Utils (SortOrder(..), makeRed, errorAndExit)
 import Transity.Xlsx (writeToZip, entriesAsXlsx)
-
-type Config = { colorState :: ColorFlag }
-
-config :: Config
-config =
-  { colorState: ColorYes
-  }
-
-
-usageString :: String
-usageString = """
-Usage: transity <command> <path/to/journal.yaml>
-
-Command             Description
-------------------  ------------------------------------------------------------
-balance             Simple balance of the owner's accounts
-balance-all         Simple balance of all accounts
-transactions        All transactions and their transfers
-transfers           All transfers with one transfer per line
-entries             All individual deposits & withdrawals, space separated
-entities            [WIP] List all referenced entities
-entities-sorted     [WIP] List all referenced entities sorted alphabetically
-ledger-entries      All entries in Ledger format
-csv                 Transfers, comma separated (printed to stdout)
-tsv                 Transfers, tab separated (printed to stdout)
-xlsx                XLSX file with all transfers (printed to stdout)
-entries-by-account  All individual deposits & withdrawals, grouped by account
-gplot               Code and data for gnuplot impulse diagram
-                      to visualize transfers of all accounts
-gplot-cumul         Code and data for cumuluative gnuplot step chart
-                      to visualize balance of all accounts
-unused-files        Recursively list all files in a directory
-                      which are not referenced in the journal
-help                Print this help dialog
-version             Print currently used version
-"""
+import Debug as Debug
 
 
 -- TODO: Move validation to parsing
@@ -77,9 +55,8 @@ utcError =
   "All transfers or their parent transaction must have a valid UTC field"
 
 
-
-run :: String -> String -> Ledger -> Result String String
-run command filePathRel ledger =
+runSimpleCmd :: String -> String -> Ledger -> Result String String
+runSimpleCmd command filePathRel ledger =
   case command of
     "balance"            -> Ok $
       Ledger.showBalance BalanceOnlyOwner ColorYes ledger
@@ -157,17 +134,75 @@ loadAndExec currentDir [command, filePathRel] = do
             (entriesAsXlsx ledger)
           pure (Ok "")
         _ ->
-          pure $ run command filePathRel ledger
+          pure $ runSimpleCmd command filePathRel ledger
 
 loadAndExec _ _ =
   pure $ Error "loadAndExec expects an array with length 2"
 
 
-errorAndExit :: String -> Effect Unit
-errorAndExit message = do
-  throw (if config.colorState == ColorYes
-        then withGraphics (foreground Red) message
-        else message)
+executor :: String -> String -> Array CliArgument -> Effect Unit
+executor cmdName usageString args = do
+  if cmdName == "unused-files"
+  then
+    case args of
+      [ ValArg (StringArg filesDirPath)
+      , ValArg (StringArg ledgerFilePath)
+      ] -> do
+        ledgerFilePathAbs <- Path.resolve [] ledgerFilePath
+        ledgerFileContent <- Sync.readTextFile UTF8 ledgerFilePathAbs
+
+        case (Ledger.fromYaml ledgerFileContent) of
+          Error msg -> errorAndExit config msg
+          Ok ledger@(Ledger {transactions}) -> do
+            currentDir <- cwd
+            let
+              journalDir =
+                if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0
+                then currentDir
+                else Path.dirname ledgerFilePathAbs
+            _ <- checkFilePaths journalDir ledger
+
+            filesDir <- Path.resolve [] filesDirPath
+            foundFiles <- getAllFiles filesDir
+            let
+              ledgerFilesRel = foldMap
+                (\(Transaction tact) -> tact.files)
+                transactions
+            ledgerFilesAbs <- sequence $ ledgerFilesRel
+                <#> (\fileRel -> Path.resolve [journalDir] fileRel)
+
+            let
+              unusedFiles = difference foundFiles ledgerFilesAbs
+              makeGreen = withGraphics (foreground Green)
+              makeYellow = withGraphics (foreground Yellow)
+
+            if null unusedFiles
+            then log $ makeGreen $"No unused files found in " <> filesDir
+            else do
+              warn $ makeYellow $ "Warning: "
+                <> "Following files are not referenced in the journal"
+
+              for_ unusedFiles $ \filePathAbs ->
+                log $ makeYellow $ "- " <> filePathAbs
+
+      _ ->
+        log $
+          makeRed config "ERROR: Wrong number of arguments for unused-files"
+          <> "\n\n"
+          <> usageString
+
+  else
+    case args of
+      [ValArg (StringArg journalPathRel)] -> do
+        currentDir <- cwd
+        result <- loadAndExec currentDir [cmdName, journalPathRel]
+
+        case result of
+          Ok output -> if length output > 0
+            then log output
+            else pure unit
+          Error message -> errorAndExit config message
+      _ -> log usageString
 
 
 getAllFiles :: String -> Effect (Array String)
@@ -200,65 +235,6 @@ getAllFiles directoryPath =
 
 main :: Effect Unit
 main = do
-  arguments <- argv
-
-  case [arguments !! 2, arguments !! 3, arguments !! 4] of
-    [Just "help",    Nothing, Nothing] -> log usageString
-    [Just "version", Nothing, Nothing] -> log "0.8.0"
-
-    [Just _,        Nothing, Nothing] ->
-      errorAndExit $ "No path to a ledger file was provided\n\n" <> usageString
-
-    [Just "unused-files", Just filesDirPath, Just ledgerFilePath] -> do
-      ledgerFilePathAbs <- Path.resolve [] ledgerFilePath
-      ledgerFileContent <- Sync.readTextFile UTF8 ledgerFilePathAbs
-
-      case (Ledger.fromYaml ledgerFileContent) of
-        Error msg -> errorAndExit msg
-        Ok ledger@(Ledger {transactions}) -> do
-          currentDir <- cwd
-          let
-            journalDir =
-              if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0
-              then currentDir
-              else Path.dirname ledgerFilePathAbs
-          _ <- checkFilePaths journalDir ledger
-
-          filesDir <- Path.resolve [] filesDirPath
-          foundFiles <- getAllFiles filesDir
-          let
-            ledgerFilesRel = foldMap
-              (\(Transaction tact) -> tact.files)
-              transactions
-          ledgerFilesAbs <- sequence $ ledgerFilesRel
-              <#> (\fileRel -> Path.resolve [journalDir] fileRel)
-
-          for_ (difference foundFiles ledgerFilesAbs) $ \filePathAbs ->
-            log $ withGraphics
-              (foreground Yellow)
-              ("Warning: \"" <> filePathAbs
-                  <> "\" is not referenced in the journal")
-
-
-    [Just command, Just ledgerFilePath, Nothing] -> do
-      currentDir <- cwd
-      result <- loadAndExec currentDir [command, ledgerFilePath]
-
-      case result of
-        Ok output -> if length output > 0
-          then log output
-          else pure unit
-        Error message -> errorAndExit message
-
-    _ -> log usageString
-
-
--- TODO: Use Monad transformers
--- resultT = ExceptT <<< toEither
--- unResultT = unExceptT >>> either Error Ok
--- main = do
---   result <- runResultT $ join $ map resultT $
---     loadAndExec <$> lift cwd <*> (resultT <<< parseArguments =<< lift argv)
---   case result of
---     Ok output -> log output
---     Error message -> error message
+  case parseCliSpec CliSpec.JsonEmbed.fileContent of
+    Error msg -> errorAndExit config msg
+    Ok cliSpec -> callCliApp cliSpec executor

@@ -1,9 +1,11 @@
 /.parcel-cache
+/.psci*
 /.spago
-/bower_components
 /docs
 /docs-dev
 /generated-docs
+/index.js
 /node_modules
 /output
+/src/CliSpec/JsonEmbed.purs
 /test/_deletable_*

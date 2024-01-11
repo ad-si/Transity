@@ -39,7 +39,8 @@ workspace:
         - tuples
         - unfoldable
         - yaml-next
-      test_dependencies: []
+      test_dependencies:
+        - spec
       build_plan:
         - aff
         - ansi

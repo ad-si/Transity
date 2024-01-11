@@ -1,7 +1,7 @@
 module Transity.Utils where
 
 import Prelude (
-  class Eq, bind, map, max, pure, show,
+  class Eq, bind, map, max, pure, show, Unit,
   (#), ($), (+), (-), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>)
 )
 
@@ -16,6 +16,8 @@ import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Result (Result(..), fromEither)
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
+import Effect (Effect)
+import Effect.Exception (throw)
 import JS.BigInt (fromInt, fromString, pow)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
@@ -36,10 +38,8 @@ import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
 import Foreign.Object (Object)
 
---| Flag to switch colorized output on or off
-data ColorFlag = ColorYes | ColorNo
+import Transity.Data.Config
 
-derive instance eqColorFlag :: Eq ColorFlag
 
 
 --| Flag to switch between different ways of sorting the output
@@ -255,8 +255,19 @@ alignNumber colorFlag intWidth fracWidth number =
         <> withGraphics colorMap.neutral fracPart
 
 
---| Decimal point is included in fraction => +1
+makeRed :: Config -> String -> String
+makeRed conf str =
+  if config.colorState == ColorYes
+  then withGraphics (foreground Red) str
+  else str
 
+
+errorAndExit :: Config -> String -> Effect Unit
+errorAndExit conf message = do
+  throw (makeRed conf message)
+
+
+-- | Decimal point is included in fraction => +1
 lengthOfNumParts :: Number -> Tuple Int Int
 lengthOfNumParts number =
   let

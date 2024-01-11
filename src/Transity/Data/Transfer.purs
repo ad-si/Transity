@@ -26,12 +26,13 @@ import Data.String (length)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
 import Text.Format (format, width)
+
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
-  ( ColorFlag(..)
-  , dateShowPretty
+  ( dateShowPretty
   , getFieldVerbose
   , stringToDateTime
   , ratioZero

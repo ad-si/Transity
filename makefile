@@ -4,15 +4,15 @@ help: makefile
 
 
 .PHONY: all
-all: index.js docs
+all: changelog.md readme.md index.js docs output
 
 
 .PHONY: build
-build:
+build: | node_modules
 	npx spago build
 
 
-changelog.md: .git
+changelog.md: .git | node_modules
 	# git config changelog.format '- %s (%h)'
 	# git changelog
 	npx conventional-changelog \
@@ -21,15 +21,17 @@ changelog.md: .git
 		--output-unreleased
 
 
-# TODO: Fix after dynamic requires of "fs" are supported
-index.js: src node_modules
-	npx spago bundle-app \
-		--platform=node \
+index.js: $(wildcard src/**/*) spago.yaml | node_modules
+	npx spago bundle \
+		--platform node \
 		--minify
+
+.PHONY: bundle
+bundle: index.js
 
 
 # The specified target is configured in package.json
-docs: output
+docs: output | node_modules
 	npx parcel build webapp/index.html \
 		--public-url /Transity \
 		--no-source-maps \
@@ -39,29 +41,34 @@ docs: output
 # Correct paths for assets during local development
 # Use e.g. Vercel's "serve" like this: `serve docs-dev`.
 # The specified target is configured in package.json.
-docs-dev: output index.js
+docs-dev: output index.js | node_modules
 	npx parcel build webapp/index.html \
 		--no-source-maps \
 		--target $@
 
 
-.PHONY: bundle-spago
-bundle-spago:
-	npx spago bundle-module --platform=node
+define JsonEmbedStart
+module CliSpec.JsonEmbed where
 
-.PHONY: minify
-minify:
-	npx uglifyjs \
-		--compress \
-		--mangle \
-		--output index.js \
-		index.js
+import Prelude
 
-.PHONY: bundle
-bundle: minify bundle-spago
+fileContent :: String
+fileContent = """
+endef
+export JsonEmbedStart
+
+src/CliSpec/JsonEmbed.purs: cli-contract.ncl cli-spec.ncl
+	echo "$$JsonEmbedStart" > $@
+
+	echo \
+		'(import "cli-contract.ncl") & (import "cli-spec.ncl")' \
+		| nickel export --format json \
+		>> $@
+
+	echo '"""' >> $@
 
 
-output: src spago.yaml node_modules
+output: src src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
 	npx spago build
 
 
@@ -69,29 +76,31 @@ node_modules: package.json package-lock.json
 	if test ! -d $@; then npm install; fi
 
 
-readme.md:
+readme.md: | node_modules
 	npx markdown-toc -i $@
 
 
 ##### TESTING ######
 
 .PHONY: lint-js
-lint-js:
+lint-js: | node_modules
 	npx eslint \
 		--max-warnings 0 \
 		--ignore-path .gitignore \
 		scripts
 
 .PHONY: test-spago
-test-spago:
+test-spago: | node_modules
 	npx spago test
 
 .PHONY: test
 test: lint-js test-spago
 
 .PHONY: test-watch
-test-watch: lint-js output
-	npx spago test --watch
+test-watch: | node_modules
+	watchexec \
+		--exts purs \
+		'npx spago test'
 
 
 .PHONY: clean

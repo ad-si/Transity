@@ -35,16 +35,12 @@ import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Partial.Unsafe (unsafePartial)
 import Test.Fixtures
-import Test.Spec
-  ( describe
-  , it
-  , pending'
-  -- , itOnly
-  )
+import Test.Spec (describe , it , pending')
 import Test.Spec.Assertions (expectError, fail, shouldEqual)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
+
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -52,6 +48,7 @@ import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
 import Transity.Data.Balance (Balance(..))
 import Transity.Data.CommodityMap (CommodityMap, isCommodityMapZero)
 import Transity.Data.CommodityMap as CommodityMap
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.Entity as Entity
 import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
@@ -63,13 +60,14 @@ import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( digitsToRational
   , indentSubsequent
-  , ColorFlag(..)
   , SortOrder(..)
   , stringToDateTime
   , ratioZero
   , stringifyJsonDecodeError
   )
 import Transity.Xlsx (entriesAsXlsx, writeToZip, FileEntry(..))
+
+import Test.CliSpec as Test.CliSpec
 
 
 rmWhitespace :: String -> String
@@ -127,6 +125,8 @@ compareChar actual expected =
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [consoleReporter] do
+  Test.CliSpec.tests
+
   describe "Utils" do
     describe "digitsToRational" do
       it "converts 137 to 137/1" do

@@ -23,6 +23,8 @@ import Data.Result (Result(..), toEither, fromEither)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
 import Text.Format (format, width)
+
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
@@ -31,7 +33,6 @@ import Transity.Utils
   , stringToDateTime
   , dateShowPretty
   , indentSubsequent
-  , ColorFlag(..)
   , stringifyJsonDecodeError
   , resultWithJsonDecodeError
   )

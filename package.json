@@ -6,7 +6,7 @@
   "type": "module",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "bin": {
-    "transity": "cli/main.js"
+    "transity": "index.js"
   },
   "scripts": {
     "prepublishOnly": "make test && make bundle"
@@ -17,7 +17,6 @@
   "files": [
     "index.js",
     "/scripts",
-    "cli-spec.json",
     "!.DS_Store"
   ],
   "keywords": [

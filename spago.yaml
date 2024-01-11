@@ -37,8 +37,8 @@ package:
     - tuples
     - unfoldable
     - yaml-next
-  tests:
-    main: Main.purs
+  test:
+    main: Test.Main
     dependencies:
       - spec
 workspace:

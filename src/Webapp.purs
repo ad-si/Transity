@@ -3,8 +3,8 @@ module Webapp where
 import Prelude (bind, ($), pure)
 
 import Data.Result (Result(..))
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Ledger as Ledger
-import Transity.Utils (ColorFlag(..))
 
 
 getBalance :: String -> String

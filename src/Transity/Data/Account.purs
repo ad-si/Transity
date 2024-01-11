@@ -25,13 +25,13 @@ import Transity.Data.CommodityMap
   , subtractAmountFromMap
   )
 import Transity.Data.CommodityMap as CommodityMap
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
   ( WidthRecord
   , widthRecordZero
   , indentSubsequent
   , getObjField
   , getFieldMaybe
-  , ColorFlag(..)
   , resultWithJsonDecodeError
   )
 

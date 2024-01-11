@@ -55,6 +55,7 @@ import Transity.Data.CommodityMap
   , isCommodityMapZero
   , isCommodityZero
   )
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..), toTransfers)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
@@ -68,7 +69,6 @@ import Transity.Utils
   , dateShowPretty
   , dateShowPrettyLong
   , widthRecordZero
-  , ColorFlag(..)
   , SortOrder(..)
   , stringifyJsonDecodeError
   , resultWithJsonDecodeError

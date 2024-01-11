@@ -28,6 +28,7 @@ import Data.Show.Generic (genericShow)
 import Data.String (Pattern(..), length, split)
 import Data.Tuple (Tuple(..))
 
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
   ( digitsToRational
   , padEnd
@@ -35,13 +36,12 @@ import Transity.Utils
   , lengthOfNumParts
   , WidthRecord
   , widthRecordZero
-  , ColorFlag(..)
   , ratioZero
   )
 
 
---| Economic good or service that has full or substantial fungibility
---| E.g. €, cows, minutes, …
+-- | Economic good or service that has full or substantial fungibility
+-- | E.g. €, cows, minutes, …
 
 newtype Commodity = Commodity String
 
