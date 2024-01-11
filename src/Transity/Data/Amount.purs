@@ -67,8 +67,8 @@ decodeJsonCommodity json =
     (toString json)
 
 
---| E.g. "20 €", "10 cows", or "20 minutes"
---| `amount = Amount (fromInt 20) (Commodity "€")
+-- | E.g. "20 €", "10 cows", or "20 minutes"
+-- | `amount = Amount (fromInt 20) (Commodity "€")
 
 data Amount = Amount Rational Commodity
 
@@ -146,10 +146,10 @@ showPretty :: Amount -> String
 showPretty = showPrettyAligned ColorNo 0 0 0
 
 
---| Specify the width (in characters) of the integer part,
---| the width of the fractional part (including decimal point),
---| the width of commodity part
---| and receive a pretty printed amount.
+-- | Specify the width (in characters) of the integer part,
+-- | the width of the fractional part (including decimal point),
+-- | the width of commodity part
+-- | and receive a pretty printed amount.
 
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> Amount -> String
 showPrettyAligned colorFlag intWid fracWid comWid (Amount val (Commodity com)) =

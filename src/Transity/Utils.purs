@@ -41,8 +41,7 @@ import Foreign.Object (Object)
 import Transity.Data.Config
 
 
-
---| Flag to switch between different ways of sorting the output
+-- | Flag to switch between different ways of sorting the output
 data SortOrder = CustomSort | Alphabetically
 
 derive instance eqSortOrder :: Eq SortOrder

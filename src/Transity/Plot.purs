@@ -44,8 +44,8 @@ gplotTable dataString = "$data << EOD\n"
   <> "\nEOD\n"
 
 
---| Code (without data) for gnuplot impulse diagram
---| to visualize transfers on one account
+-- | Code (without data) for gnuplot impulse diagram
+-- | to visualize transfers on one account
 gplotCode :: GplotConfig -> String
 gplotCode (GplotConfig conf) =
   gplotTable conf.data <>
@@ -74,8 +74,8 @@ gplotCode (GplotConfig conf) =
   ) # joinWith ";")
 
 
---| Code (without data) for cumuluative gnuplot step chart
---| to visualize balance on one account
+-- | Code (without data) for cumuluative gnuplot step chart
+-- | to visualize balance on one account
 gplotCodeCumul :: GplotConfig -> String
 gplotCodeCumul (GplotConfig conf) =
   gplotTable conf.data <>

@@ -82,10 +82,10 @@ showPretty :: CommodityMap -> String
 showPretty = showPrettyAligned ColorNo 0 0 0
 
 
---| Specify the width (in characters) of the integer part,
---| the width of the fractional part
---| (both exluding the decimal point) and receive a pretty printed
---| multi line string.
+-- | Specify the width (in characters) of the integer part,
+-- | the width of the fractional part
+-- | (both exluding the decimal point) and receive a pretty printed
+-- | multi line string.
 
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> CommodityMap -> String
 showPrettyAligned colorFlag intWidth fracWidth comWidth commodityMap =

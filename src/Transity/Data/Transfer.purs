@@ -155,11 +155,11 @@ showPrettyColorized :: Transfer -> String
 showPrettyColorized = showPrettyAligned ColorYes 15 15 5 3 10
 
 
---| - From account name width
---| - To account name width
---| - Integer part width
---| - Fraction part width
---| - Commodity width
+-- | - From account name width
+-- | - To account name width
+-- | - Integer part width
+-- | - Fraction part width
+-- | - Commodity width
 
 showPrettyAligned
   :: ColorFlag -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
