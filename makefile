@@ -50,8 +50,6 @@ docs-dev: output index.js | node_modules
 define JsonEmbedStart
 module CliSpec.JsonEmbed where
 
-import Prelude
-
 fileContent :: String
 fileContent = """
 endef

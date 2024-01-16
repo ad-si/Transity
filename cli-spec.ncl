@@ -1,6 +1,8 @@
 {
   name = "transity",
-  description = "transity <command> <path/to/journal.yaml>",
+  description = m%"
+    Transity is a full fledged, CLI based plain text accounting tool.
+  "%,
   version = "0.8.0",
   funcName = "runApp",
   commands = [

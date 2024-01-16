@@ -1,24 +1,10 @@
 module CliSpec.Types where
 
-import Prelude (
-  class Eq, class Show, bind, max, pure, map,
-  ($), (+), (<>), (==), (||), (&&), (>>=), (<$>), (#), (<#>)
-)
+import Prelude (class Eq, class Show, map, (#), ($), (+), (==))
 
-import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, foreground)
-import Data.Argonaut.Core (Json, toObject)
-import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Encode.Class (class EncodeJson)
-import Data.Argonaut.Encode.Generic (genericEncodeJson)
-import Data.Argonaut.Encode.Generic (genericEncodeJson)
-import Data.Array ((:), length, drop, take, null, concat)
+import Data.Array ((:), drop, take, null, concat, mapWithIndex)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep (class Generic)
-import Data.Maybe (Maybe(..))
-import Data.Newtype (class Newtype)
-import Data.Result (Result(Ok, Error), toEither)
-import Data.Show.Generic (genericShow)
+import Data.Maybe (Maybe)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (toCharArray, fromCharArray)
 
@@ -52,8 +38,8 @@ instance showCliArgument :: Show CliArgument where
 
 -- | One argument can lead to multiple `CliArgument`s
 -- | e.g. `-ab` -> `[FlagShort 'a', FlagShort 'b']`
-parseCliArgument :: String -> Array CliArgument
-parseCliArgument arg = do
+parseCliArgument :: Int -> String -> Array CliArgument
+parseCliArgument index arg = do
   let
     chars = arg # toCharArray :: Array Char
     charsRest = chars # drop 2 :: Array Char
@@ -66,19 +52,19 @@ parseCliArgument arg = do
                               then []
                               else charsRest # map FlagShort
 
-    _ -> [ValArg $ StringArg arg]
+    _ -> if index == 0
+          then [CmdArg arg]
+          else [ValArg $ StringArg arg]
 
 
-parseCliArguments :: Array String -> Array CliArgument
-parseCliArguments arguments =
-  let
-    firstArg = arguments # take 1
-    restArgs = arguments # drop 1
-  in
-  (firstArg <#> CmdArg)
-  <> (restArgs
-      # map parseCliArgument
-      # concat)
+parseCliArguments :: Int -> Array String -> Array CliArgument
+parseCliArguments subcmdLevels arguments = do
+  arguments
+    # mapWithIndex (\index ->
+        parseCliArgument
+          (if subcmdLevels == 0 then index else index + 1)
+      )
+    # concat
 
 
 type Command = {

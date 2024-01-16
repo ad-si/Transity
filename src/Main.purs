@@ -1,52 +1,41 @@
 module Main where
 
-import Prelude (
-  Unit, bind, discard, pure, unit, identity,
-  (#), ($), (<#>), (<>), (/=), (>), (>>=)
-)
+import Prelude
+  ( Unit, bind, discard, pure, unit
+  , (#), ($), (/=), (<#>), (<>), (>)
+  )
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Control.Plus (empty)
-import Data.Argonaut.Core as JSON
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Decode.Error (printJsonDecodeError)
-import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, cons, difference, filter, null, zip, (!!))
-import Data.Array (head, tail)
-import Data.Bifunctor (lmap)
+import Data.Array (concat, cons, difference, filter, null, zip)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..))
 import Data.Newtype (over)
-import Data.Result (Result(..), result, note, isOk, fromEither)
-import Data.Show (show)
-import Data.String (Pattern(..), indexOf, length, split)
+import Data.Result (Result(..), note, isOk, fromEither)
+import Data.String (Pattern(..), indexOf, length)
 import Data.Traversable (for_, sequence)
 import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class.Console (log, warn)
-import Effect.Exception (throw)
-import Foreign.Object as Obj
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Async (stat)
 import Node.FS.Stats (isFile, isDirectory)
 import Node.FS.Sync as Sync
 import Node.Path as Path
-import Node.Process (argv, cwd)
+import Node.Process (cwd)
 
 import CliSpec.JsonEmbed as CliSpec.JsonEmbed
-import CliSpec.Types ( CliSpec(..), CliArgument(..), CliArgPrim(..))
+import CliSpec.Types (CliArgument(..), CliArgPrim(..))
 import CliSpec (parseCliSpec, callCliApp)
 import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
-import Transity.Data.Config (Config, ColorFlag(..), config)
+import Transity.Data.Config (ColorFlag(..), config)
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
 import Transity.Utils (SortOrder(..), makeRed, errorAndExit)
 import Transity.Xlsx (writeToZip, entriesAsXlsx)
-import Debug as Debug
 
 
 -- TODO: Move validation to parsing

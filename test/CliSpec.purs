@@ -14,7 +14,7 @@ parseCliStr :: String -> Array CliArgument
 parseCliStr str =
   str
     # split (Pattern " ")
-    # parseCliArguments
+    # parseCliArguments 0
 
 
 tests :: Spec Unit
@@ -22,6 +22,14 @@ tests = do
   describe "CliSpec" do
     describe "Parser" do
       it "parses a CLI invocation" do
+        (parseCliStr "xx")
+          `shouldEqual` [CmdArg "xx"]
+
+      it "parses a standalone flag (for subcommands)" do
+        (parseCliStr "--help")
+          `shouldEqual` [FlagLong "help"]
+
+      it "parses a CLI with an argument" do
         (parseCliStr "xx dir")
           `shouldEqual` [CmdArg "xx", ValArg (StringArg "dir")]
 
