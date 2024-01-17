@@ -581,21 +581,30 @@ namecheap -> john      :  1    Domain
 
 ## Related
 
-- [plaintextaccounting.org] - Best of plain text accounting.
+For a full list of plain text accounting tools check out
+[plaintextaccounting.org](https://plaintextaccounting.org).
+Here are some of the links
+that are especially relevant for Transity:
+
+
+### Other Plain Text Accounting Tools
+
+- [Ledger] - The original command line accounting tool (written in C++).
+- [Hledger] - Ledger clone with a focus on UX, reliability,
+    and real-world practicality (written in Haskell).
+- [Beancount] - Double-entry accounting from text files (written in Python).
+- [Rust Ledger] - Ledger clone that uses YAML as well (written in Rust).
+
+[Beancount]: https://beancount.github.io
+[Hledger]: https://hledger.org
+[Ledger]: https://ledger-cli.org
+[Rust Ledger]: https://github.com/ebcrowder/rust_ledger
+
+
+### Tutorials
+
 - [cs007.blog] - Personal finance for engineers.
 - [principlesofaccounting.com] - Online tutorial on accounting.
-- [npoacct.sfconservancy.org] -
-    Effort to create accounting software for non-profit organizations.
-- [github.com/nuex/t] - sh script for working with ledger timelog files.
-- [github.com/bankscrap/bankscrap] -
-    Ruby gem to extract balance and transactions from multiple banks.
-- [github.com/prashants/webzash] -
-    Easy to use web based double entry accounting software.
 
-[plaintextaccounting.org]: http://plaintextaccounting.org
 [cs007.blog]: https://cs007.blog
-[principlesofaccounting.com]: http://principlesofaccounting.com
-[npoacct.sfconservancy.org]: https://npoacct.sfconservancy.org
-[github.com/nuex/t]: https://github.com/nuex/t
-[github.com/bankscrap/bankscrap]: https://github.com/bankscrap/bankscrap
-[github.com/prashants/webzash]: https://github.com/prashants/webzash
+[principlesofaccounting.com]: https://www.principlesofaccounting.com
