@@ -33,6 +33,7 @@ package:
     - rationals
     - result
     - strings
+    - stringutils
     - transformers
     - tuples
     - unfoldable

@@ -1,54 +1,425 @@
 module Test.CliSpec where
 
-import Prelude (Unit, (#))
-
+import CliSpec (parseCliSpec, callCommand)
+import CliSpec.Parser (tokensToCliArguments)
+import CliSpec.Tokenizer (CliArgToken(..), tokenizeCliArguments)
+import CliSpec.Types
+  ( CliArgPrim(..), CliArgument(..), CliSpec(..)
+  , emptyCliSpec, emptyCliSpecRaw
+  )
 import Control.Bind (discard)
+import Data.Maybe (Maybe(..))
+import Data.Newtype (over)
+import Data.Result (Result(..))
 import Data.String (Pattern(..), split)
+import Effect.Class (liftEffect)
+import Prelude (Unit, pure, unit, (#), ($))
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
-
-import CliSpec.Types (CliArgPrim(..), CliArgument(..), parseCliArguments)
+import Test.Spec.Assertions (shouldEqual, fail, shouldReturn)
 
 
-parseCliStr :: String -> Array CliArgument
-parseCliStr str =
+tokenizeCliStr :: String -> Array CliArgToken
+tokenizeCliStr str =
   str
     # split (Pattern " ")
-    # parseCliArguments 0
+    # tokenizeCliArguments
 
 
 tests :: Spec Unit
 tests = do
   describe "CliSpec" do
-    describe "Parser" do
+    describe "Tokenizer" do
       it "parses a CLI invocation" do
-        (parseCliStr "xx")
-          `shouldEqual` [CmdArg "xx"]
+        (tokenizeCliStr "git")
+          `shouldEqual` [TextToken "git"]
 
       it "parses a standalone flag (for subcommands)" do
-        (parseCliStr "--help")
-          `shouldEqual` [FlagLong "help"]
+        (tokenizeCliStr "--help")
+          `shouldEqual` [FlagLongToken "help"]
 
       it "parses a CLI with an argument" do
-        (parseCliStr "xx dir")
-          `shouldEqual` [CmdArg "xx", ValArg (StringArg "dir")]
+        (tokenizeCliStr "ls dir")
+          `shouldEqual` [TextToken "ls", TextToken "dir"]
 
       it "parses a CLI invocation with a long flag" do
-        (parseCliStr "xx --version")
-          `shouldEqual` [CmdArg "xx", FlagLong "version"]
+        (tokenizeCliStr "git --version")
+          `shouldEqual` [TextToken "git", FlagLongToken "version"]
 
       it "parses a CLI invocation with a short flag" do
-        (parseCliStr "xx -a")
-          `shouldEqual` [CmdArg "xx", FlagShort 'a']
+        (tokenizeCliStr "git -a")
+          `shouldEqual` [TextToken "git", FlagShortToken 'a']
 
       it "parses a CLI invocation with several short flags" do
-        (parseCliStr "xx -ab")
-          `shouldEqual` [CmdArg "xx", FlagShort 'a', FlagShort 'b']
+        (tokenizeCliStr "git -ab")
+          `shouldEqual`
+            [TextToken "git", FlagShortToken 'a', FlagShortToken 'b']
 
       it "parses a CLI invocation with a long flag and an argument" do
-        (parseCliStr "xx --verbose dir")
+        (tokenizeCliStr "git --verbose dir")
           `shouldEqual`
-            [ CmdArg "xx"
-            , FlagLong "verbose"
-            , ValArg (StringArg "dir")
+            [ TextToken "git"
+            , FlagLongToken "verbose"
+            , TextToken "dir"
             ]
+
+    describe "Spec Parser" do
+      let
+        cliSpec :: CliSpec
+        cliSpec = CliSpec (emptyCliSpecRaw
+          { name = "git"
+          , description = "The git command"
+          , funcName = Just "runApp"
+          , version = Just "1.0.0"
+          , commands = Just
+              [ CliSpec (emptyCliSpecRaw
+                  { name = "commit"
+                  , description = "The commit sub-command"
+                  , funcName = Just "runCommit"
+                  , arguments = Just
+                      [ { name: "pathspec"
+                        , description: "File to commit"
+                        , type: "Text"
+                        , optional : Nothing
+                        , default : Nothing
+                        }
+                      ]
+                  })
+              ]
+          })
+
+      it "parses a full CLI spec" do
+        let
+          cliSpecJson = """
+              { "name": "git",
+                "description": "The git command",
+                "funcName": "runApp",
+                "version": "1.0.0",
+                "commands": [
+                  { "name": "commit",
+                    "description": "The commit sub-command",
+                    "funcName": "runCommit",
+                    "arguments": [
+                      { "name": "pathspec",
+                        "description": "File to commit",
+                        "type": "Text"
+                      }
+                    ]
+                  }
+                ]
+              }
+            """
+
+        case parseCliSpec cliSpecJson of
+          Error err -> fail err
+          Ok parsedCliSpec -> parsedCliSpec `shouldEqual` cliSpec
+
+      it "correctly detects a subcommand with one argument" do
+        let
+          cliSpecWithFlag :: CliSpec
+          cliSpecWithFlag = cliSpec # over CliSpec (\spec -> spec
+            { commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , arguments = Just
+                      [ { name: "repository"
+                        , description: "Name of the repository"
+                        , type: "Text"
+                        , optional : Nothing
+                        , default : Nothing
+                        }
+                      ]
+                    })
+                ]
+            })
+          tokens = tokenizeCliStr "git pull origin"
+
+        tokens `shouldEqual`
+          [ TextToken "git"
+          , TextToken "pull"
+          , TextToken "origin"
+          ]
+        (tokensToCliArguments cliSpecWithFlag tokens)
+          `shouldEqual`
+            Ok
+              [ CmdArg "git"
+              , CmdArg "pull"
+              , ValArg (StringArg "origin")
+              ]
+
+      it "correctly detects a subcommand with one long flag and one argument" do
+        let
+          cliSpecWithFlag :: CliSpec
+          cliSpecWithFlag = cliSpec # over CliSpec (\spec -> spec
+            { commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , options = Just
+                        [ { name: Just "progress"
+                          , shortName: Nothing
+                          , description: "Show progress"
+                          , argument: Nothing
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    , arguments = Just
+                      [ { name: "repository"
+                        , description: "Name of the repository"
+                        , type: "Text"
+                        , optional : Nothing
+                        , default : Nothing
+                        }
+                      ]
+                    })
+                ]
+            })
+          tokens = tokenizeCliStr "git pull --progress origin"
+
+        tokens `shouldEqual`
+          [ TextToken "git"
+          , TextToken "pull"
+          , FlagLongToken "progress"
+          , TextToken "origin"
+          ]
+        (tokensToCliArguments cliSpecWithFlag tokens)
+          `shouldEqual`
+            Ok
+              [ CmdArg "git"
+              , CmdArg "pull"
+              , FlagLong "progress"
+              , ValArg (StringArg "origin")
+              ]
+
+      it "redefines a long flag with a value to a long option" do
+        let
+          cliSpecWithFlag :: CliSpec
+          cliSpecWithFlag = cliSpec # over CliSpec (\spec -> spec
+            { commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , options = Just
+                        [ { name: Just "strategy"
+                          , shortName: Nothing
+                          , description: "Set the preferred merge strategy"
+                          , argument: Just
+                              { name: "strategy"
+                              , description: "Strategy to use"
+                              , type: "Text"
+                              , optional : Just true
+                              , default : Nothing
+                              }
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    })
+                ]
+            })
+          tokens = tokenizeCliStr "git pull --strategy recursive"
+
+        tokens `shouldEqual`
+          [ TextToken "git"
+          , TextToken "pull"
+          , FlagLongToken "strategy"
+          , TextToken "recursive"
+          ]
+        (tokensToCliArguments cliSpecWithFlag tokens)
+          `shouldEqual`
+            Ok
+              [ CmdArg "git"
+              , CmdArg "pull"
+              , OptionLong "strategy" (StringArg "recursive")
+              ]
+
+      it "verifies number of args for variable number of allowed args" do
+        let
+          cliSpecWithFlag :: CliSpec
+          cliSpecWithFlag = emptyCliSpec # over CliSpec (\spec -> spec
+            { name = "ls"
+            , arguments = Just
+                [ { name: "file"
+                  , description: "File to list"
+                  , type: "Text"
+                  , optional : Just false
+                  , default : Nothing
+                  }
+                , { name: "file"
+                  , description: "Additional files to list"
+                  , type: "List-Text"
+                  , optional : Just true
+                  , default : Nothing
+                  }
+                ]
+            })
+
+        let tokensOne = tokenizeCliStr "ls file1"
+        (tokensToCliArguments cliSpecWithFlag tokensOne)
+          `shouldEqual`
+            Ok
+              [ CmdArg "ls"
+              , ValArg (StringArg "file1")
+              ]
+
+        let tokensTwo = tokenizeCliStr "ls file1 file2"
+        (tokensToCliArguments cliSpecWithFlag tokensTwo)
+          `shouldEqual`
+            Ok
+              [ CmdArg "ls"
+              , ValArg (StringArg "file1")
+              , ValArgList [StringArg "file2"]
+              ]
+
+        let tokensThree = tokenizeCliStr "ls file1 file2 file3"
+        (tokensToCliArguments cliSpecWithFlag tokensThree)
+          `shouldEqual`
+            Ok
+              [ CmdArg "ls"
+              , ValArg (StringArg "file1")
+              , ValArgList [StringArg "file2", StringArg "file3"]
+              ]
+
+    describe "Execution" do
+      it "executes a sub-command with one argument" do
+        let
+          cliSpec = CliSpec (emptyCliSpecRaw
+            { name = "git"
+            , description = "The git command"
+            , funcName = Just "runApp"
+            , version = Just "1.0.0"
+            , commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , arguments = Just
+                        [ { name: "dir"
+                          , description: "Path to a directory"
+                          , type: "Text"
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    })
+                ]
+            })
+          toolArgs = ["git", "pull", "dir"]
+          usageString = "Irrelevant"
+          executor cmdName usageStr providedArgs = do
+            cmdName `shouldEqual` "pull"
+            usageStr `shouldEqual` usageString
+            providedArgs `shouldEqual` [(ValArg (StringArg "dir"))]
+            pure $ Ok unit
+
+        case tokensToCliArguments cliSpec $ tokenizeCliArguments toolArgs of
+          Error err -> fail err
+          Ok cliArgs ->
+            liftEffect (callCommand
+              cliSpec
+              usageString
+              cliArgs
+              executor
+            ) `shouldReturn` (Ok unit)
+
+      it "executes a sub-command with one flag" do
+        let
+          cliSpec = CliSpec (emptyCliSpecRaw
+            { name = "git"
+            , description = "The git command"
+            , funcName = Just "runApp"
+            , version = Just "1.0.0"
+            , commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , options = Just
+                        [ { name: Just "stats"
+                          , shortName: Nothing
+                          , description: "Statistics for pull"
+                          , argument: Nothing
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    })
+                ]
+            })
+          args = ["git", "pull", "--stats"]
+          usageString = "Irrelevant"
+          executor cmdName usageStr providedArgs = do
+            cmdName `shouldEqual` "pull"
+            usageStr `shouldEqual` usageString
+            providedArgs `shouldEqual` [(FlagLong "stats")]
+            pure $ Ok unit
+
+        case (tokensToCliArguments cliSpec $ tokenizeCliArguments args) of
+          Error err -> fail err
+          Ok cliArgs ->
+              liftEffect (callCommand
+                cliSpec
+                usageString
+                cliArgs
+                executor
+              ) `shouldReturn` (Ok unit)
+
+      it "executes a sub-command with one option" do
+        let
+          cliSpec = CliSpec (emptyCliSpecRaw
+            { name = "git"
+            , description = "The git command"
+            , funcName = Just "runApp"
+            , version = Just "1.0.0"
+            , commands = Just
+                [ CliSpec (emptyCliSpecRaw
+                    { name = "pull"
+                    , description = "The pull sub-command"
+                    , funcName = Just "runPull"
+                    , options = Just
+                        [ { name: Just "output"
+                          , shortName: Nothing
+                          , description: "Output directory"
+                          , argument: Just
+                              { name: "dir"
+                              , description: "Path to a directory"
+                              , type: "Text"
+                              , optional : Nothing
+                              , default : Nothing
+                              }
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    , arguments = Just
+                        [ { name: "dir"
+                          , description: "Path to a directory"
+                          , type: "Text"
+                          , optional : Nothing
+                          , default : Nothing
+                          }
+                        ]
+                    })
+                ]
+            })
+          toolArgs = ["git", "pull", "--output", "dir"]
+          usageString = "Irrelevant"
+          executor cmdName usageStr providedArgs = do
+            cmdName `shouldEqual` "pull"
+            usageStr `shouldEqual` usageString
+            providedArgs `shouldEqual` [(OptionLong "output" (StringArg "dir"))]
+            pure $ Ok unit
+
+        case (tokensToCliArguments cliSpec $ tokenizeCliArguments toolArgs) of
+          Error err -> fail err
+          Ok cliArgs ->
+              (liftEffect $ callCommand
+                cliSpec
+                usageString
+                cliArgs
+                executor
+              ) `shouldReturn` (Ok unit)

@@ -35,6 +35,7 @@ workspace:
         - rationals
         - result
         - strings
+        - stringutils
         - transformers
         - tuples
         - unfoldable
@@ -117,6 +118,7 @@ workspace:
         - spec
         - st
         - strings
+        - stringutils
         - tailrec
         - test-unit
         - transformers
@@ -1491,6 +1493,17 @@ packages:
       - tuples
       - unfoldable
       - unsafe-coerce
+  stringutils:
+    type: registry
+    version: 0.0.12
+    integrity: sha256-t63QWBlp49U0nRqUcFryKflSJsNKGTQAHKjn24/+ooI=
+    dependencies:
+      - arrays
+      - integers
+      - maybe
+      - partial
+      - prelude
+      - strings
   tailrec:
     type: registry
     version: 6.1.0

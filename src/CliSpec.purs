@@ -1,24 +1,25 @@
 module CliSpec where
 
-import Prelude (Unit, bind, (#), ($), (/=), (<>), (-), (>))
+import CliSpec.Types
+
+import Prelude (Unit, bind, discard, pure, unit, (#), ($), (-), (<>), (>), (||))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
+import CliSpec.Parser (tokensToCliArguments)
+import CliSpec.Tokenizer (tokenizeCliArguments)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Error (printJsonDecodeError)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (drop, head, tail, replicate, foldl, foldMap, fold, find, length)
+import Data.Array (drop, find, fold, foldMap, foldl, head, replicate)
 import Data.Bifunctor (lmap)
-import Data.String as Str
 import Data.Eq ((==))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Result (Result(..), fromEither)
+import Data.String as Str
 import Effect (Effect)
-import Effect.Class.Console (log)
-import Effect.Exception (throw)
-import Node.Process (argv)
-
-import CliSpec.Types
+import Effect.Class.Console (log, error)
+import Node.Process (argv, setExitCode)
 
 
 -- TODO: Automatically disable colors if not supported
@@ -26,10 +27,16 @@ makeRed :: String -> String
 makeRed str =
   withGraphics (foreground Red) str
 
+makeYellow :: String -> String
+makeYellow str =
+  withGraphics (foreground Yellow) str
 
-errorAndExit :: String -> Effect Unit
+
+errorAndExit :: String -> Effect (Result String Unit)
 errorAndExit message = do
-  throw (makeRed message)
+  error (makeRed message)
+  setExitCode 1
+  pure $ Error message
 
 
 parseCliSpec :: String -> Result String CliSpec
@@ -49,52 +56,62 @@ callCommand
   :: CliSpec
   -> String
   -> Array CliArgument
-  -> (String -> String -> Array CliArgument -> Effect Unit)
-  ->  Effect Unit
-callCommand cliSpec usageString args executor = do
+  -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
+  ->  Effect (Result String Unit)
+callCommand (CliSpec cliSpec) usageString args executor = do
   case args # head of
-    Just (CmdArg "help") -> log usageString
-    Just (FlagLong "help") -> log usageString
-    Just (FlagShort 'h') -> log usageString
-
-    Just (CmdArg "version") -> log cliSpec.version
-    Just (FlagLong "version") -> log cliSpec.version
-    Just (FlagShort 'v') -> log cliSpec.version
-
-    Just (CmdArg cmdName) -> do
-      let
-        commandMb = cliSpec.commands
-            # find (\cmd -> cmd.name == cmdName)
-        providedArgs = args # drop 1
-
-      case commandMb of
-        Nothing -> do
-          log $
-            makeRed ("ERROR: Unknown command \"" <> cmdName <> "\"")
-            <> "\n\n"
-            <> usageString
-
-        Just command -> do
-          if (length providedArgs :: Int) /= (length command.arguments)
-          then do
-            log $
-              "Usage: " <> command.name
-              <> (command.arguments # foldMap (\arg -> " " <> arg))
-              <> "\n\n"
-              <> command.description
-              <> "\n\n"
-          else do
-            executor cmdName usageString providedArgs
-
-    Just _ -> do
-      log $
-        makeRed $
-          "ERROR: First argument must be a command"
-          <> "\n\n"
-          <> usageString
-
     Nothing -> do
-      log usageString
+      log "No arguments provided"
+      setExitCode 1
+      pure (Error "No arguments provided")
+
+    Just _mainCmd -> do
+      case args # drop 1 # head of
+        Just arg | arg == (CmdArg "help")
+                    || arg == (FlagLong "help")
+                    || arg == (FlagShort 'h') -> do
+                        log usageString
+                        pure $ Ok unit
+
+        Just arg | arg == (CmdArg "version")
+                    || arg == (FlagLong "version")
+                    || arg == (FlagShort 'v') -> do
+                        log (cliSpec.version # fromMaybe "0")
+                        pure $ Ok unit
+
+        Just (CmdArg cmdName) -> do
+          let
+            commandMb = cliSpec.commands
+              # fromMaybe []
+              # find (\(CliSpec cmd) -> cmd.name == cmdName)
+            providedArgs = args # drop 2
+
+          case commandMb of
+            Nothing -> do
+              let errStr =
+                    makeRed ("ERROR: Unknown command \"" <> cmdName <> "\"")
+                    <> "\n\n"
+                    <> usageString
+              log errStr
+              setExitCode 1
+              pure (Error errStr)
+
+            Just (CliSpec _command) -> do
+                executor cmdName usageString providedArgs
+
+        Just arg -> do
+          let errMsg =
+                "ERROR: First argument must be a command and not \""
+                <> cliArgToString arg
+                <> "\"\n\n"
+          log $ makeRed $ errMsg <> usageString
+          setExitCode 1
+          pure $ Error errMsg
+
+        Nothing -> do
+          log usageString
+          setExitCode 1
+          pure $ Error "No arguments provided"
 
 
 -- | Function to repeat a string n times
@@ -105,28 +122,30 @@ repeatString str n =
 
 callCliApp
   :: CliSpec
-  -> (String -> String -> Array CliArgument -> Effect Unit)
-  -> Effect Unit
-callCliApp cliSpec executor = do
+  -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
+  -> Effect (Result String Unit)
+callCliApp cliSpec@(CliSpec cliSpecRaw) executor = do
   let
     lengthLongestCmd :: Int
     lengthLongestCmd =
-      cliSpec.commands
-        # foldl (\acc cmd ->
+      cliSpecRaw.commands
+        # fromMaybe []
+        # foldl (\acc (CliSpec cmd) ->
             if acc > Str.length cmd.name
             then acc
             else Str.length cmd.name
           ) 0
 
     usageString =
-      "USAGE: " <> cliSpec.name <> " <command> [options]"
+      "USAGE: " <> cliSpecRaw.name <> " <command> [options]"
       <> "\n\n"
-      <> cliSpec.description
+      <> cliSpecRaw.description
       <> "\n\n"
       <> "COMMANDS:"
       <> "\n\n"
-      <> (cliSpec.commands
-            # foldMap (\cmd ->
+      <> (cliSpecRaw.commands
+            # fromMaybe []
+            # foldMap (\(CliSpec cmd) ->
                 cmd.name
                 <> (repeatString " " (lengthLongestCmd - Str.length cmd.name))
                 <> "  " <> cmd.description <> "\n"
@@ -135,27 +154,13 @@ callCliApp cliSpec executor = do
 
   arguments <- argv
 
-  -- -- TODO: Show in help
-  -- binName <- case arguments # head of
-  --   Nothing -> do
-  --     errorAndExit usageString
-  --     pure ""
-  --   Just name -> pure name
+  let
+    argsNoInterpreter = arguments # drop 1  -- Drop "node"
+    cliArgsMb =
+      tokensToCliArguments
+        cliSpec
+        (tokenizeCliArguments argsNoInterpreter)
 
-  let binArgs = arguments # tail # fromMaybe []
-
-  -- -- TODO: Show in help
-  -- -- E.g. transity, or index.js
-  -- appName <- case binArgs # head of
-  --   Nothing -> do
-  --     errorAndExit usageString
-  --     pure ""
-  --   Just name -> pure name
-
-  let toolArgs = binArgs # tail # fromMaybe []
-
-  callCommand
-    cliSpec
-    usageString
-    (parseCliArguments 0 toolArgs)
-    executor
+  case cliArgsMb of
+    Error err -> errorAndExit err
+    Ok cliArgs -> callCommand cliSpec usageString cliArgs executor

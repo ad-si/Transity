@@ -60,7 +60,7 @@ src/CliSpec/JsonEmbed.purs: cli-contract.ncl cli-spec.ncl
 
 	echo \
 		'(import "cli-contract.ncl") & (import "cli-spec.ncl")' \
-		| nickel export --format json \
+		| nickel --color=always export --format json \
 		>> $@
 
 	echo '"""' >> $@
