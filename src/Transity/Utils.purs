@@ -1,7 +1,7 @@
 module Transity.Utils where
 
 import Prelude (
-  class Eq, bind, map, max, pure, show, Unit,
+  class Eq, bind, discard, map, max, pure, show, Unit,
   (#), ($), (+), (-), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>)
 )
 
@@ -14,16 +14,13 @@ import Data.Argonaut.Decode.Error (printJsonDecodeError, JsonDecodeError(..))
 import Data.Array (elem, all, (!!))
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
-import Data.Result (Result(..), fromEither)
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
-import Effect (Effect)
-import Effect.Exception (throw)
-import JS.BigInt (fromInt, fromString, pow)
 import Data.List (fromFoldable)
 import Data.Maybe (Maybe(Just,Nothing), fromMaybe)
 import Data.Monoid (power)
 import Data.Nullable (Nullable, toMaybe)
 import Data.Rational (Rational, (%))
+import Data.Result (Result(..), fromEither)
 import Data.String
   ( indexOf
   , length
@@ -36,7 +33,11 @@ import Data.String.CodeUnits (toCharArray, fromCharArray)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
+import Effect (Effect)
+import Effect.Class.Console (error)
 import Foreign.Object (Object)
+import JS.BigInt (fromInt, fromString, pow)
+import Node.Process (setExitCode)
 
 import Transity.Data.Config
 
@@ -256,14 +257,16 @@ alignNumber colorFlag intWidth fracWidth number =
 
 makeRed :: Config -> String -> String
 makeRed conf str =
-  if config.colorState == ColorYes
+  if conf.colorState == ColorYes
   then withGraphics (foreground Red) str
   else str
 
 
-errorAndExit :: Config -> String -> Effect Unit
+errorAndExit :: Config -> String -> Effect (Result String Unit)
 errorAndExit conf message = do
-  throw (makeRed conf message)
+  error (makeRed conf message)
+  setExitCode 1
+  pure $ Error message
 
 
 -- | Decimal point is included in fraction => +1

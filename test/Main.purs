@@ -1,6 +1,6 @@
 module Test.Main where
 
-import Prelude (Unit, (==))
+import Test.Fixtures
 
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
@@ -9,9 +9,7 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (zipWith, find)
-import JS.BigInt (fromString) as BigInt
 import Data.Eq ((/=))
-import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
 import Data.Functor (map)
@@ -19,8 +17,9 @@ import Data.Map (fromFoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Newtype (over)
+import Data.Newtype (modify, over)
 import Data.Rational (Rational, (%))
+import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
 import Data.Ring (negate)
 import Data.Semigroup ((<>))
 import Data.Show (show)
@@ -33,14 +32,16 @@ import Data.Tuple (Tuple(..))
 import Data.Unit (unit)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
+import JS.BigInt (fromString) as BigInt
 import Partial.Unsafe (unsafePartial)
-import Test.Fixtures
-import Test.Spec (describe , it , pending')
+import Prelude (Unit, (==))
+import Test.CliSpec as Test.CliSpec
+import Test.Fixtures as Fixtures
+import Test.Spec (describe, it, pending')
 import Test.Spec.Assertions (expectError, fail, shouldEqual)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
-
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -60,14 +61,12 @@ import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( digitsToRational
   , indentSubsequent
-  , SortOrder(..)
-  , stringToDateTime
   , ratioZero
+  , SortOrder(..)
   , stringifyJsonDecodeError
+  , stringToDateTime
   )
 import Transity.Xlsx (entriesAsXlsx, writeToZip, FileEntry(..))
-
-import Test.CliSpec as Test.CliSpec
 
 
 rmWhitespace :: String -> String
@@ -679,7 +678,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
                         , utc: Nothing
                         })
                     ])
-                , owner: "John Doe"
+                , owner: Just "John Doe"
                 , transactions:
                     [(Transaction
                       { id: Nothing
@@ -837,3 +836,12 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
         it "serializes to HLedger format" do
           (Ledger.entriesToLedger ledger) `shouldEqualString` ledgerLedger
+
+
+        it "keeps first owner when combining several ledgers" do
+          let
+            (Ledger combined) =
+              Fixtures.ledger
+                <> (Fixtures.ledger2 # modify (_ { owner = Nothing }))
+
+          combined.owner `shouldEqual` (Just "John Doe")

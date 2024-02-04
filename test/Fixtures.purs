@@ -240,16 +240,24 @@ commodityMapPrettyAligned = ""
 
 ledger :: Ledger
 ledger = Ledger
-  { owner: "John Doe"
+  { owner: Just "John Doe"
   , entities: Nothing
   , transactions:
       [ transactionSimple ]
   }
 
+ledger2 :: Ledger
+ledger2 = Ledger
+  { owner: Just "Anna Smith"
+  , entities: Nothing
+  , transactions:
+      [ transactionSimpleB ]
+  }
+
 
 ledgerMultiTrans :: Ledger
 ledgerMultiTrans = Ledger
-  { owner: "John Doe"
+  { owner: Just "John Doe"
   , entities: Nothing
   , transactions:
       [ transactionSimple
@@ -260,7 +268,7 @@ ledgerMultiTrans = Ledger
 
 ledgerEntities :: Ledger
 ledgerEntities = Ledger
-  { owner: "John Doe"
+  { owner: Just "John Doe"
   , entities: Just
       [ wrap $ (unwrap Entity.zero) { id = "Anna" }
       , wrap $ (unwrap Entity.zero) { id = "Bob" }
@@ -478,7 +486,7 @@ ledgerShowed = """
       , """ <> idToEntityStr "evil-corp" <> """
       , """ <> idToEntityStr "john:giro" <> """
       ])
-    , owner: "John Doe"
+    , owner: (Just "John Doe")
     , transactions:
       [ """ <> transactionSimpleShowed <> """
       ]

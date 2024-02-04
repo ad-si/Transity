@@ -1,8 +1,9 @@
 module Transity.Data.Ledger where
 
 import Prelude
-  ( class Show, class Eq, bind, compare, identity, map, pure, show
-  , (#), ($), (+), (<#>), (<>), (||), (&&), (==), (/=), (>>=)
+  ( class Eq, class Monoid, class Semigroup, class Show
+  , bind, compare, identity, map, pure, show
+  , (#), ($), (&&), (+), (/=), (<#>), (<>), (==), (||)
   )
 
 import Control.Alt ((<|>))
@@ -10,8 +11,8 @@ import Control.Monad.Except (runExcept)
 import Control.Semigroupoid ((>>>))
 import Data.Argonaut.Core (toObject, Json, stringify)
 import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
 import Data.Array as Array
@@ -19,41 +20,31 @@ import Data.DateTime (DateTime)
 import Data.Foldable (all, find)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
 import Data.HeytingAlgebra (not)
 import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe, isJust)
+import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Monoid (power)
-import Data.Newtype (unwrap)
+import Data.Newtype (class Newtype, unwrap)
 import Data.Rational as Rational
 import Data.Result (Result(..), toEither, fromEither)
 import Data.Set as Set
+import Data.Show.Generic (genericShow)
 import Data.String
-  ( joinWith
-  , Pattern(..)
-  , replace
-  , replaceAll
-  , Replacement(..)
-  , split
-  , stripPrefix
-  )
+  (joinWith, Pattern(..), replace, replaceAll, Replacement(..), split)
 import Data.String.Common (toLower)
+import Data.String.Utils (startsWith)
 import Data.Traversable (fold, foldr, intercalate, sequence)
 import Data.Tuple (Tuple(..))
 import Data.Unit (Unit, unit)
 import Data.YAML.Foreign.Decode (parseYAMLToJson)
 import Foreign (renderForeignError)
-
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity, isZero)
 import Transity.Data.Amount as Amount
 import Transity.Data.CommodityMap
-  ( CommodityMap
-  , addAmountToMap
-  , subtractAmountFromMap
-  , isCommodityMapZero
-  , isCommodityZero
+  ( CommodityMap, addAmountToMap, subtractAmountFromMap
+  , isCommodityMapZero, isCommodityZero
   )
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..), toTransfers)
@@ -61,29 +52,30 @@ import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..), negateTransfer)
 import Transity.Utils
-  ( getFieldMaybe
+  ( dateShowPretty
+  , dateShowPrettyLong
+  , getFieldMaybe
   , getObjField
   , mergeWidthRecords
-  , utcToIsoString
-  , utcToIsoDateString
-  , dateShowPretty
-  , dateShowPrettyLong
-  , widthRecordZero
+  , resultWithJsonDecodeError
   , SortOrder(..)
   , stringifyJsonDecodeError
-  , resultWithJsonDecodeError
+  , utcToIsoDateString
+  , utcToIsoString
+  , widthRecordZero
   )
 
 
 -- | List of all transactions
 newtype Ledger = Ledger
-  { owner :: String
+  { owner :: Maybe String
   , entities :: Maybe (Array Entity)
   , transactions :: Array Transaction
   }
 
 derive instance genericLedger :: Generic Ledger _
 derive newtype instance eqLedger :: Eq Ledger
+derive instance newtypeLedger :: Newtype Ledger _
 
 instance showLedger :: Show Ledger where
   show = genericShow
@@ -92,6 +84,22 @@ instance decodeLedger :: DecodeJson Ledger where
   decodeJson json = toEither $
     resultWithJsonDecodeError $ decodeJsonLedger json
 
+instance monoidLedger :: Monoid Ledger where
+  mempty = Ledger
+    { owner: Nothing
+    , entities: Nothing
+    , transactions: []
+    }
+
+instance semigroupLedger :: Semigroup Ledger where
+  append (Ledger l1) (Ledger l2) =
+    Ledger
+      { owner: l1.owner
+      , entities: l1.entities <> l2.entities
+      , transactions: l1.transactions <> l2.transactions
+      }
+
+
 
 data BalanceFilter
   = BalanceOnly String
@@ -99,15 +107,11 @@ data BalanceFilter
   | BalanceAll
 
 
-startsWith :: String -> String -> Boolean
-startsWith prefix testString =
-  isJust $ stripPrefix (Pattern prefix) testString
-
 
 decodeJsonLedger :: Json -> Result String Ledger
 decodeJsonLedger json = do
   object       <- maybe (Error "Ledger is not an object") Ok (toObject json)
-  owner        <- object `getObjField` "owner"
+  owner        <- object `getFieldMaybe` "owner"
   entities     <- object `getFieldMaybe` "entities"
   transactions <- object `getObjField` "transactions"
   pure $ Ledger {owner, entities, transactions}
@@ -218,8 +222,8 @@ fromJson json = do
   jsonObj <- fromEither $ jsonParser json
   ledger <- stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
   pure ledger
-    >>= verifyAccounts
-    >>= verifyLedgerBalances
+    -- TODO: >>= verifyAccounts
+    -- TODO: >>= verifyLedgerBalances
     -- TODO: >>= addInitalBalance
 
 
@@ -238,8 +242,8 @@ fromYaml yaml =
       Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
   in
     unverified
-      >>= verifyAccounts
-      >>= verifyLedgerBalances
+      -- TODO: >>= verifyAccounts
+      -- TODO: >>= verifyLedgerBalances
 
 
 showPretty :: Ledger -> String
@@ -253,7 +257,7 @@ showPrettyAligned colorFlag (Ledger l) =
       (Transaction.showPrettyAligned colorFlag)
       l.transactions
   in ""
-    <> "Journal for \"" <> l.owner <> "\"\n"
+    <> "Journal for \"" <> (l.owner # fromMaybe "UNKNOWN") <> "\"\n"
     <> "=" `power` 80 <> "\n"
     <> fold transactionsPretty
 
@@ -265,7 +269,7 @@ showTransfers colorFlag (Ledger l) =
       <#> Transaction.showTransfersWithDate colorFlag
       # fold
   in ""
-    <> "Journal for \"" <> l.owner <> "\"\n"
+    <> "Journal for \"" <> (l.owner # fromMaybe "UNKNOWN") <> "\"\n"
     <> "=" `power` 80 <> "\n"
     <> transactionsPretty
 
@@ -404,7 +408,10 @@ showBalance balFilter colorFlag (Ledger ledger) =
           Array (Tuple Account.Id CommodityMap))
       <#> (\accTuple -> case balFilter of
               BalanceAll -> accTuple
-              BalanceOnlyOwner -> mapToEmpty accTuple (ledger.owner)
+              BalanceOnlyOwner ->
+                case ledger.owner of
+                  Just owner -> mapToEmpty accTuple owner
+                  _ -> accTuple
               BalanceOnly account -> mapToEmpty accTuple account
           )
       -- Don't show commodities with an amount of 0

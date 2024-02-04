@@ -1,3 +1,16 @@
+let journalArgs = [
+  {
+    name = "JOURNAL_FILE",
+    description = "Path to the journal file",
+    type = 'Text,
+  },
+  {
+    name = "JOURNAL_FILE",
+    description = "Additional journal files",
+    type = 'List-Text,
+  },
+]
+in
 {
   name = "transity",
   description = m%"
@@ -9,68 +22,68 @@
     {
       name = "balance",
       description = "Simple balance of the owner's accounts",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "balance-all",
       description = "Simple balance of all accounts",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "transactions",
       description = "All transactions and their transfers",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "transfers",
       description = "All transfers with one transfer per line",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "entries",
       description = m%"
         All individual deposits & withdrawals, space separated
       "%,
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "entities",
       description = "[WIP] List all referenced entities",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "entities-sorted",
       description = m%"
         [WIP] List all referenced entities sorted alphabetically
       "%,
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "ledger-entries",
       description = "All entries in Ledger format",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "csv",
       description = "Transfers, comma separated (printed to stdout)",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "tsv",
       description = "Transfers, tab separated (printed to stdout)",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "xlsx",
       description = "XLSX file with all transfers (printed to stdout)",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "entries-by-account",
       description = m%"
         All individual deposits & withdrawals, grouped by account
       "%,
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "gplot",
@@ -78,7 +91,7 @@
         Code and data for gnuplot impulse diagram
         to visualize transfers of all accounts
       "%,
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "gplot-cumul",
@@ -86,7 +99,7 @@
         Code and data for cumuluative gnuplot step chart
         to visualize balance of all accounts
       "%,
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "unused-files",
@@ -94,17 +107,25 @@
         Recursively list all files in a directory
         which are not referenced in the journal
       "%,
-      arguments = ["DIRECTORY", "JOURNAL_FILE"],
+      arguments =
+        [
+          {
+            name = "DIRECTORY",
+            description = "Path to the directory",
+            type = 'Text,
+          },
+        ]
+        @ journalArgs,
     },
     {
       name = "help",
       description = "Print this help dialog",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
     {
       name = "version",
       description = "Print currently used version",
-      arguments = ["JOURNAL_FILE"],
+      arguments = journalArgs,
     },
   ]
 }
