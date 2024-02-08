@@ -130,10 +130,17 @@ tokensToCliArguments cliSpec@(CliSpec cliSpecRaw) tokens = do
             "Something went wrong. "
             <> "The first token should be a command or a value."
 
-
-  -- If the first token after the main command is a subcommand
-  -- parse recursively the rest of the tokens.
   case tokens # drop 1 # head of
+    Just (FlagShortToken 'h') -> Ok [FlagShort 'h']
+    Just (FlagLongToken "help") -> Ok [FlagLong "help"]
+    Just (TextToken "help") -> Ok [CmdArg "help"]
+
+    Just (FlagShortToken 'v') -> Ok [FlagShort 'v']
+    Just (FlagLongToken "version") -> Ok [FlagLong "version"]
+    Just (TextToken "version") -> Ok [CmdArg "version"]
+
+    -- | If first token after the main command is a subcommand
+    -- | recursively parse the rest of the tokens.
     Just (TextToken name) ->
       case findSubCmd cliSpecRaw.commands name of
         -- Is subcommand

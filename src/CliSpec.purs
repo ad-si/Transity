@@ -65,17 +65,31 @@ callCommand (CliSpec cliSpec) usageString args executor = do
       setExitCode 1
       pure (Error "No arguments provided")
 
-    Just _mainCmd -> do
+    Just firstArg | firstArg == FlagShort 'h'
+                    ||  firstArg == FlagLong "help"
+                    ||  firstArg == CmdArg "help" -> do
+                          log usageString
+                          pure $ Ok unit
+
+    Just firstArg | firstArg == FlagShort 'v'
+                    ||  firstArg == FlagLong "version"
+                    ||  firstArg == CmdArg "version" -> do
+                          log usageString
+                          pure $ Ok unit
+
+    Just _mainCmd ->
       case args # drop 1 # head of
         Just arg | arg == (CmdArg "help")
                     || arg == (FlagLong "help")
                     || arg == (FlagShort 'h') -> do
+                        -- TODO: Only show help for subcommand
                         log usageString
                         pure $ Ok unit
 
         Just arg | arg == (CmdArg "version")
                     || arg == (FlagLong "version")
                     || arg == (FlagShort 'v') -> do
+                        -- TODO: Only show version of subcommand (if available)
                         log (cliSpec.version # fromMaybe "0")
                         pure $ Ok unit
 

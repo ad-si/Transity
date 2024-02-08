@@ -302,6 +302,93 @@ tests = do
               ]
 
     describe "Execution" do
+      describe "Help" do
+        let
+          cliSpec = CliSpec emptyCliSpecRaw
+          usageString = "Irrelevant"
+          executor cmdName usageStr providedArgs = do
+            cmdName `shouldEqual` "help"
+            usageStr `shouldEqual` usageString
+            providedArgs `shouldEqual` []
+            pure $ Ok unit
+
+        it "shows help output for -h" do
+          let
+            toolArgs = ["git", "-h"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+        it "shows help output for --help" do
+          let
+            toolArgs = ["git", "--help"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+        it "shows help output for `help`" do
+          let
+            toolArgs = ["git", "help"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+      describe "Version" do
+        let
+          cliSpec = CliSpec emptyCliSpecRaw
+          usageString = "Irrelevant"
+          executor cmdName usageStr providedArgs = do
+            cmdName `shouldEqual` "help"
+            usageStr `shouldEqual` usageString
+            providedArgs `shouldEqual` []
+            pure $ Ok unit
+
+        it "shows help output for -v" do
+          let
+            toolArgs = ["git", "-v"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+        it "shows help output for --version" do
+          let
+            toolArgs = ["git", "--version"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+        it "shows help output for `help`" do
+          let
+            toolArgs = ["git", "help"]
+            tokens = tokenizeCliArguments toolArgs
+
+          case tokensToCliArguments cliSpec tokens of
+            Error err -> fail err
+            Ok cliArgs ->
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
+
+
       it "executes a sub-command with one argument" do
         let
           cliSpec = CliSpec (emptyCliSpecRaw
@@ -378,12 +465,8 @@ tests = do
         case (tokensToCliArguments cliSpec $ tokenizeCliArguments args) of
           Error err -> fail err
           Ok cliArgs ->
-              liftEffect (callCommand
-                cliSpec
-                usageString
-                cliArgs
-                executor
-              ) `shouldReturn` (Ok unit)
+              liftEffect (callCommand cliSpec usageString cliArgs executor)
+                `shouldReturn` (Ok unit)
 
       it "executes a sub-command with one option" do
         let
