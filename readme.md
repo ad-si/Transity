@@ -9,11 +9,9 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
   width='600'
 />
 
-For help please come visit us on one of the following sites:
+For help, please come visit us on our [GitHub Discussions] page!
 
-- [Reddit](https://www.reddit.com/r/Transity/)
-- [Matrix](matrix:r/transity:matrix.feram.io) (#transity:matrix.feram.io)
-- [Gitter](https://gitter.im/feramhq/transity)
+[GitHub Discussions]: https://github.com/feramhq/Transity/discussions
 
 ---
 
@@ -476,6 +474,7 @@ of which parties where involved.
 
 - What food?
 - Where did you buy it?
+- When exactly did you buy it?
 - Which supermarket?
 
 ```ledger
