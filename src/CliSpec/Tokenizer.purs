@@ -5,15 +5,14 @@ module CliSpec.Tokenizer (
 )
   where
 
-import Prelude (class Eq, class Show, map, (#), (&&), (/=), (<#>), (==))
-
+import CliSpec.Types (CliArgPrim(..))
 import Data.Array (concat, drop, groupBy, null, take, (:))
+import Data.Array.NonEmpty (toArray)
 import Data.Foldable (elem)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (toCharArray, fromCharArray)
-
-import CliSpec.Types (CliArgPrim(..))
+import Prelude (class Eq, class Show, map, (#), (&&), (/=), (<#>), (==))
 
 
 -- | Intermediate representation of CLI arguments.
@@ -38,32 +37,18 @@ instance showCliArgToken :: Show CliArgToken where
 
 
 optionLongTokenFromChars :: Array Char -> Array CliArgToken
-optionLongTokenFromChars charsRest =
+optionLongTokenFromChars charsRest = do
   let
     groupedChars = charsRest
       # groupBy (\a b -> a /= '=' && b /= '=')
-    keyPart = ['x'] -- TODO
-    valuePart = ['y'] -- TODO
-  in
-    [OptionLongToken
-      (keyPart # fromCharArray)
-      (StringArg (valuePart # fromCharArray))
-    ]
 
-
-optionShortokenFromChars :: Array Char -> Array CliArgToken
-optionShortokenFromChars charsRest =
-  let
-    groupedChars = charsRest
-      # groupBy (\a b -> a /= '=' && b /= '=')
-    keyPart = ['a'] -- TODO
-    valuePart = ['b'] -- TODO
-  in
-    case keyPart of
-      [char] ->
-        [OptionShortToken char (StringArg (valuePart # fromCharArray))]
-
-      _ -> []
+  case groupedChars of
+    [keyPart, _equalSign, valuePart] ->
+      [OptionLongToken
+          (keyPart # toArray # fromCharArray)
+          (TextArg (valuePart # toArray # fromCharArray))
+        ]
+    _ -> []
 
 
 -- | Parse CLI arguments into a list of `CliArgToken`s
@@ -85,9 +70,13 @@ tokenizeCliArgument arg = do
         else
           [FlagLongToken (charsRest # fromCharArray)]
 
-    ['-', singleFlag ] ->
-      if '=' `elem` charsRest
-      then optionShortokenFromChars charsRest
+    ['-', singleFlag] ->
+      if (charsRest # take 1) == ['=']
+      then
+        [OptionShortToken
+          singleFlag
+          (TextArg (charsRest # drop 1 # fromCharArray))
+        ]
       else
         FlagShortToken singleFlag
           : if null charsRest
@@ -97,11 +86,8 @@ tokenizeCliArgument arg = do
     _ -> [TextToken arg]
 
 
-
 tokenizeCliArguments :: Array String -> Array CliArgToken
 tokenizeCliArguments arguments = do
   arguments
     <#> tokenizeCliArgument
     # concat
-
-

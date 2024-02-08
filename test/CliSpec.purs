@@ -4,8 +4,11 @@ import CliSpec (parseCliSpec, callCommand)
 import CliSpec.Parser (tokensToCliArguments)
 import CliSpec.Tokenizer (CliArgToken(..), tokenizeCliArguments)
 import CliSpec.Types
-  ( CliArgPrim(..), CliArgument(..), CliSpec(..)
-  , emptyCliSpec, emptyCliSpecRaw
+  ( CliArgPrim(..)
+  , CliArgument(..)
+  , CliSpec(..)
+  , emptyCliSpec
+  , emptyCliSpecRaw
   )
 import Control.Bind (discard)
 import Data.Maybe (Maybe(..))
@@ -60,6 +63,20 @@ tests = do
             [ TextToken "git"
             , FlagLongToken "verbose"
             , TextToken "dir"
+            ]
+
+      it "parses a CLI invocation with a long option" do
+        (tokenizeCliStr "git --git-dir=dir")
+          `shouldEqual`
+            [ TextToken "git"
+            , OptionLongToken "git-dir" (TextArg "dir")
+            ]
+
+      it "parses a CLI invocation with a short option" do
+        (tokenizeCliStr "git -d=dir")
+          `shouldEqual`
+            [ TextToken "git"
+            , OptionShortToken 'd' (TextArg "dir")
             ]
 
     describe "Spec Parser" do
@@ -145,7 +162,7 @@ tests = do
             Ok
               [ CmdArg "git"
               , CmdArg "pull"
-              , ValArg (StringArg "origin")
+              , ValArg (TextArg "origin")
               ]
 
       it "correctly detects a subcommand with one long flag and one argument" do
@@ -191,7 +208,7 @@ tests = do
               [ CmdArg "git"
               , CmdArg "pull"
               , FlagLong "progress"
-              , ValArg (StringArg "origin")
+              , ValArg (TextArg "origin")
               ]
 
       it "redefines a long flag with a value to a long option" do
@@ -234,7 +251,7 @@ tests = do
             Ok
               [ CmdArg "git"
               , CmdArg "pull"
-              , OptionLong "strategy" (StringArg "recursive")
+              , OptionLong "strategy" (TextArg "recursive")
               ]
 
       it "verifies number of args for variable number of allowed args" do
@@ -263,7 +280,7 @@ tests = do
           `shouldEqual`
             Ok
               [ CmdArg "ls"
-              , ValArg (StringArg "file1")
+              , ValArg (TextArg "file1")
               ]
 
         let tokensTwo = tokenizeCliStr "ls file1 file2"
@@ -271,8 +288,8 @@ tests = do
           `shouldEqual`
             Ok
               [ CmdArg "ls"
-              , ValArg (StringArg "file1")
-              , ValArgList [StringArg "file2"]
+              , ValArg (TextArg "file1")
+              , ValArgList [TextArg "file2"]
               ]
 
         let tokensThree = tokenizeCliStr "ls file1 file2 file3"
@@ -280,8 +297,8 @@ tests = do
           `shouldEqual`
             Ok
               [ CmdArg "ls"
-              , ValArg (StringArg "file1")
-              , ValArgList [StringArg "file2", StringArg "file3"]
+              , ValArg (TextArg "file1")
+              , ValArgList [TextArg "file2", TextArg "file3"]
               ]
 
     describe "Execution" do
@@ -313,7 +330,7 @@ tests = do
           executor cmdName usageStr providedArgs = do
             cmdName `shouldEqual` "pull"
             usageStr `shouldEqual` usageString
-            providedArgs `shouldEqual` [(ValArg (StringArg "dir"))]
+            providedArgs `shouldEqual` [(ValArg (TextArg "dir"))]
             pure $ Ok unit
 
         case tokensToCliArguments cliSpec $ tokenizeCliArguments toolArgs of
@@ -411,7 +428,7 @@ tests = do
           executor cmdName usageStr providedArgs = do
             cmdName `shouldEqual` "pull"
             usageStr `shouldEqual` usageString
-            providedArgs `shouldEqual` [(OptionLong "output" (StringArg "dir"))]
+            providedArgs `shouldEqual` [(OptionLong "output" (TextArg "dir"))]
             pure $ Ok unit
 
         case (tokensToCliArguments cliSpec $ tokenizeCliArguments toolArgs) of

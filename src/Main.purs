@@ -143,8 +143,8 @@ executor :: String -> String -> Array CliArgument -> Effect (Result String Unit)
 executor cmdName usageString args = do
   case cmdName, args of
     "unused-files",
-    [ ValArg (StringArg filesDirPath)
-    , ValArg (StringArg ledgerFilePath)
+    [ ValArg (TextArg filesDirPath)
+    , ValArg (TextArg ledgerFilePath)
     -- TODO: , ValArgList extraJournalPaths
     ] -> do
       ledgerFilePathAbs <- Path.resolve [] ledgerFilePath
@@ -196,7 +196,7 @@ executor cmdName usageString args = do
       pure $ Error errStr
 
     _,
-    [ValArg (StringArg journalPathRel)] -> do
+    [ValArg (TextArg journalPathRel)] -> do
           currentDir <- cwd
           result <- loadAndExec currentDir [cmdName, journalPathRel]
 
@@ -212,7 +212,7 @@ executor cmdName usageString args = do
               errorAndExit config message
 
     _,
-    [ ValArg (StringArg journalPathRel)
+    [ ValArg (TextArg journalPathRel)
     , ValArgList extraJournalPaths
     ] -> do
           currentDir <- cwd
@@ -223,7 +223,7 @@ executor cmdName usageString args = do
                 [Ok journalPathRel] <>
                 (extraJournalPaths
                     <#> (\valArg -> case valArg of
-                          (StringArg path) -> Ok path
+                          (TextArg path) -> Ok path
                           _ -> Error $ "Invalid argument type: " <> show valArg
                     )
                 )

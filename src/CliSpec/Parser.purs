@@ -75,7 +75,7 @@ verifyTokensAreAllowed (CliSpec cliSpecRaw) tokens = do
             case arg.type, token of
               "Text", TextToken txt ->
                 Tuple
-                  (cliArgs <> [Ok $ ValArg (StringArg txt)])
+                  (cliArgs <> [Ok $ ValArg (TextArg txt)])
                   (remainingTokens # drop 1)
 
               "List-Text", TextToken _ ->
@@ -83,7 +83,7 @@ verifyTokensAreAllowed (CliSpec cliSpecRaw) tokens = do
                   (cliArgs
                     <> [(remainingTokens
                           <#> (\tok -> case tok of
-                              TextToken t -> Ok $ StringArg t
+                              TextToken t -> Ok $ TextArg t
                               _ -> Error $ "Unsupported token: " <> show tok
                             )
                           # sequence
@@ -184,40 +184,40 @@ tokensToCliArguments cliSpec@(CliSpec cliSpecRaw) tokens = do
                         case nextTokenMb of
                           Just (TextToken val) ->
                             -- TODO: Check if val is allowed at this position
-                            acc <> [Ok $ OptionLong flagName (StringArg val)]
+                            acc <> [Ok $ OptionLong flagName (TextArg val)]
                           _ ->  acc <> [Ok $ FlagLong flagName]
                       Nothing ->  acc <> [Ok $ FlagLong flagName]
                     Nothing ->
                       -- Maybe it's a long option
                       case findOptionLong cliSpecRaw.options flagName of
                         Just _ ->
-                          acc <> [Ok $ OptionLong flagName (StringArg "TODO")]
+                          acc <> [Ok $ OptionLong flagName (TextArg "TODO")]
                         Nothing ->
                           acc <> [toError token]
 
                 FlagShortToken flagChar ->
                   case findFlagShort cliSpecRaw.options flagChar of
                     Just _ ->
-                      acc <> [Ok $ OptionShort flagChar (StringArg "TODO")]
+                      acc <> [Ok $ OptionShort flagChar (TextArg "TODO")]
                     Nothing ->
                       -- Maybe it's a short option
                       case findOptionShort cliSpecRaw.options flagChar of
                         Just _ ->
-                          acc <> [Ok $ OptionShort flagChar (StringArg "TODO")]
+                          acc <> [Ok $ OptionShort flagChar (TextArg "TODO")]
                         Nothing ->
                           acc <> [toError token]
 
                 OptionShortToken flagChar _arg ->
                   case findFlagShort cliSpecRaw.options flagChar of
                     Just _option ->
-                      acc <> [Ok $ OptionShort flagChar (StringArg "TODO")]
+                      acc <> [Ok $ OptionShort flagChar (TextArg "TODO")]
                     Nothing ->
                       acc <> [toError token]
 
                 OptionLongToken flagName _arg ->
                   case findFlagLong cliSpecRaw.options flagName of
                     Just _option ->
-                      acc <> [Ok $ OptionLong flagName (StringArg "TODO")]
+                      acc <> [Ok $ OptionLong flagName (TextArg "TODO")]
                     Nothing ->
                       acc <> [toError token]
 
@@ -225,7 +225,7 @@ tokensToCliArguments cliSpec@(CliSpec cliSpecRaw) tokens = do
                   case acc # last of
                     -- This token was already consumed so don't add it
                     Just (Ok (OptionLong _ _)) -> acc
-                    _ -> acc <> [Ok $ ValArg (StringArg txt)]
+                    _ -> acc <> [Ok $ ValArg (TextArg txt)]
 
                 _ -> []
             )

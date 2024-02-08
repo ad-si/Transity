@@ -97,7 +97,7 @@ callCommand (CliSpec cliSpec) usageString args executor = do
               pure (Error errStr)
 
             Just (CliSpec _command) -> do
-                executor cmdName usageString providedArgs
+              executor cmdName usageString providedArgs
 
         Just arg -> do
           let errMsg =

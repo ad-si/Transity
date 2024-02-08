@@ -12,7 +12,7 @@ import Prelude (class Eq, class Show, bind, map, pure, show, (#), (<>))
 
 
 data CliArgPrim
-  = StringArg String
+  = TextArg String
   | IntArg Int
   | NumberArg Number
   | BooleanArg Boolean
@@ -28,7 +28,7 @@ instance decodeJsonCliArgPrim :: DecodeJson CliArgPrim where
 
 cliArgPrimToString :: CliArgPrim -> String
 cliArgPrimToString arg = case arg of
-  StringArg str -> str
+  TextArg str -> str
   IntArg int -> show int
   NumberArg num -> show num
   BooleanArg bool -> show bool
