@@ -4,17 +4,20 @@ import Prelude (class Eq, class Show, bind, max, pure, ($), (+), (<>), (==))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Data.Argonaut.Core (Json, toObject)
+import Data.Argonaut.Core (Json, fromString, toObject)
+import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Encode.Class (class EncodeJson)
-import Data.Argonaut.Encode.Generic (genericEncodeJson)
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(Nothing), fromMaybe, maybe)
 import Data.Monoid (power)
 import Data.Newtype (class Newtype)
 import Data.Result (Result(Ok, Error), toEither)
-import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
 import Data.String (length)
+import Data.Tuple (Tuple(..))
+import Foreign.Object as Object
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount)
 import Transity.Data.Balance (Balance)
@@ -59,7 +62,12 @@ instance showAccount :: Show Account where
   show = genericShow
 
 instance encodeAccount :: EncodeJson Account where
-  encodeJson a = genericEncodeJson a
+  encodeJson (Account accRec) =
+    A.fromObject $ Object.fromFoldable
+      [ Tuple "id" (fromString accRec.id)
+      , Tuple "commodityMap" $ encodeJson accRec.commodityMap
+      , Tuple "balances" $ encodeJson accRec.balances
+      ]
 
 instance decodeAccount :: DecodeJson Account where
   decodeJson json =

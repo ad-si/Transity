@@ -37,7 +37,7 @@ import Partial.Unsafe (unsafePartial)
 import Prelude (Unit, (==))
 import Test.CliSpec as Test.CliSpec
 import Test.Fixtures as Fixtures
-import Test.Spec (describe, it, pending')
+import Test.Spec (describe, it)
 import Test.Spec.Assertions (expectError, fail, shouldEqual)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
@@ -250,7 +250,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-        pending' "encodes an Account as JSON" do
+        it "encodes an Account as JSON" do
           stringify (encodeJson Account.zero)
             `shouldEqualString`
             rmWhitespace """

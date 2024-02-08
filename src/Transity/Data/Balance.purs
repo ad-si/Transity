@@ -5,6 +5,7 @@ import Prelude (class Show, class Eq, bind, pure, ($), (<#>))
 import Data.Argonaut.Core (Json, toObject, fromString, jsonEmptyArray)
 import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
@@ -35,11 +36,12 @@ instance showBalance :: Show Balance where
   show = genericShow
 
 instance encodeBalance :: EncodeJson Balance where
-  encodeJson (Balance dateTime _ {- TODO: commodityMap -}) =
+  encodeJson (Balance dateTime commodityMap) =
     A.fromObject $ Object.fromFoldable
-      -- TODO: Hide seconds if 00
-      [ Tuple "utc" (fromString $ utcToIsoString dateTime)
-      , Tuple "amounts" jsonEmptyArray {- TODO: commodityMap -}
+      [ -- TODO: Hide seconds if 00
+        Tuple "utc" (fromString $ utcToIsoString dateTime)
+      , Tuple "amounts" jsonEmptyArray
+      , Tuple "commodityMap" $ encodeJson commodityMap
       ]
 
 instance decodeBalance :: DecodeJson Balance where
