@@ -38,7 +38,6 @@ import Transity.Utils
   , resultWithJsonDecodeError
   )
 
-
 -- | A physical account which can contain one or several commodities.
 -- | E.g. wallet, bank account, barn.
 -- | You shouldn't misuse this for abstract concepts like expenses or income.
@@ -73,21 +72,20 @@ instance decodeAccount :: DecodeJson Account where
   decodeJson json =
     toEither $ resultWithJsonDecodeError $ decodeJsonAccount json
 
-
 decodeJsonAccount :: Json -> Result String Account
 decodeJsonAccount json = do
-  object       <- maybe
+  object <- maybe
     (Error $ "Account is not an object")
-    Ok (toObject json)
-  id           <- object `getObjField` "id"
+    Ok
+    (toObject json)
+  id <- object `getObjField` "id"
   commodityMap <- object `getFieldMaybe` "commodityMap"
-  balances     <- object `getFieldMaybe` "balances"
+  balances <- object `getFieldMaybe` "balances"
   pure $ Account
     { id
     , commodityMap: (fromMaybe commodityMapZero commodityMap)
     , balances
     }
-
 
 zero :: Account
 zero = Account
@@ -96,32 +94,31 @@ zero = Account
   , balances: Nothing
   }
 
-
 addAmount :: Account -> Amount -> Account
 addAmount (Account account) amount =
-  let newMap = account.commodityMap `addAmountToMap` amount
-  in Account account {commodityMap = newMap}
-
+  let
+    newMap = account.commodityMap `addAmountToMap` amount
+  in
+    Account account { commodityMap = newMap }
 
 subtractAmount :: Account -> Amount -> Account
 subtractAmount (Account account) amount =
-  let newMap = account.commodityMap `subtractAmountFromMap` amount
-  in Account account {commodityMap = newMap}
-
+  let
+    newMap = account.commodityMap `subtractAmountFromMap` amount
+  in
+    Account account { commodityMap = newMap }
 
 toWidthRecord :: Id -> CommodityMap -> WidthRecord
 toWidthRecord accountId commodityMap =
   let
     widthRecord = CommodityMap.toWidthRecord commodityMap
   in
-    widthRecord {
-      account = max (length accountId) widthRecord.account
-    }
-
+    widthRecord
+      { account = max (length accountId) widthRecord.account
+      }
 
 showPretty :: Id -> CommodityMap -> String
 showPretty = showPrettyAligned ColorNo widthRecordZero
-
 
 showPrettyAligned :: ColorFlag -> WidthRecord -> Id -> CommodityMap -> String
 showPrettyAligned colorFlag widthRec accountId commodityMap =
@@ -129,20 +126,21 @@ showPrettyAligned colorFlag widthRec accountId commodityMap =
     gap = 2
     accountWidth = max widthRec.account (length accountId)
     accName = format (width accountWidth) accountId
-    accColor = if colorFlag == ColorYes
-      then foreground Blue
+    accColor =
+      if colorFlag == ColorYes then foreground Blue
       else foreground White
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
-    (if colorFlag == ColorYes
-        then withGraphics accColor accName
-        else accName)
-    <> " " `power` gap
-    <> indentSubsequent (accountWidth + gap)
-        (CommodityMap.showPrettyAligned
-          colorFlag
-          widthRec.integer
-          widthRec.fraction
-          widthRec.commodity
-          commodityMap)
-    <> "\n"
+    ( if colorFlag == ColorYes then withGraphics accColor accName
+      else accName
+    )
+      <> " " `power` gap
+      <> indentSubsequent (accountWidth + gap)
+        ( CommodityMap.showPrettyAligned
+            colorFlag
+            widthRec.integer
+            widthRec.fraction
+            widthRec.commodity
+            commodityMap
+        )
+      <> "\n"

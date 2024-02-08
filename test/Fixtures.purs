@@ -40,7 +40,8 @@ transferSimple = Transfer
   }
 
 transferSimpleJson :: String
-transferSimpleJson = """
+transferSimpleJson =
+  """
 {
   "utc": "2014-12-24",
   "from": "john:giro",
@@ -51,7 +52,8 @@ transferSimpleJson = """
 """
 
 transferSimpleYaml :: String
-transferSimpleYaml = """
+transferSimpleYaml =
+  """
 utc: '2014-12-24'
 from: john:giro
 to: evil-corp
@@ -60,7 +62,8 @@ note: A note with special chars like < and &
 """
 
 transferSimpleShowed :: String
-transferSimpleShowed = """
+transferSimpleShowed =
+  """
 (Transfer
   { amount: (Amount 15 % 1 (Commodity "€"))
   , from: "john:giro"
@@ -74,7 +77,8 @@ transferSimpleShowed = """
 """
 
 transferSimplePretty :: String
-transferSimplePretty = "\
+transferSimplePretty =
+  "\
   \2014-12-24 00:00 \
   \|       john:giro ->       evil-corp :    15    €          \
   \| A note with special chars like < and &\n\
@@ -90,7 +94,8 @@ transferSimpleB = Transfer
   }
 
 transferSimpleBShowed :: String
-transferSimpleBShowed = """
+transferSimpleBShowed =
+  """
 (Transfer
   { amount: (Amount 7 % 1 (Commodity "USD"))
   , from: "carlos:wallet"
@@ -103,7 +108,6 @@ transferSimpleBShowed = """
 )
 """
 
-
 -- | Transaction Examples
 
 transactionZero :: Transaction
@@ -115,9 +119,9 @@ transactionZero = Transaction
   , transfers: []
   }
 
-
 transactionNoAccount :: String
-transactionNoAccount = """
+transactionNoAccount =
+  """
 owner: John
 transactions:
   - transfers:
@@ -128,9 +132,10 @@ transactions:
 
 transactionNoAccountPretty :: String
 transactionNoAccountPretty = ""
-  <> " " `power` 86 <> "7.00 €       \n"
-  <> " " `power` 76 <> "John     -7.00 €       \n"
-
+  <> " " `power` 86
+  <> "7.00 €       \n"
+  <> " " `power` 76
+  <> "John     -7.00 €       \n"
 
 transactionSimple :: Transaction
 transactionSimple = Transaction
@@ -138,39 +143,45 @@ transactionSimple = Transaction
   , utc: stringToDateTime "2014-12-24"
   , note: Just "A short note about this transaction"
   -- Used for testing HYPERLINKs in XLSX files
-  , files: ["fixtures/example.txt"]
+  , files: [ "fixtures/example.txt" ]
   , transfers: [ transferSimple ]
   }
 
 transactionSimpleJson :: String
-transactionSimpleJson = """
+transactionSimpleJson =
+  """
 {
   "id": "abcxyz",
   "utc": "2014-12-24",
   "note": "A short note about this transaction",
   "transfers": [
-    """ <> transferSimpleJson <> """
+    """ <> transferSimpleJson <>
+    """
   ]
 }
 """
 
 transactionSimpleYaml :: String
-transactionSimpleYaml = """
+transactionSimpleYaml =
+  """
 id: abcxyz
 utc: '2014-12-24'
 note: A short note about this transaction
 transfers:
-  - """ <> indentSubsequent 4 transferSimpleYaml <> """
+  - """ <> indentSubsequent 4 transferSimpleYaml <>
+    """
 """
 
 transactionSimpleShowed :: String
-transactionSimpleShowed = """
+transactionSimpleShowed =
+  """
   (Transaction
     { files: []
     , id: (Just "abcxyz")
     , note: (Just "A short note about this transaction")
     , transfers:
-      [ """ <> transferSimpleShowed <> """
+      [ """ <> transferSimpleShowed <>
+    """
       ]
     , utc: (Just (DateTime
         (Date (Year 2014) December (Day 24))
@@ -179,32 +190,34 @@ transactionSimpleShowed = """
   )
 """
 
-
 transactionSimplePretty :: String
-transactionSimplePretty = "\
+transactionSimplePretty =
+  "\
   \2014-12-24 00:00 | A short note about this transaction | (id abcxyz)\n\
-  \    " <> transferSimplePretty <> "\
-  \    \n\
-  \" -- Fix syntax highlighting: "
-
+  \    " <> transferSimplePretty <>
+    "\
+    \    \n\
+    \" -- Fix syntax highlighting: "
 
 transactionSimpleB :: Transaction
 transactionSimpleB = Transaction
   { id: Just "defghi"
   , utc: stringToDateTime "2001-05-13"
   , note: Just "Another note"
-  , files: ["filepath/to/another-receipt.pdf"]
+  , files: [ "filepath/to/another-receipt.pdf" ]
   , transfers: [ transferSimpleB ]
   }
 
 transactionSimpleBShowed :: String
-transactionSimpleBShowed = """
+transactionSimpleBShowed =
+  """
   (Transaction
     { id: (Just "defghi")
     , note: (Just "Another note")
     , files: ["filepath/to/another-receipt.pdf"]
     , transfers:
-      [ """ <> transferSimpleBShowed <> """
+      [ """ <> transferSimpleBShowed <>
+    """
       ]
     , utc: (Just (DateTime
         (Date (Year 2001) May (Day 13))
@@ -212,7 +225,6 @@ transactionSimpleBShowed = """
     }
   )
 """
-
 
 accountPretty :: String
 accountPretty = ""
@@ -224,12 +236,10 @@ accountPrettyAligned = ""
   <> "  test       12         $        \n"
   <> "              2         EUR      \n"
 
-
 commodityMapPretty :: String
 commodityMapPretty = ""
   <> "12 $\n"
   <> "2 EUR"
-
 
 commodityMapPrettyAligned :: String
 commodityMapPrettyAligned = ""
@@ -254,7 +264,6 @@ ledger2 = Ledger
       [ transactionSimpleB ]
   }
 
-
 ledgerMultiTrans :: Ledger
 ledgerMultiTrans = Ledger
   { owner: Just "John Doe"
@@ -264,7 +273,6 @@ ledgerMultiTrans = Ledger
       , transactionSimpleB
       ]
   }
-
 
 ledgerEntities :: Ledger
 ledgerEntities = Ledger
@@ -276,17 +284,17 @@ ledgerEntities = Ledger
   , transactions: []
   }
 
-
 ledgerEntitiesShowed :: String
-ledgerEntitiesShowed = """
+ledgerEntitiesShowed =
+  """
   entities:
     - id: Anna
     - id: Bob
 """
 
-
 ledgerJson :: String
-ledgerJson = """
+ledgerJson =
+  """
 {
   "entities": [
     {"id": "abcxyz"},
@@ -295,14 +303,15 @@ ledgerJson = """
   ],
   "owner": "John Doe",
   "transactions": [
-    """ <> transactionSimpleJson <> """
+    """ <> transactionSimpleJson <>
+    """
   ]
 }
 """
 
-
 balanceJson :: String
-balanceJson = """
+balanceJson =
+  """
 {
   "utc": "2017-04-02 20:11:45",
   "amounts": ["7 €", "-8 $", "+9 BTC"]
@@ -310,7 +319,8 @@ balanceJson = """
 """
 
 balanceShowed :: String
-balanceShowed = """
+balanceShowed =
+  """
 (Balance
   (DateTime
     (Date (Year 2017) April (Day 2))
@@ -322,35 +332,35 @@ balanceShowed = """
     ]))
 """
 
-
 commodityMap :: CommodityMap
 commodityMap = fromFoldable
-  [(Tuple
-    (Commodity "€")
-    (Amount (100 % 1) (Commodity "€")))
+  [ ( Tuple
+        (Commodity "€")
+        (Amount (100 % 1) (Commodity "€"))
+    )
   ]
-
 
 balanceMap :: BalanceMap
 balanceMap =
-  fromFoldable [Tuple "john" commodityMap]
-
+  fromFoldable [ Tuple "john" commodityMap ]
 
 account :: Account
 account = Account
   { id: "wallet"
   , commodityMap
   , balances: Just
-      [ (Balance
-        (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")
-        (fromFoldable
-          [(Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€")))]))
+      [ ( Balance
+            (unsafePartial $ fromJust $ stringToDateTime "2017-04-02 20:11:45")
+            ( fromFoldable
+                [ (Tuple (Commodity "€") (Amount (100 % 1) (Commodity "€"))) ]
+            )
+        )
       ]
   }
 
-
 accountJson :: String
-accountJson = """
+accountJson =
+  """
 { "id": "_default_",
   "balances": [
     { "utc": "2017-04-02 20:11:45",
@@ -361,9 +371,9 @@ accountJson = """
     }]}
 """
 
-
 accountShowed :: String
-accountShowed = """
+accountShowed =
+  """
 (Account
   { balances: (Just
       [ (Balance
@@ -393,9 +403,9 @@ accountShowed = """
   })
 """
 
-
 entityJson :: String
-entityJson = """
+entityJson =
+  """
 { "id": "john",
   "accounts": [
     { "id": "_default_",
@@ -408,7 +418,8 @@ entityJson = """
 """
 
 entityShowed :: String
-entityShowed = """
+entityShowed =
+  """
 (Entity
   {accounts: (Just
     [ (Account
@@ -448,7 +459,8 @@ entityShowed = """
 """
 
 ledgerYaml :: String
-ledgerYaml = """
+ledgerYaml =
+  """
 entities:
   - id: abcxyz
   - id: evil-corp
@@ -456,20 +468,24 @@ entities:
 owner: John Doe
 additional: Additional values are ignored
 transactions:
-  - """ <> indentSubsequent 4 transactionSimpleYaml <> """
+  - """ <> indentSubsequent 4 transactionSimpleYaml <>
+    """
 """
 
 ledgerLedger :: String
-ledgerLedger  = """2014-12-24 A short note about this transaction
+ledgerLedger =
+  """2014-12-24 A short note about this transaction
   evil-corp  15 €
   john:giro
 """
 
 idToEntityStr :: String -> String
-idToEntityStr id = """
+idToEntityStr id =
+  """
 (Entity
   { accounts: Nothing
-  , id: """ <> "\"" <> id <> "\"" <> """
+  , id: """ <> "\"" <> id <> "\"" <>
+    """
   , name: Nothing
   , note: Nothing
   , tags: Nothing
@@ -477,41 +493,49 @@ idToEntityStr id = """
   })
 """
 
-
 ledgerShowed :: String
-ledgerShowed = """
+ledgerShowed =
+  """
   (Ledger
     { entities: (Just
-      [ """ <> idToEntityStr "abcxyz" <> """
-      , """ <> idToEntityStr "evil-corp" <> """
-      , """ <> idToEntityStr "john:giro" <> """
+      [ """ <> idToEntityStr "abcxyz"
+    <>
+      """
+      , """
+    <> idToEntityStr "evil-corp"
+    <>
+      """
+      , """
+    <> idToEntityStr "john:giro"
+    <>
+      """
       ])
     , owner: (Just "John Doe")
     , transactions:
-      [ """ <> transactionSimpleShowed <> """
+      [ """
+    <> transactionSimpleShowed
+    <>
+      """
       ]
     }
   )
 """
 
-
 ledgerPretty :: String
-ledgerPretty = """Journal for "John Doe"
+ledgerPretty =
+  """Journal for "John Doe"
 ================================================================================
 2014-12-24 00:00 | A short note about this transaction | (id abcxyz)
     """ <> transferSimplePretty <> "    \n"
-
 
 ledgerBalanceOwner :: String
 ledgerBalanceOwner = ""
   <> "  john:giro  -15 €\n"
 
-
 ledgerBalanceAll :: String
 ledgerBalanceAll = ""
   <> "  evil-corp   15 €\n"
   <> "  john:giro  -15 €\n"
-
 
 ledgerBalanceMultiTrans :: String
 ledgerBalanceMultiTrans = ""

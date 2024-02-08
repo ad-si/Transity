@@ -68,7 +68,6 @@ import Transity.Utils
   )
 import Transity.Xlsx (entriesAsXlsx, writeToZip, FileEntry(..))
 
-
 rmWhitespace :: String -> String
 rmWhitespace str =
   let
@@ -76,38 +75,34 @@ rmWhitespace str =
   in
     replace whitespace "" str
 
-
 wrapWithOk :: String -> String
 wrapWithOk string =
   "(Ok " <> string <> ")"
 
-
 testEqualityTo :: String -> String -> Result String String
 testEqualityTo actual expected =
-  if (actual /= expected)
-  then Error
+  if (actual /= expected) then Error
     $ indentSubsequent 2
-    $    "=========== Actual ===========\n"
-      <> replaceAll (Pattern "\n") (Replacement "|\n") actual <> "|\n"
-      <> "========== Expected ==========\n"
-      <> replaceAll (Pattern "\n") (Replacement "|\n") expected <> "|\n"
-      <> "=============================="
-      <> "\n\n"
+    $ "=========== Actual ===========\n"
+        <> replaceAll (Pattern "\n") (Replacement "|\n") actual
+        <> "|\n"
+        <> "========== Expected ==========\n"
+        <> replaceAll (Pattern "\n") (Replacement "|\n") expected
+        <> "|\n"
+        <> "=============================="
+        <> "\n\n"
   else Ok ""
-
 
 shouldBeOk :: Result String String -> Aff Unit
 shouldBeOk value = case value of
   Error error -> fail error
   Ok _ -> (pure unit)
 
-
 shouldEqualString :: String -> String -> Aff Unit
 shouldEqualString v1 v2 =
   case v1 `testEqualityTo` v2 of
     Error error -> fail error
     Ok _ -> (pure unit)
-
 
 compareChar :: String -> String -> Aff Unit
 compareChar actual expected =
@@ -116,14 +111,13 @@ compareChar actual expected =
       shouldEqual
       (toCharArray actual)
       (toCharArray expected)
-  in do
-    fold comparisonArray
-    (length actual) `shouldEqual` (length expected)
-
-
+  in
+    do
+      fold comparisonArray
+      (length actual) `shouldEqual` (length expected)
 
 main :: Effect Unit
-main = launchAff_ $ runSpec [consoleReporter] do
+main = launchAff_ $ runSpec [ consoleReporter ] do
   Test.CliSpec.tests
 
   describe "Utils" do
@@ -158,7 +152,7 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
       it "converts 12.3456 to 123456/10000" do
         (digitsToRational "12.3456") `shouldEqual`
-            (Just (123456 % 10000))
+          (Just (123456 % 10000))
 
       it "converts -0.3 to -3/10" do
         (digitsToRational "-0.3") `shouldEqual`
@@ -174,14 +168,13 @@ main = launchAff_ $ runSpec [consoleReporter] do
         let
           bigIntRatio :: Maybe Rational
           bigIntRatio = do
-           a <- BigInt.fromString "3111111111"
-           b <- BigInt.fromString "2000000000"
-           pure (a % b)
+            a <- BigInt.fromString "3111111111"
+            b <- BigInt.fromString "2000000000"
+            pure (a % b)
 
         -- This would fail with a range overflow
         -- if Ints instead of BigInt were used
         (Just $ digitsToRational digits) `shouldEqual` (Just bigIntRatio)
-
 
   describe "Xlsx" do
     it "writes files to a ZIP archive" do
@@ -213,7 +206,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
         Just (FileEntry sheet) ->
           sheet.content `shouldContain` "special chars like &lt; and &amp;"
 
-
   describe "Transity" do
     describe "Data" do
       describe "Amount" do
@@ -235,7 +227,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
               (Amount (37 % 1) (Commodity "EUR"))
           actual `shouldEqualString` "      37      EUR    "
 
-
       describe "Account" do
         it "converts a JSON string to an Account" do
           let
@@ -253,7 +244,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
         it "encodes an Account as JSON" do
           stringify (encodeJson Account.zero)
             `shouldEqualString`
-            rmWhitespace """
+              rmWhitespace
+                """
               {
                 "id": "",
                 "commodityMap": [],
@@ -264,9 +256,11 @@ main = launchAff_ $ runSpec [consoleReporter] do
         it "can add an amount to a commodity map" do
           let
             expectedMap = Map.fromFoldable
-              [(Tuple
-                  (Commodity "€")
-                  (Amount (37 % 1) (Commodity "€")))]
+              [ ( Tuple
+                    (Commodity "€")
+                    (Amount (37 % 1) (Commodity "€"))
+                )
+              ]
             emptyMap = Map.empty :: CommodityMap
             amount = Amount (37 % 1) (Commodity "€")
             actualMap = emptyMap `CommodityMap.addAmountToMap` amount
@@ -275,43 +269,50 @@ main = launchAff_ $ runSpec [consoleReporter] do
         it "can subtract an amount from a commodity map" do
           let
             expectedMap = Map.fromFoldable
-              [(Tuple
-                  (Commodity "€")
-                  (Amount (37 % 1) (Commodity "€")))]
+              [ ( Tuple
+                    (Commodity "€")
+                    (Amount (37 % 1) (Commodity "€"))
+                )
+              ]
             initialMap = Map.fromFoldable
-              [(Tuple
-                  (Commodity "€")
-                  (Amount (42 % 1) (Commodity "€")))]
+              [ ( Tuple
+                    (Commodity "€")
+                    (Amount (42 % 1) (Commodity "€"))
+                )
+              ]
             amount = Amount (5 % 1) (Commodity "€")
             actualMap = initialMap `CommodityMap.subtractAmountFromMap` amount
           actualMap `shouldEqual` expectedMap
 
         it "can check if a commodity map as only zero of each commodity" do
-          let commodityMapZero = Map.fromFoldable
-                [ (Tuple (Commodity "€") (Amount ratioZero (Commodity "€")))
-                , (Tuple (Commodity "$") (Amount ratioZero (Commodity "$")))
-                ]
+          let
+            commodityMapZero = Map.fromFoldable
+              [ (Tuple (Commodity "€") (Amount ratioZero (Commodity "€")))
+              , (Tuple (Commodity "$") (Amount ratioZero (Commodity "$")))
+              ]
           (isCommodityMapZero commodityMapZero) `shouldEqual` true
 
-
-        let commodityMap = Map.fromFoldable
-              [ (Tuple
+        let
+          commodityMap = Map.fromFoldable
+            [ ( Tuple
                   (Commodity "EUR")
-                  (Amount (2 % 1) (Commodity "EUR")))
-              , (Tuple
+                  (Amount (2 % 1) (Commodity "EUR"))
+              )
+            , ( Tuple
                   (Commodity "$")
-                  (Amount (12 % 1) (Commodity "$")))
-              ]
+                  (Amount (12 % 1) (Commodity "$"))
+              )
+            ]
 
         it "pretty shows a commodity map" do
           let actualPretty = CommodityMap.showPretty commodityMap
           actualPretty `shouldEqualString` commodityMapPretty
 
         it "pretty shows and aligns a commodity map" do
-          let actualPretty =
-                CommodityMap.showPrettyAligned ColorNo 7 8 9 commodityMap
+          let
+            actualPretty =
+              CommodityMap.showPrettyAligned ColorNo 7 8 9 commodityMap
           actualPretty `shouldEqualString` commodityMapPrettyAligned
-
 
         it "pretty shows an account" do
           let actualPretty = Account.showPretty "test" commodityMap
@@ -332,7 +333,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
               commodityMap
           actualPretty `shouldEqualString` accountPrettyAligned
 
-
       describe "Transfer" do
         it "converts a simple JSON string to a Transfer" do
           let
@@ -350,7 +350,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
             actual = Transfer.showPretty transferSimple
           actual `shouldEqualString` transferSimplePretty
 
-
       describe "Transaction" do
         it "converts a JSON string to a Transaction" do
           let
@@ -363,7 +362,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
         it "converts a YAML string to a Transaction" do
           let
             actual = transactionSimpleYaml
@@ -375,12 +373,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
         it "pretty shows a transaction" do
           let
             actual = Transaction.showPretty transactionSimple
           actual `shouldEqualString` transactionSimplePretty
-
 
       describe "Balance" do
         it "converts a JSON string to a Balance" do
@@ -397,7 +393,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
       describe "Entity" do
         it "converts a JSON string to an Entity" do
           let
@@ -410,52 +405,65 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
         it "converts an Entity to an array of accounts with long id" do
           let
             accountWithId = over Account.Account
               (_ { id = "_default_" })
               Account.zero
             entity = over Entity.Entity
-              (_ { accounts = Just [account, accountWithId], id = "John" })
+              (_ { accounts = Just [ account, accountWithId ], id = "John" })
               Entity.zero
             accounts = Entity.toAccountsWithId entity
 
-          (show accounts) `shouldEqualString` (show
-            [ (Account
-                { balances: (Just [(Balance
-                    (unsafePartial $ fromJust
-                      $ stringToDateTime "2017-04-02 20:11:45")
-                    (Map.fromFoldable
-                      [(Tuple
-                          (Commodity "€")
-                          (Amount (100 % 1) (Commodity "€")))
-                      ]))
-                    ])
-                , commodityMap: (Map.fromFoldable
-                    [(Tuple
-                      (Commodity "€")
-                      (Amount (100 % 1) (Commodity "€")))
-                    ])
-                , id: "John:wallet"
-                })
-            , (Account
-                { balances: Nothing
-                , commodityMap: (Map.fromFoldable [])
-                , id: "John:_default_"
-                })
-            ]
-          )
-
+          (show accounts) `shouldEqualString`
+            ( show
+                [ ( Account
+                      { balances:
+                          ( Just
+                              [ ( Balance
+                                    ( unsafePartial $ fromJust
+                                        $ stringToDateTime "2017-04-02 20:11:45"
+                                    )
+                                    ( Map.fromFoldable
+                                        [ ( Tuple
+                                              (Commodity "€")
+                                              (Amount (100 % 1) (Commodity "€"))
+                                          )
+                                        ]
+                                    )
+                                )
+                              ]
+                          )
+                      , commodityMap:
+                          ( Map.fromFoldable
+                              [ ( Tuple
+                                    (Commodity "€")
+                                    (Amount (100 % 1) (Commodity "€"))
+                                )
+                              ]
+                          )
+                      , id: "John:wallet"
+                      }
+                  )
+                , ( Account
+                      { balances: Nothing
+                      , commodityMap: (Map.fromFoldable [])
+                      , id: "John:_default_"
+                      }
+                  )
+                ]
+            )
 
         it "converts an Entitie's balances to an array of transfers" do
           let
             entity = over Entity.Entity
-              (_ { accounts = Just [account], id = "John" })
+              (_ { accounts = Just [ account ], id = "John" })
               Entity.zero
             transfers = Entity.toTransfers entity
 
-          (rmWhitespace $ show transfers) `shouldEqualString` (rmWhitespace """
+          (rmWhitespace $ show transfers) `shouldEqualString`
+            ( rmWhitespace
+                """
               [(Transfer
                   { amount: (Amount 100 % 1 (Commodity "€"))
                   , from: "John:wallet"
@@ -466,8 +474,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
                       (Time (Hour 20) (Minute 11) (Second 45) (Millisecond 0))))
                   })
               ]
-            """)
-
+            """
+            )
 
       describe "Ledger" do
         it "converts a JSON string to a Ledger" do
@@ -481,7 +489,6 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
         it "converts a YAML string to a Ledger" do
           let
             actual = ledgerYaml
@@ -493,31 +500,32 @@ main = launchAff_ $ runSpec [consoleReporter] do
               # rmWhitespace
           actual `shouldEqualString` expected
 
-
         it "checks if balance map is zero" do
           (Ledger.isBalanceMapZero balanceMap) `shouldEqual` false
 
-
         it "checks if amount in balance map is zero" do
           let
-            balMap = fromFoldable [Tuple "john" $ fromFoldable
-              [ (Tuple
-                  (Commodity "€")
-                  (Amount (100 % 1) (Commodity "€")))
-              , (Tuple
-                  (Commodity "$")
-                  (Amount ratioZero (Commodity "$")))
-              ]]
+            balMap = fromFoldable
+              [ Tuple "john" $ fromFoldable
+                  [ ( Tuple
+                        (Commodity "€")
+                        (Amount (100 % 1) (Commodity "€"))
+                    )
+                  , ( Tuple
+                        (Commodity "$")
+                        (Amount ratioZero (Commodity "$"))
+                    )
+                  ]
+              ]
             isZeroUSD = Ledger.isAmountInMapZero balMap "john" (Commodity "$")
             isZeroEUR = Ledger.isAmountInMapZero balMap "john" (Commodity "€")
 
           isZeroUSD `shouldEqual` true
           isZeroEUR `shouldEqual` false
 
-
         it "adds a transfer to a balance map" do
           let
-            emptyMap = fromFoldable [Tuple "john" Map.empty]
+            emptyMap = fromFoldable [ Tuple "john" Map.empty ]
             transfer = Transfer
               { utc: stringToDateTime "2014-12-24"
               , from: "john:wallet"
@@ -527,21 +535,22 @@ main = launchAff_ $ runSpec [consoleReporter] do
               }
             expected = fromFoldable
               [ Tuple "anna:_default_" $ fromFoldable
-                  [ (Tuple
-                      (Commodity "€")
-                      (Amount (15 % 1) (Commodity "€")))
+                  [ ( Tuple
+                        (Commodity "€")
+                        (Amount (15 % 1) (Commodity "€"))
+                    )
                   ]
               , Tuple "john" $ fromFoldable []
               , Tuple "john:wallet" $ fromFoldable
-                  [ (Tuple
-                      (Commodity "€")
-                      (Amount (-15 % 1) (Commodity "€")))
+                  [ ( Tuple
+                        (Commodity "€")
+                        (Amount (-15 % 1) (Commodity "€"))
+                    )
                   ]
               ]
             actual = emptyMap `Ledger.addTransfer` transfer
 
           (show actual) `shouldEqualString` (show expected)
-
 
         describe "Verification" do
 
@@ -549,13 +558,13 @@ main = launchAff_ $ runSpec [consoleReporter] do
             let verification = Ledger.verifyLedgerBalances ledger
 
             (isOk verification) `shouldEqual` true
-            -- TODO: Use instead following with purescript-spec@v3.1.0
-            -- verification `shouldSatisfy` isOk
-
+          -- TODO: Use instead following with purescript-spec@v3.1.0
+          -- verification `shouldSatisfy` isOk
 
           it "fails if verification balances are incorrect" do
             let
-              ledgerValid = Ledger.fromYaml """
+              ledgerValid = Ledger.fromYaml
+                """
                   owner: John Doe
                   entities:
                     - id: anna
@@ -579,10 +588,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
             (isError verification) `shouldEqual` true
 
-
           it "fails if verification balance has too many entries" do
             let
-              ledgerValid = Ledger.fromYaml """
+              ledgerValid = Ledger.fromYaml
+                """
                   owner: John Doe
                   entities:
                     - id: anna
@@ -609,10 +618,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
             (show verification) `shouldContain` "off by 5 BTC"
 
-
           it "passes if verification balance is correct" do
             let
-              ledgerValid = Ledger.fromYaml """
+              ledgerValid = Ledger.fromYaml
+                """
                   owner: John Doe
                   entities:
                     - id: anna
@@ -634,80 +643,116 @@ main = launchAff_ $ runSpec [consoleReporter] do
                 """
               verification = ledgerValid >>= Ledger.verifyLedgerBalances
               expected = Ledger
-                { entities: (Just
-                    [ (Entity
-                        { accounts: (Just
-                          [(Account { balances: (Just
-                            [ (Balance
-                                (unsafePartial $ fromJust
-                                  $ stringToDateTime "2000-01-01 12:00")
-                                (fromFoldable []))
-                            , (Balance
-                                (unsafePartial $ fromJust
-                                  $ stringToDateTime "2010-01-01 12:00")
-                                (fromFoldable
-                                  [(Tuple
-                                    (Commodity "€")
-                                    (Amount
-                                      (3 % 1)
-                                      (Commodity "€")))
-                                  ]
-                                )
-                              )
-                            ])
-                          , commodityMap: (fromFoldable [])
-                          , id: "wallet" })])
-                        , id: "anna"
-                        , name: Nothing
-                        , note: Nothing
-                        , tags: Nothing
-                        , utc: Nothing
-                        })
-                    , (Entity
-                        { accounts: (Just
-                            [(Account
-                              { balances: Nothing
-                              , commodityMap: (fromFoldable [])
-                              , id: "wallet"
-                              })
-                            ])
-                        , id: "ben"
-                        , name: Nothing
-                        , note: Nothing
-                        , tags: Nothing
-                        , utc: Nothing
-                        })
-                    ])
+                { entities:
+                    ( Just
+                        [ ( Entity
+                              { accounts:
+                                  ( Just
+                                      [ ( Account
+                                            { balances:
+                                                ( Just
+                                                    [ ( Balance
+                                                          ( unsafePartial
+                                                              $ fromJust
+                                                              $ stringToDateTime
+                                                                  "2000-01-01 12:00"
+                                                          )
+                                                          (fromFoldable [])
+                                                      )
+                                                    , ( Balance
+                                                          ( unsafePartial
+                                                              $ fromJust
+                                                              $ stringToDateTime
+                                                                  "2010-01-01 12:00"
+                                                          )
+                                                          ( fromFoldable
+                                                              [ ( Tuple
+                                                                    ( Commodity
+                                                                        "€"
+                                                                    )
+                                                                    ( Amount
+                                                                        (3 % 1)
+                                                                        ( Commodity
+                                                                            "€"
+                                                                        )
+                                                                    )
+                                                                )
+                                                              ]
+                                                          )
+                                                      )
+                                                    ]
+                                                )
+                                            , commodityMap: (fromFoldable [])
+                                            , id: "wallet"
+                                            }
+                                        )
+                                      ]
+                                  )
+                              , id: "anna"
+                              , name: Nothing
+                              , note: Nothing
+                              , tags: Nothing
+                              , utc: Nothing
+                              }
+                          )
+                        , ( Entity
+                              { accounts:
+                                  ( Just
+                                      [ ( Account
+                                            { balances: Nothing
+                                            , commodityMap: (fromFoldable [])
+                                            , id: "wallet"
+                                            }
+                                        )
+                                      ]
+                                  )
+                              , id: "ben"
+                              , name: Nothing
+                              , note: Nothing
+                              , tags: Nothing
+                              , utc: Nothing
+                              }
+                          )
+                        ]
+                    )
                 , owner: Just "John Doe"
                 , transactions:
-                    [(Transaction
-                      { id: Nothing
-                      , note: Nothing
-                      , files: []
-                      , transfers:
-                          [ (Transfer
-                              { amount: (Amount
-                                  (3 % 1)
-                                  (Commodity "€"))
-                              , from: "ben:wallet"
-                              , note: Nothing
-                              , to: "anna:wallet"
-                              , utc: Nothing
-                              })
-                          ]
-                      , utc: (Just (unsafePartial $ fromJust
-                          $ stringToDateTime "2005-01-01 12:00"))
-                      })
+                    [ ( Transaction
+                          { id: Nothing
+                          , note: Nothing
+                          , files: []
+                          , transfers:
+                              [ ( Transfer
+                                    { amount:
+                                        ( Amount
+                                            (3 % 1)
+                                            (Commodity "€")
+                                        )
+                                    , from: "ben:wallet"
+                                    , note: Nothing
+                                    , to: "anna:wallet"
+                                    , utc: Nothing
+                                    }
+                                )
+                              ]
+                          , utc:
+                              ( Just
+                                  ( unsafePartial $ fromJust
+                                      $ stringToDateTime "2005-01-01 12:00"
+                                  )
+                              )
+                          }
+                      )
                     ]
                 }
 
             (show verification) `shouldEqualString`
-              (show (Ok expected :: Result String Ledger.Ledger) )
-
+              (show (Ok expected :: Result String Ledger.Ledger))
 
           it "passes if verification balances are correct" do
             let
-              ledgerValid = Ledger.fromYaml """
+              ledgerValid = Ledger.fromYaml
+                """
                   owner: John Doe
                   entities:
                     - id: anna
@@ -734,10 +779,10 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
             (isOk verification) `shouldEqual` true
 
-
           it "passes if verification balances at different UTCs are correct" do
             let
-              ledgerValid = Ledger.fromYaml """
+              ledgerValid = Ledger.fromYaml
+                """
                   owner: John Doe
                   entities:
                     - id: anna
@@ -768,64 +813,66 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
             (isOk verification) `shouldEqual` true
 
-
         it "subtracts a transfer from a balance map" do
           let
             result = balanceMap `Ledger.subtractTransfer` transferSimple
             expected = Map.fromFoldable
-              [ (Tuple "evil-corp:_default_"
-                  (Map.fromFoldable
-                    [(Tuple
-                      (Commodity "€")
-                      (Amount (-15 % 1) (Commodity "€")))
-                    ]))
-              , (Tuple "john"
-                  (Map.fromFoldable
-                    [(Tuple
-                      (Commodity "€")
-                      (Amount (100 % 1) (Commodity "€")))
-                    ]))
-              , (Tuple "john:giro"
-                  (Map.fromFoldable
-                    [(Tuple
-                      (Commodity "€")
-                      (Amount (15 % 1) (Commodity "€")))
-                    ]))
+              [ ( Tuple "evil-corp:_default_"
+                    ( Map.fromFoldable
+                        [ ( Tuple
+                              (Commodity "€")
+                              (Amount (-15 % 1) (Commodity "€"))
+                          )
+                        ]
+                    )
+                )
+              , ( Tuple "john"
+                    ( Map.fromFoldable
+                        [ ( Tuple
+                              (Commodity "€")
+                              (Amount (100 % 1) (Commodity "€"))
+                          )
+                        ]
+                    )
+                )
+              , ( Tuple "john:giro"
+                    ( Map.fromFoldable
+                        [ ( Tuple
+                              (Commodity "€")
+                              (Amount (15 % 1) (Commodity "€"))
+                          )
+                        ]
+                    )
+                )
               ]
 
           (show result) `shouldEqualString` (show expected)
 
-
         it "fails if a transfer contains an empty field" do
           expectError
-            (shouldBeOk do
-              actual <- transactionNoAccount
-                # Ledger.fromYaml
-                # map (Ledger.showBalance BalanceAll ColorNo)
-              expected <- Ok transactionNoAccountPretty
-              actual `testEqualityTo` expected
+            ( shouldBeOk do
+                actual <- transactionNoAccount
+                  # Ledger.fromYaml
+                  # map (Ledger.showBalance BalanceAll ColorNo)
+                expected <- Ok transactionNoAccountPretty
+                actual `testEqualityTo` expected
             )
-
 
         it "pretty shows a ledger" do
           (Ledger.showPretty ledger) `shouldEqualString` ledgerPretty
 
-
         it "pretty shows all accounts" do
           (ledgerEntities # Ledger.showEntities CustomSort # rmWhitespace)
             `shouldEqualString`
-            (rmWhitespace ledgerEntitiesShowed)
-
+              (rmWhitespace ledgerEntitiesShowed)
 
         it "pretty shows the balance of owner" do
           (Ledger.showBalance (BalanceOnly "john") ColorNo ledger)
             `shouldEqualString` ledgerBalanceOwner
 
-
         it "pretty shows the balance of all accounts" do
           (Ledger.showBalance BalanceAll ColorNo ledger)
             `shouldEqualString` ledgerBalanceAll
-
 
         it "supports multiple transactions on one account" do
           let
@@ -833,10 +880,8 @@ main = launchAff_ $ runSpec [consoleReporter] do
 
           actual `shouldEqualString` ledgerBalanceMultiTrans
 
-
         it "serializes to HLedger format" do
           (Ledger.entriesToLedger ledger) `shouldEqualString` ledgerLedger
-
 
         it "keeps first owner when combining several ledgers" do
           let

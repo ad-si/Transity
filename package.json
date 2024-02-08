@@ -41,7 +41,8 @@
     "big-integer": "^1.6.52",
     "chrono-node": "^2.7.5",
     "csvnorm": "^1.1.0",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "purs-tidy": "^0.10.1"
   },
   "optionalDependencies": {
     "converter": "0.0.5",

@@ -22,12 +22,10 @@ import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Ledger (Ledger(..), entitiesToInitialTransfers)
 import Transity.Utils (utcToIsoString)
 
-
 newtype FileEntry = FileEntry
   { path :: String
   , content :: String
   }
-
 
 foreign import writeToZipImpl
   :: forall a. Fn3 (Maybe a) (Maybe String) (Array FileEntry) (EffectFnAff Unit)
@@ -35,7 +33,6 @@ foreign import writeToZipImpl
 writeToZip :: Maybe String -> Array FileEntry -> Aff Unit
 writeToZip outPath files = fromEffectFnAff $
   runFn3 writeToZipImpl Nothing outPath files
-
 
 newtype SheetRow = SheetRow
   { utc :: String
@@ -46,17 +43,16 @@ newtype SheetRow = SheetRow
   , files :: Array String
   }
 
-
 getSheetRows :: Ledger -> Maybe (Array SheetRow)
-getSheetRows (Ledger {transactions, entities}) = do
+getSheetRows (Ledger { transactions, entities }) = do
   let
-    getQunty (Amount quantity _ ) = show $ Rational.toNumber quantity
-    getCmdty (Amount _ commodity ) = unwrap commodity
+    getQunty (Amount quantity _) = show $ Rational.toNumber quantity
+    getCmdty (Amount _ commodity) = unwrap commodity
 
     splitTransfer
       :: { note :: Maybe String, files :: Array String, transfer :: Transfer }
       -> Maybe (Array SheetRow)
-    splitTransfer { note: note , files: files, transfer: (Transfer tfer) } =
+    splitTransfer { note: note, files: files, transfer: (Transfer tfer) } =
       let
         fromAmnt = Amount.negate tfer.amount
 
@@ -67,7 +63,7 @@ getSheetRows (Ledger {transactions, entities}) = do
               , account: tfer.from
               , amount: getQunty fromAmnt
               , commodity: getCmdty fromAmnt
-              , note: [note, tfer.note]
+              , note: [ note, tfer.note ]
                   # catMaybes
                   # intercalate ", "
               , files: files
@@ -77,7 +73,7 @@ getSheetRows (Ledger {transactions, entities}) = do
               , account: tfer.to
               , amount: getQunty tfer.amount
               , commodity: getCmdty tfer.amount
-              , note: [note, tfer.note]
+              , note: [ note, tfer.note ]
                   # catMaybes
                   # intercalate ", "
               , files: files
@@ -86,26 +82,30 @@ getSheetRows (Ledger {transactions, entities}) = do
       in
         (tfer.utc <#> utcToIsoString) <#> getFromAndTo
 
-  splitted <- do
-    transactions
-    <#> (\(Transaction tact) -> tact.transfers
-          <#> (\(Transfer tfer) ->
-                { note: tact.note
-                , files: tact.files
-                , transfer: Transfer (tfer { utc = tfer.utc <|> tact.utc })
-                }
+  splitted <-
+    do
+      transactions
+      <#>
+        ( \(Transaction tact) -> tact.transfers
+            <#>
+              ( \(Transfer tfer) ->
+                  { note: tact.note
+                  , files: tact.files
+                  , transfer: Transfer (tfer { utc = tfer.utc <|> tact.utc })
+                  }
               )
         )
-    # concat
-    <#> splitTransfer
-    # sequence
+      # concat
+      <#> splitTransfer
+      # sequence
 
   let
     initialEntries = entitiesToInitialTransfers entities <#>
       \(Transfer t) ->
-          let isoString = fromMaybe "INVALID DATE" $ t.utc <#> utcToIsoString
-          in
-            [ SheetRow
+        let
+          isoString = fromMaybe "INVALID DATE" $ t.utc <#> utcToIsoString
+        in
+          [ SheetRow
               { utc: isoString
               , account: replaceAll
                   (Pattern ":_default_")
@@ -116,20 +116,18 @@ getSheetRows (Ledger {transactions, entities}) = do
               , note: fromMaybe "" t.note
               , files: []
               }
-            ]
+          ]
 
   pure $ (splitted <> initialEntries) # concat
-
 
 escapeHtml :: String -> String
 escapeHtml unsafeStr =
   unsafeStr
-   # replaceAll (Pattern "&") (Replacement "&amp;")
-   # replaceAll (Pattern "<") (Replacement "&lt;")
-   # replaceAll (Pattern ">") (Replacement "&gt;")
-   # replaceAll (Pattern "\"") (Replacement "&quot;")
-   # replaceAll (Pattern "'") (Replacement "&#039;")
-
+    # replaceAll (Pattern "&") (Replacement "&amp;")
+    # replaceAll (Pattern "<") (Replacement "&lt;")
+    # replaceAll (Pattern ">") (Replacement "&gt;")
+    # replaceAll (Pattern "\"") (Replacement "&quot;")
+    # replaceAll (Pattern "'") (Replacement "&#039;")
 
 entriesAsXml :: Ledger -> Maybe String
 entriesAsXml ledger = do
@@ -140,7 +138,8 @@ entriesAsXml ledger = do
     -- Remove "'file://" for LibreOffice
     -- Should therefore work on macOS and Windows with Excel and LibreOffice
     -- (Apple's Numbers does not support local file links at all)
-    hyperlinkFormula = """
+    hyperlinkFormula =
+      """
       =HYPERLINK(
         SUBSTITUTE(
           LEFT(
@@ -173,35 +172,36 @@ entriesAsXml ledger = do
       case dataType of
         "inlineStr" ->
           "<c t=\"inlineStr\"><is><t>"
-          <> escapeHtml val
-          <> "</t></is></c>"
+            <> escapeHtml val
+            <> "</t></is></c>"
 
         "formula" ->
-            "<c t=\"str\">"
-            <> (if val == ""
-                then ""
+          "<c t=\"str\">"
+            <>
+              ( if val == "" then ""
                 else
-                  ("<f>"
-                    <> (escapeHtml $ replaceAll
-                        (Pattern "{{ filename }}")
-                        (Replacement val )
-                        hyperlinkFormula)
-                    <> "</f>"
+                  ( "<f>"
+                      <>
+                        ( escapeHtml $ replaceAll
+                            (Pattern "{{ filename }}")
+                            (Replacement val)
+                            hyperlinkFormula
+                        )
+                      <> "</f>"
                   )
-                )
+              )
             <> "</c>"
 
         _ ->
           "<c t=\"" <> dataType <> "\"><v>"
-          <> escapeHtml val
-          <> "</v></c>"
+            <> escapeHtml val
+            <> "</v></c>"
 
     -- This workaround is necessary
     -- since there must only be one HYPERLINK per cell
     -- TODO: Make it work for an unlimited number of files
     limitTo4Files files =
-      take 4 (files <> ["", "", "", ""])
-
+      take 4 (files <> [ "", "", "", "" ])
 
     wrapStr = wrapValue "inlineStr"
 
@@ -222,28 +222,33 @@ entriesAsXml ledger = do
 
     dataRows :: String
     dataRows = sheetRows
-      # sortBy (\(SheetRow rowRecA) (SheetRow rowRecB) ->
-          compare rowRecA.utc rowRecB.utc)
-      <#> (\(SheetRow rowRec) ->
-        "<row>\n"
-        <> (wrapStr (rowRec.utc <> "Z"))
-        <> (wrapStr rowRec.account)
-        <> (wrapValue "n" rowRec.amount)
-        <> (wrapStr rowRec.commodity)
-        <> (wrapStr rowRec.note)
-        <> (limitTo4Files rowRec.files
-              <#> wrapValue "formula"
-              # fold
-            )
-        <> "\n"
-        <> "</row>")
+      # sortBy
+          ( \(SheetRow rowRecA) (SheetRow rowRecB) ->
+              compare rowRecA.utc rowRecB.utc
+          )
+      <#>
+        ( \(SheetRow rowRec) ->
+            "<row>\n"
+              <> (wrapStr (rowRec.utc <> "Z"))
+              <> (wrapStr rowRec.account)
+              <> (wrapValue "n" rowRec.amount)
+              <> (wrapStr rowRec.commodity)
+              <> (wrapStr rowRec.note)
+              <>
+                ( limitTo4Files rowRec.files
+                    <#> wrapValue "formula"
+                    # fold
+                )
+              <> "\n"
+              <> "</row>"
+        )
       # joinWith "\n"
 
   pure $ headerRow <> dataRows
 
-
 contentTypesContent :: String
-contentTypesContent = """<?xml version="1.0" encoding="UTF-8"?>
+contentTypesContent =
+  """<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default
     ContentType="application/xml"
@@ -288,9 +293,9 @@ contentTypesContent = """<?xml version="1.0" encoding="UTF-8"?>
 </Types>
 """
 
-
 relsContent :: String
-relsContent = """<?xml version="1.0" encoding="UTF-8"?>
+relsContent =
+  """<?xml version="1.0" encoding="UTF-8"?>
 <Relationships
   xmlns="http://schemas.openxmlformats.org/package/2006/relationships"
 >
@@ -312,9 +317,9 @@ relsContent = """<?xml version="1.0" encoding="UTF-8"?>
 </Relationships>
 """
 
-
 appContent :: String
-appContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+appContent =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties
   xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties"
 >
@@ -323,14 +328,13 @@ appContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </Properties>
 """
 
-
 -- TODO: Implement correct timestamp
 now :: String
 now = "2021-01-01T00:00:00Z"
 
-
 coreContent :: String
-coreContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+coreContent =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties
   xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -343,17 +347,19 @@ coreContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     All transfers of journal created with Transity
   </dc:description>
   <dcterms:created xsi:type="dcterms:W3CDTF">"""
-    <> now <>
-  """</dcterms:created>
+    <> now
+    <>
+      """</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">"""
-    <> now <>
-  """</dcterms:modified>
+    <> now
+    <>
+      """</dcterms:modified>
 </cp:coreProperties>
 """
 
-
 xlRelsContent :: String
-xlRelsContent = """<?xml version="1.0" encoding="UTF-8"?>
+xlRelsContent =
+  """<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship
     Id="rId1"
@@ -373,9 +379,9 @@ xlRelsContent = """<?xml version="1.0" encoding="UTF-8"?>
 </Relationships>
 """
 
-
 sharedStrContent :: String
-sharedStrContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+sharedStrContent =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sst
   count="0"
   uniqueCount="0"
@@ -384,11 +390,11 @@ sharedStrContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </sst>
 """
 
-
 -- Mandatory (otherwise neither Excel nor Apple Numbers can open it)
 -- More information: https://stackoverflow.com/a/26062365/1850340
 stylesContent :: String
-stylesContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+stylesContent =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="1">
     <font>
@@ -431,9 +437,9 @@ stylesContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </styleSheet>
 """
 
-
 workbookContent :: String
-workbookContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+workbookContent =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook
   xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
   xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -448,9 +454,9 @@ workbookContent = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </workbook>
 """
 
-
-rowsToSheet:: String -> String
-rowsToSheet rows = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+rowsToSheet :: String -> String
+rowsToSheet rows =
+  """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet
   xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -496,7 +502,8 @@ rowsToSheet rows = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     zeroHeight="false"
   />
   <sheetData>
-""" <> rows <> """
+""" <> rows <>
+    """
   </sheetData>
   <printOptions
     gridLines="false"
@@ -540,7 +547,6 @@ rowsToSheet rows = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </worksheet>
 """
 
-
 entriesAsXlsx :: Ledger -> Array FileEntry
 entriesAsXlsx ledger = do
   case entriesAsXml ledger of
@@ -559,5 +565,4 @@ entriesAsXlsx ledger = do
           , content: rowsToSheet rowsString
           }
       ]
-
 

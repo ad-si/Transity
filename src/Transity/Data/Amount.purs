@@ -1,5 +1,4 @@
-module Transity.Data.Amount
-where
+module Transity.Data.Amount where
 
 import Control.Bind (bind)
 import Data.Argonaut.Core (toString, fromString, Json)
@@ -39,7 +38,6 @@ import Transity.Utils
   , ratioZero
   )
 
-
 -- | Economic good or service that has full or substantial fungibility
 -- | E.g. €, cows, minutes, …
 
@@ -65,7 +63,6 @@ decodeJsonCommodity json =
     (Error $ TypeMismatch "Commodity is not a string")
     (\x -> Ok (Commodity x))
     (toString json)
-
 
 -- | E.g. "20 €", "10 cows", or "20 minutes"
 -- | `amount = Amount (fromInt 20) (Commodity "€")
@@ -94,41 +91,36 @@ instance encodeAmount :: EncodeJson Amount where
 instance decodeAmount :: DecodeJson Amount where
   decodeJson json = toEither $ decodeJsonAmount json
 
-
 parseAmount :: String -> Result JsonDecodeError Amount
 parseAmount string = do
   let amountFrags = split (Pattern " ") string
   case take 2 amountFrags of
-    [value, currency] -> case digitsToRational value of
+    [ value, currency ] -> case digitsToRational value of
       Nothing -> Error $ TypeMismatch "Amount does not contain a valid value"
       Just quantity ->
         Ok $ Amount quantity (Commodity currency)
     _ -> Error $ TypeMismatch "Amount does not contain a value and a commodity"
 
-
 decodeJsonAmount :: Json -> Result JsonDecodeError Amount
 decodeJsonAmount json = do
   amount <- maybe
     (Error $ TypeMismatch "Amount is not a string")
-    Ok (toString json)
+    Ok
+    (toString json)
   parseAmount amount
-
 
 subtract :: Amount -> Amount -> Amount
 subtract (Amount numA (Commodity comA)) (Amount numB (Commodity comB))
   | comA /= comB = Amount ratioZero (Commodity "INVALID COMPUTATION")
   | otherwise = Amount (numA - numB) (Commodity comA)
 
-
 negate :: Amount -> Amount
 negate (Amount num com) =
   Amount (Ring.negate num) com
 
-
 isZero :: Amount -> Boolean
 isZero (Amount quantity _) =
   quantity == ratioZero
-
 
 toWidthRecord :: Amount -> WidthRecord
 toWidthRecord (Amount quantity (Commodity commodity)) =
@@ -141,10 +133,8 @@ toWidthRecord (Amount quantity (Commodity commodity)) =
       , commodity = length commodity
       }
 
-
 showPretty :: Amount -> String
 showPretty = showPrettyAligned ColorNo 0 0 0
-
 
 -- | Specify the width (in characters) of the integer part,
 -- | the width of the fractional part (including decimal point),
@@ -154,5 +144,5 @@ showPretty = showPrettyAligned ColorNo 0 0 0
 showPrettyAligned :: ColorFlag -> Int -> Int -> Int -> Amount -> String
 showPrettyAligned colorFlag intWid fracWid comWid (Amount val (Commodity com)) =
   alignNumber colorFlag intWid fracWid (Rational.toNumber val)
-  <> " "
-  <> padEnd comWid com
+    <> " "
+    <> padEnd comWid com

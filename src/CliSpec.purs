@@ -21,7 +21,6 @@ import Effect (Effect)
 import Effect.Class.Console (log, error)
 import Node.Process (argv, setExitCode)
 
-
 -- TODO: Automatically disable colors if not supported
 makeRed :: String -> String
 makeRed str =
@@ -31,13 +30,11 @@ makeYellow :: String -> String
 makeYellow str =
   withGraphics (foreground Yellow) str
 
-
 errorAndExit :: String -> Effect (Result String Unit)
 errorAndExit message = do
   error (makeRed message)
   setExitCode 1
   pure $ Error message
-
 
 parseCliSpec :: String -> Result String CliSpec
 parseCliSpec cliSpecJsonStr = do
@@ -51,13 +48,12 @@ parseCliSpec cliSpecJsonStr = do
         # (lmap printJsonDecodeError)
         # fromEither
 
-
 callCommand
   :: CliSpec
   -> String
   -> Array CliArgument
   -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
-  ->  Effect (Result String Unit)
+  -> Effect (Result String Unit)
 callCommand (CliSpec cliSpec) usageString args executor = do
   case args # head of
     Nothing -> do
@@ -65,33 +61,37 @@ callCommand (CliSpec cliSpec) usageString args executor = do
       setExitCode 1
       pure (Error "No arguments provided")
 
-    Just firstArg | firstArg == FlagShort 'h'
-                    ||  firstArg == FlagLong "help"
-                    ||  firstArg == CmdArg "help" -> do
-                          log usageString
-                          pure $ Ok unit
+    Just firstArg
+      | firstArg == FlagShort 'h'
+          || firstArg == FlagLong "help"
+          || firstArg == CmdArg "help" -> do
+          log usageString
+          pure $ Ok unit
 
-    Just firstArg | firstArg == FlagShort 'v'
-                    ||  firstArg == FlagLong "version"
-                    ||  firstArg == CmdArg "version" -> do
-                          log usageString
-                          pure $ Ok unit
+    Just firstArg
+      | firstArg == FlagShort 'v'
+          || firstArg == FlagLong "version"
+          || firstArg == CmdArg "version" -> do
+          log usageString
+          pure $ Ok unit
 
     Just _mainCmd ->
       case args # drop 1 # head of
-        Just arg | arg == (CmdArg "help")
-                    || arg == (FlagLong "help")
-                    || arg == (FlagShort 'h') -> do
-                        -- TODO: Only show help for subcommand
-                        log usageString
-                        pure $ Ok unit
+        Just arg
+          | arg == (CmdArg "help")
+              || arg == (FlagLong "help")
+              || arg == (FlagShort 'h') -> do
+              -- TODO: Only show help for subcommand
+              log usageString
+              pure $ Ok unit
 
-        Just arg | arg == (CmdArg "version")
-                    || arg == (FlagLong "version")
-                    || arg == (FlagShort 'v') -> do
-                        -- TODO: Only show version of subcommand (if available)
-                        log (cliSpec.version # fromMaybe "0")
-                        pure $ Ok unit
+        Just arg
+          | arg == (CmdArg "version")
+              || arg == (FlagLong "version")
+              || arg == (FlagShort 'v') -> do
+              -- TODO: Only show version of subcommand (if available)
+              log (cliSpec.version # fromMaybe "0")
+              pure $ Ok unit
 
         Just (CmdArg cmdName) -> do
           let
@@ -102,8 +102,9 @@ callCommand (CliSpec cliSpec) usageString args executor = do
 
           case commandMb of
             Nothing -> do
-              let errStr =
-                    makeRed ("ERROR: Unknown command \"" <> cmdName <> "\"")
+              let
+                errStr =
+                  makeRed ("ERROR: Unknown command \"" <> cmdName <> "\"")
                     <> "\n\n"
                     <> usageString
               log errStr
@@ -114,8 +115,9 @@ callCommand (CliSpec cliSpec) usageString args executor = do
               executor cmdName usageString providedArgs
 
         Just arg -> do
-          let errMsg =
-                "ERROR: First argument must be a command and not \""
+          let
+            errMsg =
+              "ERROR: First argument must be a command and not \""
                 <> cliArgToString arg
                 <> "\"\n\n"
           log $ makeRed $ errMsg <> usageString
@@ -127,12 +129,10 @@ callCommand (CliSpec cliSpec) usageString args executor = do
           setExitCode 1
           pure $ Error "No arguments provided"
 
-
 -- | Function to repeat a string n times
 repeatString :: String -> Int -> String
 repeatString str n =
   fold $ replicate n str
-
 
 callCliApp
   :: CliSpec
@@ -144,32 +144,40 @@ callCliApp cliSpec@(CliSpec cliSpecRaw) executor = do
     lengthLongestCmd =
       cliSpecRaw.commands
         # fromMaybe []
-        # foldl (\acc (CliSpec cmd) ->
-            if acc > Str.length cmd.name
-            then acc
-            else Str.length cmd.name
-          ) 0
+        # foldl
+            ( \acc (CliSpec cmd) ->
+                if acc > Str.length cmd.name then acc
+                else Str.length cmd.name
+            )
+            0
 
     usageString =
       "USAGE: " <> cliSpecRaw.name <> " <command> [options]"
-      <> "\n\n"
-      <> cliSpecRaw.description
-      <> "\n\n"
-      <> "COMMANDS:"
-      <> "\n\n"
-      <> (cliSpecRaw.commands
-            # fromMaybe []
-            # foldMap (\(CliSpec cmd) ->
-                cmd.name
-                <> (repeatString " " (lengthLongestCmd - Str.length cmd.name))
-                <> "  " <> cmd.description <> "\n"
-              )
+        <> "\n\n"
+        <> cliSpecRaw.description
+        <> "\n\n"
+        <> "COMMANDS:"
+        <> "\n\n"
+        <>
+          ( cliSpecRaw.commands
+              # fromMaybe []
+              # foldMap
+                  ( \(CliSpec cmd) ->
+                      cmd.name
+                        <>
+                          ( repeatString " "
+                              (lengthLongestCmd - Str.length cmd.name)
+                          )
+                        <> "  "
+                        <> cmd.description
+                        <> "\n"
+                  )
           )
 
   arguments <- argv
 
   let
-    argsNoInterpreter = arguments # drop 1  -- Drop "node"
+    argsNoInterpreter = arguments # drop 1 -- Drop "node"
     cliArgsMb =
       tokensToCliArguments
         cliSpec

@@ -1,8 +1,18 @@
 module Main where
 
 import Prelude
-  ( Unit, bind, discard, pure, show, unit
-  , (#), ($), (/=), (<#>), (<>), (>)
+  ( Unit
+  , bind
+  , discard
+  , pure
+  , show
+  , unit
+  , (#)
+  , ($)
+  , (/=)
+  , (<#>)
+  , (<>)
+  , (>)
   )
 
 import Ansi.Codes (Color(..))
@@ -37,66 +47,73 @@ import Transity.Plot as Plot
 import Transity.Utils (SortOrder(..), makeRed, errorAndExit)
 import Transity.Xlsx (writeToZip, entriesAsXlsx)
 
-
 -- TODO: Move validation to parsing
 utcError :: String
 utcError =
   "All transfers or their parent transaction must have a valid UTC field"
 
-
 runSimpleCmd :: String -> String -> Ledger -> Result String String
 runSimpleCmd command filePathRel ledger =
   case command of
-    "balance"            -> Ok $
+    "balance" -> Ok $
       Ledger.showBalance BalanceOnlyOwner ColorYes ledger
-    "balance-all"        -> Ok $ Ledger.showBalance BalanceAll ColorYes ledger
+    "balance-all" -> Ok $ Ledger.showBalance BalanceAll ColorYes ledger
     -- "balance-on"         -> Ok $
     --   Ledger.showBalanceOn dateMaybe ColorYes ledger
-    "transactions"       -> Ok $ Ledger.showPrettyAligned ColorYes ledger
-    "transfers"          -> Ok $ Ledger.showTransfers ColorYes ledger
-    "entries"            -> note utcError $ Ledger.showEntries  " " ledger
-    "entities"           -> Ok $ Ledger.showEntities CustomSort ledger
-    "entities-sorted"    -> Ok $ Ledger.showEntities Alphabetically ledger
-    "ledger-entries"     -> Ok $ Ledger.entriesToLedger ledger
-    "csv"                -> note utcError $ Ledger.showEntries  "," ledger
-    "tsv"                -> note utcError $ Ledger.showEntries  "\t" ledger
+    "transactions" -> Ok $ Ledger.showPrettyAligned ColorYes ledger
+    "transfers" -> Ok $ Ledger.showTransfers ColorYes ledger
+    "entries" -> note utcError $ Ledger.showEntries " " ledger
+    "entities" -> Ok $ Ledger.showEntities CustomSort ledger
+    "entities-sorted" -> Ok $ Ledger.showEntities Alphabetically ledger
+    "ledger-entries" -> Ok $ Ledger.entriesToLedger ledger
+    "csv" -> note utcError $ Ledger.showEntries "," ledger
+    "tsv" -> note utcError $ Ledger.showEntries "\t" ledger
     "entries-by-account" -> note utcError $ Ledger.showEntriesByAccount ledger
     "gplot" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)
-      <#> (\entries -> Plot.gplotCode $ Plot.configDefault
-        # (Plot.GplotConfig `over` (_
-            { data = entries
-            , title = filePathRel
-            })))
+        <#>
+          ( \entries -> Plot.gplotCode $ Plot.configDefault
+              #
+                ( Plot.GplotConfig `over`
+                    ( _
+                        { data = entries
+                        , title = filePathRel
+                        }
+                    )
+                )
+          )
     "gplot-cumul" ->
       (note utcError $ Ledger.showEntriesByAccount ledger)
-      <#> (\entries -> Plot.gplotCodeCumul $ Plot.configDefault
-        # (Plot.GplotConfig `over` (_
-            { data = entries
-            , title = filePathRel <> " - Cumulative"
-            })))
+        <#>
+          ( \entries -> Plot.gplotCodeCumul $ Plot.configDefault
+              #
+                ( Plot.GplotConfig `over`
+                    ( _
+                        { data = entries
+                        , title = filePathRel <> " - Cumulative"
+                        }
+                    )
+                )
+          )
 
     other -> Error ("\"" <> other <> "\" is not a valid command")
 
-
 -- | Asynchronously logs all non existent referenced files
 checkFilePaths :: String -> Ledger -> Effect (Result String String)
-checkFilePaths ledgerFilePath (Ledger {transactions}) = do
+checkFilePaths ledgerFilePath (Ledger { transactions }) = do
   let
     files = foldMap (\(Transaction tact) -> tact.files) transactions
 
   for_ files \filePathRel -> do
-    filePathAbs <- Path.resolve [ledgerFilePath] filePathRel
+    filePathAbs <- Path.resolve [ ledgerFilePath ] filePathRel
     stat filePathAbs $ \statsResult ->
-      if isOk $ fromEither statsResult
-      then pure unit
+      if isOk $ fromEither statsResult then pure unit
       else
         log $ withGraphics
           (foreground Yellow)
           ("Warning: \"" <> filePathAbs <> "\" does not exist")
 
   pure $ Ok ""
-
 
 execForLedger
   :: String
@@ -105,30 +122,28 @@ execForLedger
   -> Ledger
   -> Effect (Result String String)
 execForLedger currentDir filePathRel command ledger = do
-  filePathAbs <- Path.resolve [currentDir] filePathRel
+  filePathAbs <- Path.resolve [ currentDir ] filePathRel
   let
     journalDir =
-      if indexOf (Pattern "/dev/fd/") filePathAbs == Just 0
-      then currentDir
+      if indexOf (Pattern "/dev/fd/") filePathAbs == Just 0 then currentDir
       else Path.dirname filePathAbs
   _ <- checkFilePaths journalDir ledger
 
   case command of
     "xlsx" -> do
       launchAff_ $ writeToZip
-        Nothing  -- Means stdout
+        Nothing -- Means stdout
         (entriesAsXlsx ledger)
       pure (Ok "")
     _ ->
       pure $ runSimpleCmd command filePathRel ledger
 
-
 loadAndExec
   :: String
   -> Array String
   -> Effect (Result String String)
-loadAndExec currentDir [command, filePathRel] = do
-  filePathAbs <- Path.resolve [currentDir] filePathRel
+loadAndExec currentDir [ command, filePathRel ] = do
+  filePathAbs <- Path.resolve [ currentDir ] filePathRel
   ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
 
   case (Ledger.fromYaml ledgerFileContent) of
@@ -137,7 +152,6 @@ loadAndExec currentDir [command, filePathRel] = do
 
 loadAndExec _ _ =
   pure $ Error "loadAndExec expects an array with length 2"
-
 
 executor :: String -> String -> Array CliArgument -> Effect (Result String Unit)
 executor cmdName usageString args = do
@@ -152,12 +166,12 @@ executor cmdName usageString args = do
 
       case (Ledger.fromYaml ledgerFileContent) of
         Error msg -> errorAndExit config msg
-        Ok ledger@(Ledger {transactions}) -> do
+        Ok ledger@(Ledger { transactions }) -> do
           currentDir <- cwd
           let
             journalDir =
-              if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0
-              then currentDir
+              if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0 then
+                currentDir
               else Path.dirname ledgerFilePathAbs
 
           _ <- checkFilePaths journalDir ledger
@@ -169,15 +183,14 @@ executor cmdName usageString args = do
               (\(Transaction tact) -> tact.files)
               transactions
           ledgerFilesAbs <- sequence $ ledgerFilesRel
-              <#> (\fileRel -> Path.resolve [journalDir] fileRel)
+            <#> (\fileRel -> Path.resolve [ journalDir ] fileRel)
 
           let
             unusedFiles = difference foundFiles ledgerFilesAbs
             makeGreen = withGraphics (foreground Green)
             makeYellow = withGraphics (foreground Yellow)
 
-          if null unusedFiles
-          then
+          if null unusedFiles then
             log $ makeGreen $ "No unused files found in " <> filesDir
           else do
             warn $ makeYellow $ "Warning: "
@@ -196,77 +209,77 @@ executor cmdName usageString args = do
       pure $ Error errStr
 
     _,
-    [ValArg (TextArg journalPathRel)] -> do
-          currentDir <- cwd
-          result <- loadAndExec currentDir [cmdName, journalPathRel]
+    [ ValArg (TextArg journalPathRel) ] -> do
+      currentDir <- cwd
+      result <- loadAndExec currentDir [ cmdName, journalPathRel ]
 
-          case result of
-            Ok output ->
-              if length output > 0
-              then do
-                log output
-                pure $ Ok unit
-              else
-                pure $ Ok unit
-            Error message ->
-              errorAndExit config message
+      case result of
+        Ok output ->
+          if length output > 0 then do
+            log output
+            pure $ Ok unit
+          else
+            pure $ Ok unit
+        Error message ->
+          errorAndExit config message
 
     _,
     [ ValArg (TextArg journalPathRel)
     , ValArgList extraJournalPaths
     ] -> do
-          currentDir <- cwd
+      currentDir <- cwd
 
-          let
-            journalPaths :: Result String (Array String)
-            journalPaths = sequence $
-                [Ok journalPathRel] <>
-                (extraJournalPaths
-                    <#> (\valArg -> case valArg of
-                          (TextArg path) -> Ok path
-                          _ -> Error $ "Invalid argument type: " <> show valArg
-                    )
-                )
+      let
+        journalPaths :: Result String (Array String)
+        journalPaths = sequence $
+          [ Ok journalPathRel ] <>
+            ( extraJournalPaths
+                <#>
+                  ( \valArg -> case valArg of
+                      (TextArg path) -> Ok path
+                      _ -> Error $ "Invalid argument type: " <> show valArg
+                  )
+            )
 
-            combineJournals :: Array String -> Effect (Result String Ledger)
-            combineJournals paths = do
-              paths
-                <#> (\filePathRel -> do
-                        filePathAbs <- Path.resolve [currentDir] filePathRel
-                        ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
+        combineJournals :: Array String -> Effect (Result String Ledger)
+        combineJournals paths = do
+          paths
+            <#>
+              ( \filePathRel -> do
+                  filePathAbs <- Path.resolve [ currentDir ] filePathRel
+                  ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
 
-                        pure $ Ledger.fromYaml ledgerFileContent
-                    )
-                # sequence
-                <#> sequence
-                <#> (\ledgerRes -> ledgerRes <#> fold )
+                  pure $ Ledger.fromYaml ledgerFileContent
+              )
+            # sequence
+            <#> sequence
+            <#> (\ledgerRes -> ledgerRes <#> fold)
 
-          case journalPaths of
+      case journalPaths of
+        Error message -> errorAndExit config message
+        Ok paths -> do
+          combineRes <- combineJournals paths
+          case combineRes of
             Error message -> errorAndExit config message
-            Ok paths -> do
-              combineRes <- combineJournals paths
-              case combineRes of
-                Error message -> errorAndExit config message
-                Ok ledger -> do
-                  result <- execForLedger
-                    currentDir
-                    journalPathRel -- TODO: Must incorporate all paths
-                    cmdName
-                    ledger
+            Ok ledger -> do
+              result <- execForLedger
+                currentDir
+                journalPathRel -- TODO: Must incorporate all paths
+                cmdName
+                ledger
 
-                  case result of
-                    Ok output -> do
-                      log output
-                      pure $ Ok unit
-                    Error message ->
-                      errorAndExit config message
+              case result of
+                Ok output -> do
+                  log output
+                  pure $ Ok unit
+                Error message ->
+                  errorAndExit config message
 
     _,
     _ -> do
       log usageString
       setExitCode 1
       pure $ Ok unit
-
 
 getAllFiles :: String -> Effect (Array String)
 getAllFiles directoryPath =
@@ -285,8 +298,7 @@ getAllFiles directoryPath =
         dirTuples = filter (\tuple -> isDirectory $ snd tuple) pathStatsTuples
         files = fileTuples <#> fst
 
-      if null dirTuples
-      then
+      if null dirTuples then
         pure $ files
       else do
         filesNested <- sequence $ dirTuples
@@ -294,7 +306,6 @@ getAllFiles directoryPath =
         pure (concat $ cons files filesNested)
   in
     addFiles directoryPath
-
 
 main :: Effect Unit
 main = do

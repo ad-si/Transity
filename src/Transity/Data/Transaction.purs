@@ -1,8 +1,16 @@
 module Transity.Data.Transaction where
 
 import Prelude
-  ( class Show, class Eq, bind, map, pure
-  , (#), ($), (<>), (>>=), (<#>)
+  ( class Show
+  , class Eq
+  , bind
+  , map
+  , pure
+  , (#)
+  , ($)
+  , (<>)
+  , (>>=)
+  , (<#>)
   )
 
 import Control.Alt ((<|>))
@@ -37,7 +45,6 @@ import Transity.Utils
   , resultWithJsonDecodeError
   )
 
-
 -- newtype FilePath = FilePath String
 
 newtype Transaction = Transaction
@@ -56,19 +63,20 @@ instance showTransaction :: Show Transaction where
   show = genericShow
 
 instance decodeTransaction :: DecodeJson Transaction where
-  decodeJson json = toEither $
-    resultWithJsonDecodeError $ decodeJsonTransaction json
-
+  decodeJson json = toEither
+    $ resultWithJsonDecodeError
+    $ decodeJsonTransaction json
 
 decodeJsonTransaction :: Json -> Result String Transaction
 decodeJsonTransaction json = do
   object <- maybe (Error "Transaction is not an object") Ok (toObject json)
 
-  id        <- object `getFieldMaybe` "id"
-  utc       <- object `getFieldMaybe` "utc"
-  note      <- object `getFieldMaybe` "note"
-  files     <- stringifyJsonDecodeError $
-    fromEither $ object `getFieldOptional` "files" `defaultField` []
+  id <- object `getFieldMaybe` "id"
+  utc <- object `getFieldMaybe` "utc"
+  note <- object `getFieldMaybe` "note"
+  files <- stringifyJsonDecodeError
+    $ fromEither
+    $ object `getFieldOptional` "files" `defaultField` []
   transfers <- object `getObjField` "transfers"
 
   pure $ Transaction
@@ -79,13 +87,11 @@ decodeJsonTransaction json = do
     , transfers
     }
 
-
 fromJson :: String -> Result String Transaction
 fromJson string = do
   json <- fromEither $ jsonParser string
   transaction <- stringifyJsonDecodeError $ fromEither $ decodeJson json
   pure transaction
-
 
 fromYaml :: String -> Result String Transaction
 fromYaml yaml =
@@ -98,14 +104,12 @@ fromYaml yaml =
     case result of
       Error error -> Error
         ( "Could not parse YAML: "
-          <> foldMap renderForeignError error
+            <> foldMap renderForeignError error
         )
       Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
 
-
 toTransfers :: Array Transaction -> Array Transfer
 toTransfers = foldMap transactionTransfers
-
 
 showTransfersWithDate :: ColorFlag -> Transaction -> String
 showTransfersWithDate _ transac =
@@ -113,18 +117,18 @@ showTransfersWithDate _ transac =
     # transactionTransfers
     # foldMap Transfer.showPrettyColorized
 
-
 transactionTransfers :: Transaction -> Array Transfer
 transactionTransfers (Transaction transac) =
   transac.transfers
-    <#> (\(Transfer transf) -> Transfer (transf
-            { utc = transf.utc <|> transac.utc }
-        ))
-
+    <#>
+      ( \(Transfer transf) -> Transfer
+          ( transf
+              { utc = transf.utc <|> transac.utc }
+          )
+      )
 
 showPretty :: Transaction -> String
 showPretty = showPrettyAligned ColorNo
-
 
 showPrettyAligned :: ColorFlag -> Transaction -> String
 showPrettyAligned colorFlag (Transaction tact) =
@@ -137,7 +141,8 @@ showPrettyAligned colorFlag (Transaction tact) =
     addId str = " | (id " <> str <> ")"
   in
     fromMaybe (" " `power` offsetDate) (map dateShowPretty tact.utc)
-    <> " | " <> format (width 30) (fromMaybe "NO NOTE" tact.note)
-    <> fromMaybe "" (map addId tact.id)
-    <> indentSubsequent offsetIndentation ("\n" <> transfersPretty)
-    <> "\n"
+      <> " | "
+      <> format (width 30) (fromMaybe "NO NOTE" tact.note)
+      <> fromMaybe "" (map addId tact.id)
+      <> indentSubsequent offsetIndentation ("\n" <> transfersPretty)
+      <> "\n"

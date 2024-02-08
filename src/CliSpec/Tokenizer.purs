@@ -1,9 +1,8 @@
-module CliSpec.Tokenizer (
-  CliArgToken(..),
-  tokenizeCliArgument,
-  tokenizeCliArguments
-)
-  where
+module CliSpec.Tokenizer
+  ( CliArgToken(..)
+  , tokenizeCliArgument
+  , tokenizeCliArguments
+  ) where
 
 import CliSpec.Types (CliArgPrim(..))
 import Data.Array (concat, drop, groupBy, null, take, (:))
@@ -14,12 +13,11 @@ import Data.Show.Generic (genericShow)
 import Data.String.CodeUnits (toCharArray, fromCharArray)
 import Prelude (class Eq, class Show, map, (#), (&&), (/=), (<#>), (==))
 
-
 -- | Intermediate representation of CLI arguments.
 -- | This might not yet differentiate correctly between `Option`s and `Flag`s
 -- | and between `CmdArg`s and `ValArg`s.
-data CliArgToken =
-  TextToken String -- ^ Could be a command or a value argument
+data CliArgToken
+  = TextToken String -- ^ Could be a command or a value argument
   | FlagShortToken Char
   | FlagLongToken String
   | OptionShortToken Char CliArgPrim -- ^ `-n=3`
@@ -35,7 +33,6 @@ derive instance eqCliArgToken :: Eq CliArgToken
 instance showCliArgToken :: Show CliArgToken where
   show = genericShow
 
-
 optionLongTokenFromChars :: Array Char -> Array CliArgToken
 optionLongTokenFromChars charsRest = do
   let
@@ -43,13 +40,12 @@ optionLongTokenFromChars charsRest = do
       # groupBy (\a b -> a /= '=' && b /= '=')
 
   case groupedChars of
-    [keyPart, _equalSign, valuePart] ->
-      [OptionLongToken
+    [ keyPart, _equalSign, valuePart ] ->
+      [ OptionLongToken
           (keyPart # toArray # fromCharArray)
           (TextArg (valuePart # toArray # fromCharArray))
-        ]
+      ]
     _ -> []
-
 
 -- | Parse CLI arguments into a list of `CliArgToken`s
 -- | One argument can lead to multiple `CliArgToken`s
@@ -61,30 +57,25 @@ tokenizeCliArgument arg = do
     charsRest = chars # drop 2 :: Array Char
 
   case chars # take 2 of
-    ['-', '-'] ->
-      if charsRest == []
-      then [SeparatorToken]
+    [ '-', '-' ] ->
+      if charsRest == [] then [ SeparatorToken ]
+      else if '=' `elem` charsRest then optionLongTokenFromChars charsRest
       else
-        if '=' `elem` charsRest
-        then optionLongTokenFromChars charsRest
-        else
-          [FlagLongToken (charsRest # fromCharArray)]
+        [ FlagLongToken (charsRest # fromCharArray) ]
 
-    ['-', singleFlag] ->
-      if (charsRest # take 1) == ['=']
-      then
-        [OptionShortToken
-          singleFlag
-          (TextArg (charsRest # drop 1 # fromCharArray))
+    [ '-', singleFlag ] ->
+      if (charsRest # take 1) == [ '=' ] then
+        [ OptionShortToken
+            singleFlag
+            (TextArg (charsRest # drop 1 # fromCharArray))
         ]
       else
         FlagShortToken singleFlag
-          : if null charsRest
-            then []
+          :
+            if null charsRest then []
             else charsRest # map FlagShortToken
 
-    _ -> [TextToken arg]
-
+    _ -> [ TextToken arg ]
 
 tokenizeCliArguments :: Array String -> Array CliArgToken
 tokenizeCliArguments arguments = do

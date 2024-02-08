@@ -6,7 +6,6 @@ import Data.Result (Result(..))
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Ledger as Ledger
 
-
 getBalance :: String -> String
 getBalance journal = do
   let

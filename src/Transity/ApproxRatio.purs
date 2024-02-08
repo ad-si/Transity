@@ -32,7 +32,6 @@ module ApproxRatio where
 --     else if q /= q'  then (q + 1) % 1
 --                      else (q * n'' + d'') % n''
 
-
 -- approxRational :: Number -> Number -> Ratio BigInt
 -- approxRational rat eps  =
 --   simplest (rat - eps) (rat + eps)

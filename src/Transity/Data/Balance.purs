@@ -25,9 +25,7 @@ import Transity.Utils
   , utcToIsoString
   )
 
-
 data Balance = Balance DateTime CommodityMap
-
 
 derive instance genericBalance :: Generic Balance _
 derive instance eqBalance :: Eq Balance
@@ -46,13 +44,13 @@ instance encodeBalance :: EncodeJson Balance where
 
 instance decodeBalance :: DecodeJson Balance where
   decodeJson json = toEither
-    $ resultWithJsonDecodeError $ decodeJsonBalance json
-
+    $ resultWithJsonDecodeError
+    $ decodeJsonBalance json
 
 decodeJsonBalance :: Json -> Result String Balance
 decodeJsonBalance json = do
-  object  <- maybe (Error "Balance is not an object") Ok (toObject json)
-  utc     <- object `getObjField` "utc"
+  object <- maybe (Error "Balance is not an object") Ok (toObject json)
+  utc <- object `getObjField` "utc"
   (amounts :: Array String) <- object `getObjField` "amounts"
 
   amountList <- sequence $ amounts <#> parseAmount <#> stringifyJsonDecodeError
