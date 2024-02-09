@@ -44,7 +44,7 @@ import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
-import Transity.Utils (SortOrder(..), makeRed, errorAndExit)
+import Transity.Utils (SortOrder(..), errorAndExit)
 import Transity.Xlsx (writeToZip, entriesAsXlsx)
 
 -- TODO: Move validation to parsing
@@ -153,26 +153,64 @@ loadAndExec currentDir [ command, filePathRel ] = do
 loadAndExec _ _ =
   pure $ Error "loadAndExec expects an array with length 2"
 
+getJournalPaths :: String -> Array CliArgPrim -> Result String (Array String)
+getJournalPaths journalPathRel extraJournalPaths = sequence $
+  [ Ok journalPathRel ] <>
+    ( extraJournalPaths
+        <#>
+          ( \valArg -> case valArg of
+              (TextArg path) -> Ok path
+              _ -> Error $ "Invalid argument type: " <> show valArg
+          )
+    )
+
+combineJournals :: String -> Array String -> Effect (Result String Ledger)
+combineJournals currentDir paths = do
+  paths
+    <#>
+      ( \filePathRel -> do
+          filePathAbs <- Path.resolve [ currentDir ] filePathRel
+          ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
+
+          pure $ Ledger.fromYaml ledgerFileContent
+      )
+    # sequence
+    <#> sequence
+    <#> (\ledgerRes -> ledgerRes <#> fold)
+
+buildLedgerAndRun
+  :: String
+  -> String
+  -> Array CliArgPrim
+  -> (Ledger -> Effect (Result String Unit))
+  -> Effect (Result String Unit)
+buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback = do
+  let journalPaths = getJournalPaths journalPathRel extraJournalPaths
+
+  case journalPaths of
+    Error message -> errorAndExit config message
+    Ok paths -> do
+      combineRes <- combineJournals currentDir paths
+      case combineRes of
+        Error message -> errorAndExit config message
+        Ok ledger -> callback ledger
+
 executor :: String -> String -> Array CliArgument -> Effect (Result String Unit)
 executor cmdName usageString args = do
   case cmdName, args of
     "unused-files",
     [ ValArg (TextArg filesDirPath)
-    , ValArg (TextArg ledgerFilePath)
-    -- TODO: , ValArgList extraJournalPaths
+    , ValArg (TextArg jourPathRel)
+    , ValArgList extraJournalPaths
     ] -> do
-      ledgerFilePathAbs <- Path.resolve [] ledgerFilePath
-      ledgerFileContent <- Sync.readTextFile UTF8 ledgerFilePathAbs
-
-      case (Ledger.fromYaml ledgerFileContent) of
-        Error msg -> errorAndExit config msg
-        Ok ledger@(Ledger { transactions }) -> do
-          currentDir <- cwd
+      currentDir <- cwd
+      buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
+        \ledger@(Ledger { transactions }) -> do
           let
             journalDir =
-              if indexOf (Pattern "/dev/fd/") ledgerFilePathAbs == Just 0 then
+              if indexOf (Pattern "/dev/fd/") jourPathRel == Just 0 then
                 currentDir
-              else Path.dirname ledgerFilePathAbs
+              else Path.dirname jourPathRel
 
           _ <- checkFilePaths journalDir ledger
 
@@ -201,13 +239,6 @@ executor cmdName usageString args = do
 
           pure $ Ok unit
 
-    "unused-files",
-    _ -> do
-      let errStr = "ERROR: Wrong number of arguments for unused-files"
-      log $ makeRed config errStr <> "\n\n" <> usageString
-      setExitCode 1
-      pure $ Error errStr
-
     _,
     [ ValArg (TextArg journalPathRel) ] -> do
       currentDir <- cwd
@@ -224,56 +255,24 @@ executor cmdName usageString args = do
           errorAndExit config message
 
     _,
-    [ ValArg (TextArg journalPathRel)
+    [ ValArg (TextArg jourPathRel)
     , ValArgList extraJournalPaths
     ] -> do
       currentDir <- cwd
+      buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
+        \ledger -> do
+          result <- execForLedger
+            currentDir
+            jourPathRel -- TODO: Must incorporate all paths
+            cmdName
+            ledger
 
-      let
-        journalPaths :: Result String (Array String)
-        journalPaths = sequence $
-          [ Ok journalPathRel ] <>
-            ( extraJournalPaths
-                <#>
-                  ( \valArg -> case valArg of
-                      (TextArg path) -> Ok path
-                      _ -> Error $ "Invalid argument type: " <> show valArg
-                  )
-            )
-
-        combineJournals :: Array String -> Effect (Result String Ledger)
-        combineJournals paths = do
-          paths
-            <#>
-              ( \filePathRel -> do
-                  filePathAbs <- Path.resolve [ currentDir ] filePathRel
-                  ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
-
-                  pure $ Ledger.fromYaml ledgerFileContent
-              )
-            # sequence
-            <#> sequence
-            <#> (\ledgerRes -> ledgerRes <#> fold)
-
-      case journalPaths of
-        Error message -> errorAndExit config message
-        Ok paths -> do
-          combineRes <- combineJournals paths
-          case combineRes of
-            Error message -> errorAndExit config message
-            Ok ledger -> do
-              result <- execForLedger
-                currentDir
-                journalPathRel -- TODO: Must incorporate all paths
-                cmdName
-                ledger
-
-              case result of
-                Ok output -> do
-                  log output
-                  pure $ Ok unit
-                Error message ->
-                  errorAndExit config message
+          case result of
+            Ok output -> do
+              log output
+              pure $ Ok unit
+            Error message ->
+              errorAndExit config message
 
     _,
     _ -> do
