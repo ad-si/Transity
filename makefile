@@ -21,7 +21,8 @@ changelog.md: .git | node_modules
 		--output-unreleased
 
 
-index.js: $(wildcard src/**/*) src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
+srcFiles := $(shell find src -type f -name "*.purs")
+index.js: $(srcFiles) src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
 	npx spago bundle \
 		--platform node \
 		--minify
