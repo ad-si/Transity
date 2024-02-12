@@ -1,7 +1,7 @@
 import fse from "fs-extra"
 import yaml from "js-yaml"
 import converter from "converter"
-import chrono from "chrono-node"
+import * as chrono from "chrono-node"
 
 import {
   rmEmptyString,
