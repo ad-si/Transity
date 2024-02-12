@@ -1,7 +1,8 @@
 module Test.Main where
 
-import Test.Fixtures
+import Prelude (Unit, (==))
 
+import CliSpec.Types (CliArgPrim(..))
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Core (stringify)
@@ -32,16 +33,19 @@ import Data.Tuple (Tuple(..))
 import Data.Unit (unit)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
+import Effect.Class (liftEffect)
 import JS.BigInt (fromString) as BigInt
 import Partial.Unsafe (unsafePartial)
-import Prelude (Unit, (==))
-import Test.CliSpec as Test.CliSpec
-import Test.Fixtures as Fixtures
 import Test.Spec (describe, it)
-import Test.Spec.Assertions (expectError, fail, shouldEqual)
+import Test.Spec.Assertions (expectError, fail, shouldEqual, shouldSatisfy)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
+
+import Main (buildLedgerAndRun)
+import Test.CliSpec as Test.CliSpec
+import Test.Fixtures
+import Test.Fixtures as Fixtures
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -553,13 +557,10 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
           (show actual) `shouldEqualString` (show expected)
 
         describe "Verification" do
-
           it "ledger without verification balances is valid" do
             let verification = Ledger.verifyLedgerBalances ledger
 
-            (isOk verification) `shouldEqual` true
-          -- TODO: Use instead following with purescript-spec@v3.1.0
-          -- verification `shouldSatisfy` isOk
+            verification `shouldSatisfy` isOk
 
           it "fails if verification balances are incorrect" do
             let
@@ -812,6 +813,15 @@ main = launchAff_ $ runSpec [ consoleReporter ] do
               verification = ledgerValid >>= Ledger.verifyLedgerBalances
 
             (isOk verification) `shouldEqual` true
+
+          it "verifies balances for combined journals" do
+            execResult <- liftEffect $ buildLedgerAndRun
+              "."
+              "test/fixtures/journal1.yaml"
+              [ TextArg "test/fixtures/journal2.yaml" ]
+              (\_ledger -> pure $ Ok unit)
+
+            (isError execResult) `shouldEqual` true
 
         it "subtracts a transfer from a balance map" do
           let

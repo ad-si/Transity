@@ -33,7 +33,7 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
 import Data.Array as Array
 import Data.DateTime (DateTime)
-import Data.Foldable (all, find)
+import Data.Foldable (all, find, foldMap)
 import Data.Function (flip)
 import Data.Generic.Rep (class Generic)
 import Data.HeytingAlgebra (not)
@@ -188,7 +188,7 @@ verifyBalances balanceMap balancingTransfers =
       in
         if tfHeadRec.note == Just "___BALANCE___" then
           if not $ isAmountInMapZero newBal tfHeadRec.from targetCom then Error
-            ( "Error:\nThe verification balance of account '" <> tfHeadRec.from
+            ( "ERROR:\nThe verification balance of account '" <> tfHeadRec.from
                 <> "' on '"
                 <> (fromMaybe "" $ tfHeadRec.utc <#> dateShowPretty)
                 <> "'\nis off by "
@@ -241,28 +241,19 @@ fromJson json = do
   ledger <- stringifyJsonDecodeError $ fromEither $ decodeJson jsonObj
   pure ledger
 
--- TODO: >>= verifyAccounts
--- TODO: >>= verifyLedgerBalances
--- TODO: >>= addInitalBalance
-
 fromYaml :: String -> Result String Ledger
-fromYaml yaml =
+fromYaml yaml = do
   let
     result = yaml
       # parseYAMLToJson
       # runExcept
       # fromEither
-    unverified = case result of
-      Error error -> Error
-        ( "Could not parse YAML: "
-            <> fold (map renderForeignError error)
-        )
-      Ok json -> stringifyJsonDecodeError $ fromEither $ decodeJson json
-  in
-    unverified
 
--- TODO: >>= verifyAccounts
--- TODO: >>= verifyLedgerBalances
+  case result of
+    Error error ->
+      Error $ "Could not parse YAML: " <> foldMap renderForeignError error
+    Ok json ->
+      stringifyJsonDecodeError $ fromEither $ decodeJson json
 
 showPretty :: Ledger -> String
 showPretty = showPrettyAligned ColorNo

@@ -1,0 +1,29 @@
+owner: John Doe
+
+entities:
+  -
+    id: lisa
+    accounts:
+      - id: wallet
+        balances:
+          - utc: '2020-01-01 12:00'
+            amounts: []
+          - utc: '2023-01-01 12:00'
+            amounts: [4 €, 7 $]
+  -
+    id: marc
+    accounts: [id: wallet]
+
+transactions:
+  -
+    utc: '2022-01-01 12:00'
+    transfers:
+      - from: lisa:wallet
+        to: marc:wallet
+        amount: 3 €
+  -
+    utc: '2023-01-01 12:00'
+    transfers:
+      - from: marc:wallet
+        to: john:wallet
+        amount: 8 $

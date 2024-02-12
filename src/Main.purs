@@ -13,6 +13,7 @@ import Prelude
   , (<#>)
   , (<>)
   , (>)
+  , (>>=)
   )
 
 import Ansi.Codes (Color(..))
@@ -40,7 +41,12 @@ import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (cwd, setExitCode)
 import Transity.Data.Config (ColorFlag(..), config)
-import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
+import Transity.Data.Ledger
+  ( BalanceFilter(..)
+  , Ledger(..)
+  , verifyAccounts
+  , verifyLedgerBalances
+  )
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
@@ -191,9 +197,25 @@ buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback = do
     Error message -> errorAndExit config message
     Ok paths -> do
       combineRes <- combineJournals currentDir paths
-      case combineRes of
-        Error message -> errorAndExit config message
-        Ok ledger -> callback ledger
+      case
+        combineRes
+          >>= verifyAccounts
+          >>= verifyLedgerBalances
+        of
+        Error msg -> pure $ Error msg
+        Ok ledger -> ledger # callback
+
+buildRunExit
+  :: String
+  -> String
+  -> Array CliArgPrim
+  -> (Ledger -> Effect (Result String Unit))
+  -> Effect (Result String Unit)
+buildRunExit currentDir journalPathRel extraJournalPaths callback = do
+  buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback
+    >>= \res -> case res of
+      Ok val -> pure $ Ok val
+      Error msg -> errorAndExit config msg
 
 executor :: String -> String -> Array CliArgument -> Effect (Result String Unit)
 executor cmdName usageString args = do
@@ -204,7 +226,7 @@ executor cmdName usageString args = do
     , ValArgList extraJournalPaths
     ] -> do
       currentDir <- cwd
-      buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
+      buildRunExit currentDir jourPathRel extraJournalPaths $
         \ledger@(Ledger { transactions }) -> do
           let
             journalDir =

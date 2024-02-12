@@ -1,0 +1,35 @@
+owner: john
+
+entities:
+  -
+    id: anna
+    accounts:
+      - id: wallet
+        balances:
+          - utc: '2000-01-01 12:00'
+            amounts: []
+          - utc: '2006-01-01 12:00'
+            amounts: [3 €]
+          - utc: '2010-01-01 12:00'
+            amounts: [3 €, 4 $]
+  -
+    id: ben
+    accounts: [id: wallet]
+
+  -
+    id: john
+    accounts: [id: wallet]
+
+transactions:
+  -
+    utc: '2005-01-01 12:00'
+    transfers:
+      - from: ben:wallet
+        to: anna:wallet
+        amount: 3 €
+  -
+    utc: '2007-01-01 12:00'
+    transfers:
+      - from: ben:wallet
+        to: anna:wallet
+        amount: 4 $
