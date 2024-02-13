@@ -314,7 +314,19 @@ transity gplot-cumul examples/journal.yaml \
 ![Screenshot of cumulative account balance plot](./images/screenshot-plot.png)
 
 
-## Import from Ledger CLI
+## Import
+
+### AI Powered
+
+We built a dedicated OpenAI GPT to convert any financial data
+(e.g. CSVs, bank statements, chat history, …) to a Transity journal file.
+
+Check it out at
+[chat.openai.com/g/g-aUph953Vj-transity](
+  https://chat.openai.com/g/g-aUph953Vj-transity).
+
+
+### From Ledger CLI
 
 Execute the included ledger2transity script:
 
