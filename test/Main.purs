@@ -2,7 +2,6 @@ module Test.Main where
 
 import Prelude (Unit, (==))
 
-import CliSpec.Types (CliArgPrim(..))
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
 import Data.Argonaut.Core (stringify)
@@ -43,7 +42,7 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 import Main (buildLedgerAndRun)
-import Test.CliSpec as Test.CliSpec
+import Oclis.Types (CliArgPrim(TextArg))
 import Test.Fixtures
 import Test.Fixtures as Fixtures
 import Transity.Data.Account (Account(..))
@@ -122,8 +121,6 @@ compareChar actual expected =
 
 main :: Effect Unit
 main = launchAff_ $ runSpec [ consoleReporter ] do
-  Test.CliSpec.tests
-
   describe "Utils" do
     describe "digitsToRational" do
       it "converts 137 to 137/1" do

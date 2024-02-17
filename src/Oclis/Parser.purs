@@ -1,4 +1,8 @@
-module CliSpec.Parser
+-- | CAUTION:
+-- | THIS FILE WAS GENERATED BASED ON `oclis.ncl`.
+-- | DO NOT EDIT MANUALLY!
+
+module Oclis.Parser
   ( findFlagLong
   , findSubCmd
   , tokensToCliArguments
@@ -6,8 +10,8 @@ module CliSpec.Parser
 
 import Data.Result
 
-import CliSpec.Tokenizer (CliArgToken(..))
-import CliSpec.Types (CliArgPrim(..), CliArgument(..), CliSpec(..), Option)
+import Oclis.Tokenizer (CliArgToken(..))
+import Oclis.Types (CliArgPrim(..), CliArgument(..), Oclis(..), Option)
 import Data.Array (drop, find, foldl, head, last, zip)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.CodeUnits (singleton)
@@ -39,20 +43,20 @@ findOptionLong cliSpecOptionsMb flagName = do
     # fromMaybe []
     # find (\opt -> opt.name == Just flagName)
 
-findSubCmd :: Maybe (Array CliSpec) -> String -> Maybe CliSpec
+findSubCmd :: Maybe (Array Oclis) -> String -> Maybe Oclis
 findSubCmd cliSpecCommands value = do
   cliSpecCommands
     # fromMaybe []
-    # find (\(CliSpec cmd) -> cmd.name == value)
+    # find (\(Oclis cmd) -> cmd.name == value)
 
 -- | Verify that the remaining tokens are allowed
 -- | for the given command specification and return
 -- | the corresponding `CliArgument`s.
 verifyTokensAreAllowed
-  :: CliSpec
+  :: Oclis
   -> Array CliArgToken
   -> Result String (Array CliArgument)
-verifyTokensAreAllowed (CliSpec cliSpecRaw) tokens = do
+verifyTokensAreAllowed (Oclis cliSpecRaw) tokens = do
   let
     argsAndTokens = zip
       (cliSpecRaw.arguments # fromMaybe [])
@@ -104,12 +108,12 @@ verifyTokensAreAllowed (CliSpec cliSpecRaw) tokens = do
 -- | by matching them against the spec.
 -- | Especially for the differentiation between `Option`s and `Flag`s.
 tokensToCliArguments
-  :: CliSpec
+  :: Oclis
   -> Array CliArgToken
   -> Result String (Array CliArgument)
-tokensToCliArguments cliSpec@(CliSpec cliSpecRaw) tokens = do
+tokensToCliArguments cliSpec@(Oclis cliSpecRaw) tokens = do
   let
-    mainCmdRes :: Result String CliSpec
+    mainCmdRes :: Result String Oclis
     mainCmdRes = case tokens # head of
       Just (TextToken cmdName) ->
         if
@@ -237,5 +241,5 @@ tokensToCliArguments cliSpec@(CliSpec cliSpecRaw) tokens = do
                 []
 
       sequence
-        $ [ mainCmdRes <#> (\(CliSpec cmdSpec) -> CmdArg cmdSpec.name) ]
+        $ [ mainCmdRes <#> (\(Oclis cmdSpec) -> CmdArg cmdSpec.name) ]
             <> options

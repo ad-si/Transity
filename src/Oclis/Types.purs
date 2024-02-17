@@ -1,4 +1,8 @@
-module CliSpec.Types where
+-- | CAUTION:
+-- | THIS FILE WAS GENERATED BASED ON `oclis.ncl`.
+-- | DO NOT EDIT MANUALLY!
+
+module Oclis.Types where
 
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
@@ -96,22 +100,22 @@ type CliSpecRaw =
   , funcName :: Maybe String
   , options :: Maybe (Array Option)
   , arguments :: Maybe (Array Argument)
-  , commands :: Maybe (Array CliSpec)
+  , commands :: Maybe (Array Oclis)
   }
 
 -- | Must be a newtype to avoid circular references
-newtype CliSpec = CliSpec CliSpecRaw
+newtype Oclis = Oclis CliSpecRaw
 
-derive instance genericCliSpec :: Generic CliSpec _
-derive instance eqCliSpec :: Eq CliSpec
-derive instance newtypeCliSpec :: Newtype CliSpec _
-instance showCliSpec :: Show CliSpec where
-  show = \(CliSpec specRaw) -> show specRaw
+derive instance genericCliSpec :: Generic Oclis _
+derive instance eqCliSpec :: Eq Oclis
+derive instance newtypeCliSpec :: Newtype Oclis _
+instance showCliSpec :: Show Oclis where
+  show = \(Oclis specRaw) -> show specRaw
 
-instance decodeJsonCliSpec :: DecodeJson CliSpec where
+instance decodeJsonCliSpec :: DecodeJson Oclis where
   decodeJson = \json -> do
     raw <- decodeJson json
-    pure (CliSpec raw)
+    pure (Oclis raw)
 
 emptyCliSpecRaw :: CliSpecRaw
 emptyCliSpecRaw =
@@ -125,6 +129,6 @@ emptyCliSpecRaw =
   , commands: Nothing
   }
 
-emptyCliSpec :: CliSpec
+emptyCliSpec :: Oclis
 emptyCliSpec =
-  CliSpec emptyCliSpecRaw
+  Oclis emptyCliSpecRaw

@@ -8,7 +8,7 @@ all: changelog.md readme.md index.js docs output
 
 
 .PHONY: build
-build: src/CliSpec/JsonEmbed.purs | node_modules
+build: | node_modules
 	npx spago build
 
 
@@ -22,7 +22,7 @@ changelog.md: .git | node_modules
 
 
 srcFiles := $(shell find src -type f -name "*.purs")
-index.js: $(srcFiles) src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
+index.js: $(srcFiles) spago.yaml | node_modules
 	npx spago bundle \
 		--platform node \
 		--minify
@@ -48,26 +48,8 @@ docs-dev: output index.js | node_modules
 		--target $@
 
 
-define JsonEmbedStart
-module CliSpec.JsonEmbed where
 
-fileContent :: String
-fileContent = """
-endef
-export JsonEmbedStart
-
-src/CliSpec/JsonEmbed.purs: cli-contract.ncl cli-spec.ncl
-	echo "$$JsonEmbedStart" > $@
-
-	echo \
-		'(import "cli-contract.ncl") & (import "cli-spec.ncl")' \
-		| nickel --color=always export --format json \
-		>> $@
-
-	echo '"""' >> $@
-
-
-output: src src/CliSpec/JsonEmbed.purs spago.yaml | node_modules
+output: src spago.yaml | node_modules
 	npx spago build
 
 
@@ -89,14 +71,14 @@ lint-js: | node_modules
 		scripts
 
 .PHONY: test-spago
-test-spago: src/CliSpec/JsonEmbed.purs | node_modules
+test-spago: | node_modules
 	npx spago test
 
 .PHONY: test
 test: lint-js test-spago
 
 .PHONY: test-watch
-test-watch: src/CliSpec/JsonEmbed.purs | node_modules
+test-watch: | node_modules
 	watchexec \
 		--exts purs \
 		'npx spago test'

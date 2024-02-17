@@ -18,9 +18,9 @@ import Prelude
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import CliSpec (parseCliSpec, callCliApp)
-import CliSpec.JsonEmbed as CliSpec.JsonEmbed
-import CliSpec.Types (CliArgPrim(..), CliArgument(..))
+import Oclis (parseCliSpec, callCliApp)
+import Oclis.SpecEmbed as Oclis.SpecEmbed
+import Oclis.Types (CliArgPrim(..), CliArgument(..))
 import Data.Array (concat, cons, difference, filter, fold, null, zip)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
@@ -330,7 +330,7 @@ getAllFiles directoryPath =
 
 main :: Effect Unit
 main = do
-  _ <- case parseCliSpec CliSpec.JsonEmbed.fileContent of
+  _ <- case parseCliSpec Oclis.SpecEmbed.fileContent of
     Error msg -> errorAndExit config msg
     Ok cliSpec -> callCliApp cliSpec executor
 

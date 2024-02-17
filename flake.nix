@@ -25,12 +25,14 @@
       nixpkgsFor = forAllSystems (system: import nixpkgs {
         inherit system;
         config = { };
-        overlays = builtins.attrValues self.overlays;
+        # TODO: PureScript deps are currently still installed via npm
+        # overlays = builtins.attrValues self.overlays;
       });
     in {
-      overlays = {
-        purescript = inputs.purescript-overlay.overlays.default;
-      };
+      # TODO: PureScript deps are currently still installed via npm
+      # overlays = {
+      #   purescript = inputs.purescript-overlay.overlays.default;
+      # };
 
       packages = forAllSystems (system:
         let pkgs = nixpkgsFor.${system}; in {
@@ -51,12 +53,13 @@
         let pkgs = nixpkgsFor.${system}; in {
           default = pkgs.mkShell {
             name = "transity";
-            inputsFrom = builtins.attrValues self.packages.${system};
+            # TODO: This somehow makes it use nodejs_18
+            # inputsFrom = builtins.attrValues self.packages.${system};
             buildInputs = with pkgs; [
               nodejs_20
               watchexec
 
-              # TODO: Currently still installed via npm
+              # TODO: PureScript deps are currently still installed via npm
               # purs
               # purs-backend-es
               # purs-tidy-bin.purs-tidy-0_10_1

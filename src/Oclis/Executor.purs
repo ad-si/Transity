@@ -1,13 +1,17 @@
-module CliSpec where
+-- | CAUTION:
+-- | THIS FILE WAS GENERATED BASED ON `oclis.ncl`.
+-- | DO NOT EDIT MANUALLY!
 
-import CliSpec.Types
+module Oclis where
+
+import Oclis.Types
 
 import Prelude (Unit, bind, discard, pure, unit, (#), ($), (-), (<>), (>), (||))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import CliSpec.Parser (tokensToCliArguments)
-import CliSpec.Tokenizer (tokenizeCliArguments)
+import Oclis.Parser (tokensToCliArguments)
+import Oclis.Tokenizer (tokenizeCliArguments)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Error (printJsonDecodeError)
 import Data.Argonaut.Parser (jsonParser)
@@ -36,7 +40,7 @@ errorAndExit message = do
   setExitCode 1
   pure $ Error message
 
-parseCliSpec :: String -> Result String CliSpec
+parseCliSpec :: String -> Result String Oclis
 parseCliSpec cliSpecJsonStr = do
   let cliSpecRes = fromEither $ jsonParser cliSpecJsonStr
 
@@ -49,12 +53,12 @@ parseCliSpec cliSpecJsonStr = do
         # fromEither
 
 callCommand
-  :: CliSpec
+  :: Oclis
   -> String
   -> Array CliArgument
   -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
   -> Effect (Result String Unit)
-callCommand (CliSpec cliSpec) usageString args executor = do
+callCommand (Oclis cliSpec) usageString args executor = do
   case args # head of
     Nothing -> do
       log "No arguments provided"
@@ -97,7 +101,7 @@ callCommand (CliSpec cliSpec) usageString args executor = do
           let
             commandMb = cliSpec.commands
               # fromMaybe []
-              # find (\(CliSpec cmd) -> cmd.name == cmdName)
+              # find (\(Oclis cmd) -> cmd.name == cmdName)
             providedArgs = args # drop 2
 
           case commandMb of
@@ -111,7 +115,7 @@ callCommand (CliSpec cliSpec) usageString args executor = do
               setExitCode 1
               pure (Error errStr)
 
-            Just (CliSpec _command) -> do
+            Just (Oclis _command) -> do
               executor cmdName usageString providedArgs
 
         Just arg -> do
@@ -135,17 +139,17 @@ repeatString str n =
   fold $ replicate n str
 
 callCliApp
-  :: CliSpec
+  :: Oclis
   -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
   -> Effect (Result String Unit)
-callCliApp cliSpec@(CliSpec cliSpecRaw) executor = do
+callCliApp cliSpec@(Oclis cliSpecRaw) executor = do
   let
     lengthLongestCmd :: Int
     lengthLongestCmd =
       cliSpecRaw.commands
         # fromMaybe []
         # foldl
-            ( \acc (CliSpec cmd) ->
+            ( \acc (Oclis cmd) ->
                 if acc > Str.length cmd.name then acc
                 else Str.length cmd.name
             )
@@ -162,7 +166,7 @@ callCliApp cliSpec@(CliSpec cliSpecRaw) executor = do
           ( cliSpecRaw.commands
               # fromMaybe []
               # foldMap
-                  ( \(CliSpec cmd) ->
+                  ( \(Oclis cmd) ->
                       cmd.name
                         <>
                           ( repeatString " "
