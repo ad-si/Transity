@@ -4,14 +4,10 @@
 
 module Oclis where
 
-import Oclis.Types
-
 import Prelude (Unit, bind, discard, pure, unit, (#), ($), (-), (<>), (>), (||))
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Oclis.Parser (tokensToCliArguments)
-import Oclis.Tokenizer (tokenizeCliArguments)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Error (printJsonDecodeError)
 import Data.Argonaut.Parser (jsonParser)
@@ -24,6 +20,11 @@ import Data.String as Str
 import Effect (Effect)
 import Effect.Class.Console (log, error)
 import Node.Process (argv, setExitCode)
+
+import Oclis.Parser (tokensToCliArguments)
+import Oclis.SpecEmbed (fileContent)
+import Oclis.Tokenizer (tokenizeCliArguments)
+import Oclis.Types
 
 -- TODO: Automatically disable colors if not supported
 makeRed :: String -> String
@@ -52,11 +53,17 @@ parseCliSpec cliSpecJsonStr = do
         # (lmap printJsonDecodeError)
         # fromEither
 
+type ExecutorContext =
+  { usageString :: String
+  , command :: Maybe String
+  , arguments :: Array CliArgument
+  }
+
 callCommand
   :: Oclis
   -> String
   -> Array CliArgument
-  -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
+  -> (ExecutorContext -> Effect (Result String Unit))
   -> Effect (Result String Unit)
 callCommand (Oclis cliSpec) usageString args executor = do
   case args # head of
@@ -116,17 +123,17 @@ callCommand (Oclis cliSpec) usageString args executor = do
               pure (Error errStr)
 
             Just (Oclis _command) -> do
-              executor cmdName usageString providedArgs
+              executor
+                { command: Just cmdName
+                , usageString
+                , arguments: providedArgs
+                }
 
-        Just arg -> do
-          let
-            errMsg =
-              "ERROR: First argument must be a command and not \""
-                <> cliArgToString arg
-                <> "\"\n\n"
-          log $ makeRed $ errMsg <> usageString
-          setExitCode 1
-          pure $ Error errMsg
+        Just _ -> executor
+          { command: Nothing
+          , usageString
+          , arguments: args # drop 1
+          }
 
         Nothing -> do
           log usageString
@@ -138,11 +145,34 @@ repeatString :: String -> Int -> String
 repeatString str n =
   fold $ replicate n str
 
-callCliApp
+-- | Convenience function to call the CLI app with the default spec and args.
+-- | Use `callCliAppWith`` if you want to provide your own values.
+callCliApp :: (ExecutorContext -> Effect (Result String Unit)) -> Effect Unit
+callCliApp executor =
+  case parseCliSpec fileContent of
+    Error errMsg -> do
+      error $
+        "ERROR:\n"
+          <> "The auto-generated CLI specification in SpecEmbed.purs "
+          <> "could not be parsed.\n"
+          <> "This should not be possible!\n"
+          <> "Please make sure you didn't accidentally modify any Oclis files\n"
+          <> "and report following error at "
+          <> "https://github.com/Airsequel/Oclis/issues/new:\n"
+          <> "\n"
+          <> errMsg
+      setExitCode 1
+    Ok cliSpec -> do
+      arguments <- argv
+      _ <- callCliAppWith cliSpec executor arguments
+      pure unit
+
+callCliAppWith
   :: Oclis
-  -> (String -> String -> Array CliArgument -> Effect (Result String Unit))
+  -> (ExecutorContext -> Effect (Result String Unit))
+  -> Array String
   -> Effect (Result String Unit)
-callCliApp cliSpec@(Oclis cliSpecRaw) executor = do
+callCliAppWith cliSpec@(Oclis cliSpecRaw) executor arguments = do
   let
     lengthLongestCmd :: Int
     lengthLongestCmd =
@@ -177,8 +207,6 @@ callCliApp cliSpec@(Oclis cliSpecRaw) executor = do
                         <> "\n"
                   )
           )
-
-  arguments <- argv
 
   let
     argsNoInterpreter = arguments # drop 1 -- Drop "node"

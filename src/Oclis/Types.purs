@@ -50,6 +50,7 @@ data CliArgument
   | ValArgList (Array CliArgPrim)
 
 -- TODO: Add support for the following list types
+--       (All entries must be of the same type)
 -- | ValArgList (Array String)
 -- | ValArgListInt (Array Int)
 -- | ValArgListNumber (Array Number)

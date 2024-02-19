@@ -70,12 +70,37 @@ lint-js: | node_modules
 		--ignore-path .gitignore \
 		scripts
 
+
 .PHONY: test-spago
 test-spago: | node_modules
 	npx spago test
 
+
+.PHONY: test-cli
+test-cli: | node_modules
+	npx spago run -- \
+		balance examples/journal.yaml \
+		> /dev/null
+
+	npx spago run -- \
+		balance examples/journal.yaml examples/journal-only-transactions.yaml \
+		> /dev/null
+
+	npx spago run -- \
+		unused-files examples/receipts examples/journal.yaml \
+		2> /dev/null
+
+	npx spago run -- \
+		unused-files \
+			examples/receipts \
+			examples/journal.yaml \
+			examples/journal-only-transactions.yaml \
+		2> /dev/null
+
+
 .PHONY: test
-test: lint-js test-spago
+test: test-spago test-cli lint-js
+
 
 .PHONY: test-watch
 test-watch: | node_modules

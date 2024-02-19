@@ -18,9 +18,6 @@ import Prelude
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
-import Oclis (parseCliSpec, callCliApp)
-import Oclis.SpecEmbed as Oclis.SpecEmbed
-import Oclis.Types (CliArgPrim(..), CliArgument(..))
 import Data.Array (concat, cons, difference, filter, fold, null, zip)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
@@ -40,6 +37,9 @@ import Node.FS.Stats (isFile, isDirectory)
 import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (cwd, setExitCode)
+
+import Oclis (ExecutorContext, callCliApp)
+import Oclis.Types (CliArgPrim(..), CliArgument(..))
 import Transity.Data.Config (ColorFlag(..), config)
 import Transity.Data.Ledger
   ( BalanceFilter(..)
@@ -217,91 +217,6 @@ buildRunExit currentDir journalPathRel extraJournalPaths callback = do
       Ok val -> pure $ Ok val
       Error msg -> errorAndExit config msg
 
-executor :: String -> String -> Array CliArgument -> Effect (Result String Unit)
-executor cmdName usageString args = do
-  case cmdName, args of
-    "unused-files",
-    [ ValArg (TextArg filesDirPath)
-    , ValArg (TextArg jourPathRel)
-    , ValArgList extraJournalPaths
-    ] -> do
-      currentDir <- cwd
-      buildRunExit currentDir jourPathRel extraJournalPaths $
-        \ledger@(Ledger { transactions }) -> do
-          let
-            journalDir =
-              if indexOf (Pattern "/dev/fd/") jourPathRel == Just 0 then
-                currentDir
-              else Path.dirname jourPathRel
-
-          _ <- checkFilePaths journalDir ledger
-
-          filesDir <- Path.resolve [] filesDirPath
-          foundFiles <- getAllFiles filesDir
-          let
-            ledgerFilesRel = foldMap
-              (\(Transaction tact) -> tact.files)
-              transactions
-          ledgerFilesAbs <- sequence $ ledgerFilesRel
-            <#> (\fileRel -> Path.resolve [ journalDir ] fileRel)
-
-          let
-            unusedFiles = difference foundFiles ledgerFilesAbs
-            makeGreen = withGraphics (foreground Green)
-            makeYellow = withGraphics (foreground Yellow)
-
-          if null unusedFiles then
-            log $ makeGreen $ "No unused files found in " <> filesDir
-          else do
-            warn $ makeYellow $ "Warning: "
-              <> "Following files are not referenced in the journal"
-
-            for_ unusedFiles $ \filePathAbs ->
-              log $ makeYellow $ "- " <> filePathAbs
-
-          pure $ Ok unit
-
-    _,
-    [ ValArg (TextArg journalPathRel) ] -> do
-      currentDir <- cwd
-      result <- loadAndExec currentDir [ cmdName, journalPathRel ]
-
-      case result of
-        Ok output ->
-          if length output > 0 then do
-            log output
-            pure $ Ok unit
-          else
-            pure $ Ok unit
-        Error message ->
-          errorAndExit config message
-
-    _,
-    [ ValArg (TextArg jourPathRel)
-    , ValArgList extraJournalPaths
-    ] -> do
-      currentDir <- cwd
-      buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
-        \ledger -> do
-          result <- execForLedger
-            currentDir
-            jourPathRel -- TODO: Must incorporate all paths
-            cmdName
-            ledger
-
-          case result of
-            Ok output -> do
-              log output
-              pure $ Ok unit
-            Error message ->
-              errorAndExit config message
-
-    _,
-    _ -> do
-      log usageString
-      setExitCode 1
-      pure $ Ok unit
-
 getAllFiles :: String -> Effect (Array String)
 getAllFiles directoryPath =
   let
@@ -328,10 +243,100 @@ getAllFiles directoryPath =
   in
     addFiles directoryPath
 
+checkUnusedFiles
+  :: String -> String -> Array CliArgPrim -> Effect (Result String Unit)
+checkUnusedFiles filesDirPath jourPathRel extraJournalPaths = do
+  currentDir <- cwd
+  buildRunExit currentDir jourPathRel extraJournalPaths $
+    \ledger@(Ledger { transactions }) -> do
+      let
+        journalDir =
+          if indexOf (Pattern "/dev/fd/") jourPathRel == Just 0 then
+            currentDir
+          else Path.dirname jourPathRel
+
+      _ <- checkFilePaths journalDir ledger
+
+      filesDir <- Path.resolve [] filesDirPath
+      foundFiles <- getAllFiles filesDir
+      let
+        ledgerFilesRel = foldMap
+          (\(Transaction tact) -> tact.files)
+          transactions
+      ledgerFilesAbs <- sequence $ ledgerFilesRel
+        <#> (\fileRel -> Path.resolve [ journalDir ] fileRel)
+
+      let
+        unusedFiles = difference foundFiles ledgerFilesAbs
+        makeGreen = withGraphics (foreground Green)
+        makeYellow = withGraphics (foreground Yellow)
+
+      if null unusedFiles then
+        log $ makeGreen $ "No unused files found in " <> filesDir
+      else do
+        warn $ makeYellow $ "Warning: "
+          <> "Following files are not referenced in the journal"
+
+        for_ unusedFiles $ \filePathAbs ->
+          warn $ makeYellow $ "- " <> filePathAbs
+
+      pure $ Ok unit
+
+executor :: ExecutorContext -> Effect (Result String Unit)
+executor context = do
+  case context.command, context.arguments of
+    Just "unused-files",
+    [ ValArg (TextArg filesDirPath)
+    , ValArg (TextArg jourPathRel)
+    , ValArgList extraJournalPaths
+    ] -> checkUnusedFiles filesDirPath jourPathRel extraJournalPaths
+
+    Just "unused-files",
+    [ ValArg (TextArg filesDirPath)
+    , ValArg (TextArg jourPathRel)
+    ] -> checkUnusedFiles filesDirPath jourPathRel []
+
+    Just cmdName,
+    [ ValArg (TextArg journalPathRel) ] -> do
+      currentDir <- cwd
+      result <- loadAndExec currentDir [ cmdName, journalPathRel ]
+
+      case result of
+        Ok output ->
+          if length output > 0 then do
+            log output
+            pure $ Ok unit
+          else
+            pure $ Ok unit
+        Error message ->
+          errorAndExit config message
+
+    Just cmdName,
+    [ ValArg (TextArg jourPathRel)
+    , ValArgList extraJournalPaths
+    ] -> do
+      currentDir <- cwd
+      buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
+        \ledger -> do
+          result <- execForLedger
+            currentDir
+            jourPathRel -- TODO: Must incorporate all paths
+            cmdName
+            ledger
+
+          case result of
+            Ok output -> do
+              log output
+              pure $ Ok unit
+            Error message ->
+              errorAndExit config message
+
+    _,
+    _ -> do
+      log context.usageString
+      setExitCode 1
+      pure $ Ok unit
+
 main :: Effect Unit
 main = do
-  _ <- case parseCliSpec Oclis.SpecEmbed.fileContent of
-    Error msg -> errorAndExit config msg
-    Ok cliSpec -> callCliApp cliSpec executor
-
-  pure unit
+  callCliApp executor
