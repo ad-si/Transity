@@ -13,12 +13,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -29,12 +30,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -45,12 +47,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -61,12 +64,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -77,12 +81,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -93,12 +98,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -109,12 +115,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -125,12 +132,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -141,12 +149,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -157,12 +166,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -173,12 +183,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -189,12 +200,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -205,12 +217,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -221,12 +234,13 @@ fileContent = """
       "arguments": [
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
@@ -242,52 +256,21 @@ fileContent = """
         },
         {
           "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
           "type": "Text"
         },
         {
           "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
+          "name": "JOURNAL",
+          "optional": true,
           "type": "List-Text"
         }
       ],
       "description": "Recursively list all files in a directory which are not referenced in the journal",
       "name": "unused-files"
-    },
-    {
-      "arguments": [
-        {
-          "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
-          "type": "Text"
-        },
-        {
-          "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
-          "type": "List-Text"
-        }
-      ],
-      "description": "Print this help dialog",
-      "name": "help"
-    },
-    {
-      "arguments": [
-        {
-          "description": "Path to the journal file",
-          "name": "JOURNAL_FILE",
-          "type": "Text"
-        },
-        {
-          "description": "Additional journal files",
-          "name": "JOURNAL_FILE",
-          "type": "List-Text"
-        }
-      ],
-      "description": "Print currently used version",
-      "name": "version"
     }
   ],
-  "description": "Transity is a full fledged, CLI based plain text accounting tool.",
+  "description": "Transity is a full fledged, CLI based, plain text accounting tool.",
   "funcName": "runApp",
   "name": "transity",
   "version": "0.8.0"

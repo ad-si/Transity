@@ -1,20 +1,21 @@
 let journalArgs = [
   {
-    name = "JOURNAL_FILE",
+    name = "JOURNAL",
     description = "Path to the journal file",
     type = 'Text,
   },
   {
-    name = "JOURNAL_FILE",
+    name = "JOURNAL",
     description = "Additional journal files",
     type = 'List-Text,
+    "optional" = true,
   },
 ]
 in
 {
   name = "transity",
   description = m%"
-    Transity is a full fledged, CLI based plain text accounting tool.
+    Transity is a full fledged, CLI based, plain text accounting tool.
   "%,
   version = "0.8.0",
   funcName = "runApp",
@@ -116,16 +117,6 @@ in
           },
         ]
         @ journalArgs,
-    },
-    {
-      name = "help",
-      description = "Print this help dialog",
-      arguments = journalArgs,
-    },
-    {
-      name = "version",
-      description = "Print currently used version",
-      arguments = journalArgs,
     },
   ]
 }
