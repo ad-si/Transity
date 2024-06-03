@@ -56,6 +56,7 @@
             # TODO: This somehow makes it use nodejs_18
             # inputsFrom = builtins.attrValues self.packages.${system};
             buildInputs = with pkgs; [
+              bun
               nodejs_20
               watchexec
 

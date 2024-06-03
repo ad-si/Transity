@@ -11,7 +11,7 @@ By simply running `make` it will also print a short list of them.
 Build and run:
 
 ```shell
-npx spago run --exec-args 'balance test/test.yaml'
+bun x spago run --exec-args 'balance test/test.yaml'
 ```
 
 Make `transity` executable available in your path:
@@ -29,7 +29,7 @@ will now be available via the linked `transity` executable.
 Generate and serve the Pursuit documentation with:
 
 ```sh
-npx spago docs
+bun x spago docs
 cd generated-docs/html
 python3 -m http.server 1222
 ```

@@ -85,7 +85,7 @@ Transity is distributed as a JavaScript bundle and can therefore
 be installed via [npm](https://npmjs.com):
 
 ```sh
-npm install --global transity
+bun install --global transity
 ```
 
 
