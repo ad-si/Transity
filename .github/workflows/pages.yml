@@ -1,4 +1,4 @@
-name: Deploy webapp to GitHub Pages
+name: Run tests and deploy webapp to GitHub Pages
 
 on:
   push:
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  test-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -53,12 +53,12 @@ jobs:
         run: make docs
 
       - name: Upload artifact
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           path: docs
 
       - name: Deploy to GitHub Pages
-        if: runner.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         id: deployment
         uses: actions/deploy-pages@v4
