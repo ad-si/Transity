@@ -108,7 +108,6 @@ async function downloadRange (options = {}) {
   const endInputSelector = "#zeitraumKalender input[type=text]:last-of-type"
   const log = process.env.NODE_DEBUG
     ? console.warn
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     : () => {}
 
   log(
@@ -177,7 +176,6 @@ async function getTransactions (options = {}) {
   const filePathTemp = temporaryFile({name: "transactions.csv"})
   const log = process.env.NODE_DEBUG
     ? console.warn
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
     : () => {}
 
   const url = `${baseUrl}/de/home.html`

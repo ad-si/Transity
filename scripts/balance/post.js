@@ -6,7 +6,6 @@ import {prettyPrint} from "../helpers.js"
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
   ? console.warn
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   : () => {}
 
 
