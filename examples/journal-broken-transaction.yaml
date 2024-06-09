@@ -1,0 +1,9 @@
+# This file on its own is not valid,
+# but it can be merged with other journals
+transactions:
+  - utc: '2024-05-28 14:35'
+    note: Bread and butter
+    transfers:
+      - from: john:giro
+        to: non_existant_bakery
+        amount: 4.19 €

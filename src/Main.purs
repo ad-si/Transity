@@ -205,18 +205,6 @@ buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback = do
         Error msg -> pure $ Error msg
         Ok ledger -> ledger # callback
 
-buildRunExit
-  :: String
-  -> String
-  -> Array CliArgPrim
-  -> (Ledger -> Effect (Result String Unit))
-  -> Effect (Result String Unit)
-buildRunExit currentDir journalPathRel extraJournalPaths callback = do
-  buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback
-    >>= \res -> case res of
-      Ok val -> pure $ Ok val
-      Error msg -> errorAndExit config msg
-
 getAllFiles :: String -> Effect (Array String)
 getAllFiles directoryPath =
   let
@@ -247,7 +235,7 @@ checkUnusedFiles
   :: String -> String -> Array CliArgPrim -> Effect (Result String Unit)
 checkUnusedFiles filesDirPath jourPathRel extraJournalPaths = do
   currentDir <- cwd
-  buildRunExit currentDir jourPathRel extraJournalPaths $
+  buildLedgerAndRun currentDir jourPathRel extraJournalPaths $
     \ledger@(Ledger { transactions }) -> do
       let
         journalDir =

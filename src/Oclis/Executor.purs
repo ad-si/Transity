@@ -357,7 +357,14 @@ callCliAppWithOutput doesPrint executor =
       setExitCode 1
     Ok cliSpec -> do
       arguments <- argv
-      _ <- callCliAppWith cliSpec executor doesPrint arguments
+      result <- callCliAppWith cliSpec executor doesPrint arguments
+      case result of
+        Error errMsg -> do
+          error (makeRed errMsg)
+          setExitCode 1
+        Ok val -> do
+          log val
+          setExitCode 0
       pure unit
 
 callCliAppWith

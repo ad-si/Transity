@@ -86,6 +86,12 @@ test-cli: | node_modules
 		balance examples/journal.yaml examples/journal-only-transactions.yaml \
 		> /dev/null
 
+	# Following command should fail
+	@bun x spago run -- \
+		balance examples/journal.yaml examples/journal-broken-transaction.yaml \
+		&& echo "❌ This must fail" && exit 1 \
+		|| echo "✅ Balance printed an error"
+
 	bun x spago run -- \
 		unused-files examples/receipts examples/journal.yaml \
 		2> /dev/null
