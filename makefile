@@ -109,6 +109,11 @@ test-watch: | node_modules
 		'bun x spago test'
 
 
+
+.PHONY: install
+install: bundle
+
+
 .PHONY: clean
 clean:
 	-rm -f bun.lockb
@@ -118,5 +123,6 @@ clean:
 	-rm -rf .spago
 	-rm -rf docs
 	-rm -rf docs-dev
+	-rm -rf generated-docs
 	-rm -rf node_modules
 	-rm -rf output
