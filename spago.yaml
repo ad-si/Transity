@@ -43,9 +43,9 @@ package:
     dependencies:
       - spec
 workspace:
-  package_set:
+  packageSet:
     registry: 47.12.0
-  extra_packages:
+  extraPackages:
     format:
       git: https://github.com/feramhq/purescript-format
       ref: 3b0fc6c74f439fc3ad7fc7c88fc6f73b083f82e2
