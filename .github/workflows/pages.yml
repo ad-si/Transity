@@ -2,7 +2,7 @@ name: Run tests and deploy webapp to GitHub Pages
 
 on:
   push:
-    branches: ["master"]
+    branches: ["main"]
 
   # Allow running this workflow manually from the Actions tab
   workflow_dispatch:

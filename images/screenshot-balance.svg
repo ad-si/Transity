@@ -33,7 +33,7 @@
         <svg>
           <use xlink:href="#a"/>
           <text y="3.841" fill="#a8ff60">~/P/transity</text>
-          <text x="13.026" y="3.841" fill="#dfdfdf">(master)</text>
+          <text x="13.026" y="3.841" fill="#dfdfdf">(main)</text>
           <text x="22.044" y="3.841" fill="#dfdfdf">$</text>
           <text x="24.048" y="3.841" fill="#c397d8">transity</text>
           <text x="33.066" y="3.841" fill="#7aa6da">balance</text>
