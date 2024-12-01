@@ -20,10 +20,12 @@ package:
     - functions
     - js-bigints
     - lists
+    - markdown-it
     - maybe
     - newtype
     - node-buffer
     - node-fs
+    - node-fs-extra
     - node-path
     - node-process
     - nullable
@@ -44,7 +46,7 @@ package:
       - spec
 workspace:
   packageSet:
-    registry: 47.12.0
+    registry: 61.2.0
   extraPackages:
     format:
       git: https://github.com/feramhq/purescript-format
@@ -59,6 +61,26 @@ workspace:
         - strings
         - test-unit
         - unfoldable
+    markdown-it:
+      git: https://github.com/nonbili/purescript-markdown-it
+      ref: f6e8ee91298f2fc13c4277e75a19e0538de5f7a2
+      dependencies:
+        - effect
+        - foldable-traversable
+        - foreign
+        - jest
+        - node-process
+        - options
+        - prelude
+        - psci-support
+        - tuples
+    node-fs-extra:
+      git: https://github.com/ad-si/purescript-node-fs-extra
+      ref: 4985e50936bc142d998c616554df3acf820c0cbc
+      dependencies:
+        - aff-promise
+        - node-buffer
+        - node-path
     yaml-next:
       git: https://github.com/archaeron/purescript-yaml-next
       ref: cd4833a32458e06ebb4338c3e00f98723c681891

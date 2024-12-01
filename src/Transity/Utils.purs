@@ -1,26 +1,6 @@
 module Transity.Utils where
 
-import Prelude
-  ( class Eq
-  , bind
-  , discard
-  , map
-  , max
-  , pure
-  , show
-  , Unit
-  , (#)
-  , ($)
-  , (+)
-  , (-)
-  , (/=)
-  , (<#>)
-  , (<>)
-  , (==)
-  , (>=)
-  , (>>=)
-  , (>>>)
-  )
+import Transity.Data.Config
 
 import Ansi.Codes (Color(..))
 import Ansi.Output (withGraphics, foreground)
@@ -39,12 +19,15 @@ import Data.Nullable (Nullable, toMaybe)
 import Data.Rational (Rational, (%))
 import Data.Result (Result(..), fromEither)
 import Data.String
-  ( indexOf
-  , length
-  , split
-  , replaceAll
-  , Pattern(..)
+  ( Pattern(..)
   , Replacement(..)
+  , indexOf
+  , length
+  , replaceAll
+  , split
+  , toUpper
+  , singleton
+  , uncons
   )
 import Data.String.CodeUnits (toCharArray, fromCharArray)
 import Data.Time.Duration (Milliseconds(Milliseconds))
@@ -55,13 +38,18 @@ import Effect.Class.Console (error)
 import Foreign.Object (Object)
 import JS.BigInt (fromInt, fromString, pow)
 import Node.Process (setExitCode)
-
-import Transity.Data.Config
+import Prelude (class Eq, bind, discard, map, max, pure, show, Unit, (#), ($), (+), (-), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>))
 
 -- | Flag to switch between different ways of sorting the output
 data SortOrder = CustomSort | Alphabetically
 
 derive instance eqSortOrder :: Eq SortOrder
+
+-- | Capitalize the first `Char` in a `String`
+capitalize :: String -> String
+capitalize str = case uncons str of
+  Just o -> (toUpper $ singleton o.head) <> o.tail
+  _ -> str
 
 foreign import parseToUnixTimeImpl :: String -> Nullable Number
 

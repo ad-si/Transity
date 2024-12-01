@@ -40,6 +40,15 @@ nav h1 {
   display: inline-block;
 }
 
+nav a {
+  color: white;
+  text-decoration: none;
+}
+
+nav #links { display: inline-block; }
+nav #links a { font-size: 1rem; }
+nav #links a:hover { text-decoration: underline; }
+
 nav small {
   font-size: 0.9rem;
   color: hsl(0, 0%, 40%);

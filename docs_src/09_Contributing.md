@@ -1,6 +1,6 @@
-# Transity Development
+## Contributing
 
-## Getting Started
+### Getting Started
 
 Check out the `makefile` for all available tasks.
 By simply running `make` it will also print a short list of them.
@@ -11,7 +11,7 @@ By simply running `make` it will also print a short list of them.
 Build and run:
 
 ```shell
-bun x spago run --exec-args 'balance test/test.yaml'
+bunx spago run --exec-args 'balance test/test.yaml'
 ```
 
 Make `transity` executable available in your path:
@@ -24,12 +24,12 @@ All modifications to the source code (after building it)
 will now be available via the linked `transity` executable.
 
 
-## Documentation
+### Documentation
 
 Generate and serve the Pursuit documentation with:
 
 ```sh
-bun x spago docs
+bunx spago docs
 cd generated-docs/html
 python3 -m http.server 1222
 ```
@@ -47,13 +47,13 @@ markdown-toc -i readme.md
 [markdown-toc]: https://github.com/jonschlinkert/markdown-toc
 
 
-## XLSX Generation
+### XLSX Generation
 
 Check out https://stackoverflow.com/q/18334314/1850340 for an explanation
 of the XML fields.
 
 
-## Generate Screenshots
+### Generate Screenshots
 
 Use [asciinema] to generate the terminal recording:
 

@@ -32,21 +32,24 @@ bundle: index.js
 
 
 # The specified target is configured in package.json
-docs: output | node_modules
-	bun x parcel build webapp/index.html \
-		--public-url /Transity \
+docs/docs: | node_modules
+	bunx spago run --main Build
+
+
+# The specified target is configured in package.json
+docs: output docs/docs | node_modules
+	bunx parcel build \
 		--no-source-maps \
+		webapp/index.html \
 		--target $@
 
 
-# Correct paths for assets during local development
-# Use e.g. Vercel's "serve" like this: `serve docs-dev`.
-# The specified target is configured in package.json.
-docs-dev: output index.js | node_modules
-	bun x parcel build webapp/index.html \
+.PHONY: docs-watch
+docs-watch: output | node_modules
+	bunx parcel watch \
 		--no-source-maps \
-		--target $@
-
+		webapp/index.html \
+		--target docs
 
 
 output: src spago.yaml | node_modules

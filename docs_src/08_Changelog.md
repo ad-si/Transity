@@ -1,9 +1,9 @@
-# Changelog
+## Changelog
 
 This changelog only contains user facing changes of the app.
 
 
-## [WIP] 0.9.0
+### Current Main
 
 - Don't list commodities with an amount of 0 in `balance` command
 - Show only owner's balance with `balance`
@@ -19,7 +19,7 @@ This changelog only contains user facing changes of the app.
 - FIX: Correctly filter accounts with an empty commodity map
 
 
-## 0.8.0 (2020-09-09)
+### 0.8.0 (2020-09-09)
 
 - Add CLI command to show version number ([5f9cc03])
 - Add csv2yaml scripts for MBS and PayPal ([d1b4840])
@@ -36,7 +36,7 @@ This changelog only contains user facing changes of the app.
 [a6fbf8b]: https://github.com/feramhq/transity/commit/a6fbf8b
 
 
-## 0.7.0 (2020-02-18)
+### 0.7.0 (2020-02-18)
 
 - Improve normalization of crawled transactions ([ac78c05])
 - Improve scripts for transactions loading & parsing ([c7c558e])
@@ -47,7 +47,7 @@ This changelog only contains user facing changes of the app.
 [8dde588]: https://github.com/feramhq/transity/commit/8dde588
 
 
-## 0.6.0 (2019-10-20)
+### 0.6.0 (2019-10-20)
 
 - Add comparison between Transity and Hledger entries ([acf219b])
 - Add screenshots ([acf219b])
@@ -55,7 +55,7 @@ This changelog only contains user facing changes of the app.
 [acf219b]: https://github.com/feramhq/transity/commit/acf219b
 
 
-## 0.5.0 (2019-05-04)
+### 0.5.0 (2019-05-04)
 
 - Deploy simple web version of Transity at [feram.io/transity] <!----> (5cc24f6)
 - Fix several typos and grammatical errors (0f670a7)
@@ -63,20 +63,20 @@ This changelog only contains user facing changes of the app.
 [feram.io/transity]: https://www.feram.io/transity
 
 
-## 0.4.2 (2019-04-26)
+### 0.4.2 (2019-04-26)
 
 - Only add relevant files to npm package (1c9dc47)
 - Update dependencies (83992a7)
 
 
-## 0.4.1 (2019-04-26)
+### 0.4.1 (2019-04-26)
 
 - Simplify installation by pre-building Transity
     and only delivering the built files in the npm package (459d3c0)
 - Add a changelog (c33e03b)
 
 
-## 0.4.0 (2019-04-25)
+### 0.4.0 (2019-04-25)
 
 - Add scripts to retrieve the balance and transactions
     from several German banks (097eb93, 204874e)
@@ -89,20 +89,20 @@ This changelog only contains user facing changes of the app.
 - Fix `npm install` by using psc-package instead of bower (5cada63)
 
 
-## 0.3.0 (2018-09-10)
+### 0.3.0 (2018-09-10)
 
 - Add command `transfers` (3ae89fc)
 - Add command `ledger-entries` to export to the ledger file format (4be8374)
 - Add commands `csv` and `tsv` to print entries in as CSV / TSV (8587e22)
 
 
-## 0.2.1 (2018-06-05)
+### 0.2.1 (2018-06-05)
 
 - Fix test command for CI, fix typos (ac81a8e)
 - Fix references (42f17b3)
 
 
-## 0.2.0 (2018-06-05)
+### 0.2.0 (2018-06-05)
 
 - Don't coerce invalid dates to 1970-01-01 (07f99f5)
 - Add `gplot` subcommands to allow piping to gnuplot (c25b445)
@@ -113,7 +113,7 @@ This changelog only contains user facing changes of the app.
 - Implement alignment of entries (bfa602f)
 
 
-## 0.1.0-alpha (2018-01-18)
+### 0.1.0-alpha (2018-01-18)
 
 - Indent entries in balance only as deep as necessary (bcc61a7)
 - Disallow accounts with empty ids, improve error messages (af22b62)

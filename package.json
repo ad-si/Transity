@@ -36,29 +36,31 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
-    "@eslint/js": "^9.5.0",
-    "@swc/helpers": "^0.5.11",
+    "@eslint/js": "^9.16.0",
+    "@swc/helpers": "^0.5.15",
     "@types/eslint__js": "^8.42.3",
     "archiver": "^7.0.1",
     "big-integer": "^1.6.52",
-    "chrono-node": "^2.7.6",
+    "chrono-node": "^2.7.7",
     "csvnorm": "^1.1.0",
     "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "converter": "0.0.5",
-    "inquirer": "^9.2.23",
+    "inquirer": "^12.1.0",
     "tempy": "^3.1.0"
   },
   "devDependencies": {
+    "@highlightjs/cdn-assets": "^11.10.0",
     "assert": "^2.1.0",
     "conventional-changelog-cli": "^5.0.0",
-    "esbuild": "^0.21.5",
-    "eslint": "^9.5.0",
+    "esbuild": "^0.24.0",
+    "eslint": "^9.16.0",
     "eslint-config-javascript": "^3.0.0",
     "events": "^3.3.0",
+    "highlight.js": "^11.10.0",
     "markdown-toc": "^1.2.0",
-    "parcel": "^2.12.0",
+    "parcel": "^2.13.2",
     "process": "^0.11.10",
     "purescript": "^0.15.15",
     "purs-tidy": "^0.11.0",
