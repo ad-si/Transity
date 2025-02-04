@@ -27,8 +27,8 @@ async function normalizeAndPrint (filePathTemp) {
       .parse(jsonTemp)
       .map(keysToEnglish)
       .map(transaction => {
-        const currency = transaction.currency
-          .replace("EUR", "€")
+        const currency = transaction?.currency
+          ?.replace("EUR", "€")
           .replace("USD", "$")
           .trim()
 
@@ -40,7 +40,7 @@ async function normalizeAndPrint (filePathTemp) {
                 transaction.time,
                 transaction.timezone,
               ].join(" "))
-              .toISOString()
+              ?.toISOString()
               .replace("T", " ")
               .replace(".000Z", ""),
             note: transaction.subject,
@@ -48,7 +48,7 @@ async function normalizeAndPrint (filePathTemp) {
           transaction,
         )
         const account = noteToAccount(transaction.name)
-        const transfer = transaction.gross.startsWith("-")
+        const transfer = transaction.gross?.startsWith("-")
           ? {
             from: "_todo_:paypal:" +
               transaction.currency
@@ -61,7 +61,7 @@ async function normalizeAndPrint (filePathTemp) {
             from: account ? account : "paypal",
             to: "_todo_:paypal:" +
               transaction.currency
-                .toLowerCase()
+                ?.toLowerCase()
                 .trim(),
             amount: transaction.gross + " " + currency,
           }
@@ -75,10 +75,10 @@ async function normalizeAndPrint (filePathTemp) {
           newTransaction.transfers.push({
             from: "_todo_:paypal:" +
               transaction.currency
-                .toLowerCase()
+                ?.toLowerCase()
                 .trim(),
             to: "paypal",
-            amount: transaction.fee.slice(1) + " " + currency,
+            amount: transaction.fee?.slice(1) + " " + currency,
             tags: ["fee"],
           })
         }

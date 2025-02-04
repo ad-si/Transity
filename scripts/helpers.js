@@ -63,6 +63,7 @@ export function keysToEnglish (object) {
         .replace(/^Auswirkung auf Guthaben$/i, "balance_impact")
         .replace(/^Ursprünglicher Betrag$/i, "original-amount")
         .replace(/^Versicherungsbetrag$/i, "insurance_amount")
+        .replace(/^Zahlungsempfänger\*in$/i, "to")
         .replace(/^Zahlungsbetrag in ZW$/i, "amount")
         .replace(/^Artikelbezeichnung$/i, "item_title")
         .replace(/^Zahlungswährung \(ZW\)$/i, "currency")
@@ -96,6 +97,7 @@ export function keysToEnglish (object) {
         .replace(/^Buchungstag$/i, "entry-utc")
         .replace(/^Depotnummer$/i, "depot-id")
         .replace(/^Betrag \(EUR\)$/i, "amount")
+        .replace(/^Betrag \(€\)$/i, "amount")
         .replace(/^Buchungstext$/i, "type")
         .replace(/^Beschreibung$/i, "note")
         .replace(/^Belegdatum$/i, "entry-utc")
@@ -187,6 +189,7 @@ export function noteToAccount (note = "") {
     "google": "google",
     "free software foundation": "free_software_foundation",
     "landr audio": "landr",
+    "landr studio": "landr",
     "mzla technologies": "mzla_technologies",
     "vodafone": "vodafone",
     "mailgun": "mailgun",

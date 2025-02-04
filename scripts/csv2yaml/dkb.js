@@ -49,14 +49,16 @@ async function normalizeAndPrint (filePathTemp) {
           ? {
             transfers: [{
               from: "dkb:giro",
-              to: noteToAccount(transaction.from) || noteToAccount(note),
+              to: noteToAccount(transaction.to) ||
+                noteToAccount(transaction.from) || noteToAccount(note),
               amount: amount.slice(1),
               "original-amount": transaction["original-amount"],
             }],
           }
           : {
             transfers: [{
-              from: noteToAccount(transaction.from) || noteToAccount(note),
+              from: noteToAccount(transaction.to) ||
+                noteToAccount(transaction.from) || noteToAccount(note),
               to: "dkb:giro",
               // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
               amount: transaction.amount === "0,00" ? "0 €" : amount,
@@ -81,9 +83,8 @@ async function normalizeAndPrint (filePathTemp) {
   })
 
   csvnorm.default({
-    encoding: "latin1",
     readableStream: fse.createReadStream(filePathTemp),
-    skipLinesStart: 6,
+    skipLinesStart: 4,
     writableStream: csv2json,
   })
 }
