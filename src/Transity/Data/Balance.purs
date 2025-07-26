@@ -1,8 +1,6 @@
 module Transity.Data.Balance where
 
-import Prelude (class Show, class Eq, bind, pure, ($), (<#>))
-
-import Data.Argonaut.Core (Json, toObject, fromString, jsonEmptyArray)
+import Data.Argonaut.Core (Json, fromString, jsonEmptyArray, toObject)
 import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Encode (encodeJson)
@@ -10,17 +8,18 @@ import Data.Argonaut.Encode.Class (class EncodeJson)
 import Data.DateTime (DateTime)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (maybe)
-import Data.Result (Result(Ok, Error), toEither, note)
+import Data.Result (Result(Ok, Error), note, toEither)
 import Data.Show.Generic (genericShow)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(Tuple))
 import Foreign.Object as Object
+import Prelude (class Eq, class Show, bind, pure, ($), (<#>))
 import Transity.Data.Amount (parseAmount)
 import Transity.Data.CommodityMap (CommodityMap, fromAmounts)
 import Transity.Utils
   ( getObjField
-  , stringToDateTime
   , resultWithJsonDecodeError
+  , stringToDateTime
   , stringifyJsonDecodeError
   , utcToIsoString
   )

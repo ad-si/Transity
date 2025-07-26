@@ -1,5 +1,43 @@
 module Transity.Data.Ledger where
 
+import Control.Alt ((<|>))
+import Control.Monad.Except (runExcept)
+import Control.Semigroupoid ((>>>))
+import Data.Argonaut.Core (Json, stringify, toObject)
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Encode (encodeJson)
+import Data.Argonaut.Parser (jsonParser)
+import Data.Array (concat, groupBy, length, sort, sortBy, uncons, (!!))
+import Data.Array as Array
+import Data.DateTime (DateTime)
+import Data.Foldable (all, find, foldMap)
+import Data.Function (flip)
+import Data.Generic.Rep (class Generic)
+import Data.HeytingAlgebra (not)
+import Data.Map as Map
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Monoid (power)
+import Data.Newtype (class Newtype, unwrap)
+import Data.Rational as Rational
+import Data.Result (Result(..), fromEither, toEither)
+import Data.Set as Set
+import Data.Show.Generic (genericShow)
+import Data.String
+  ( Pattern(..)
+  , Replacement(..)
+  , joinWith
+  , replace
+  , replaceAll
+  , split
+  )
+import Data.String.Common (toLower)
+import Data.String.Utils (startsWith)
+import Data.Traversable (fold, foldr, intercalate, sequence)
+import Data.Tuple (Tuple(..))
+import Data.Unit (Unit, unit)
+import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Prelude
   ( class Eq
   , class Monoid
@@ -21,45 +59,6 @@ import Prelude
   , (==)
   , (||)
   )
-
-import Control.Alt ((<|>))
-import Control.Monad.Except (runExcept)
-import Control.Semigroupoid ((>>>))
-import Data.Argonaut.Core (toObject, Json, stringify)
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Encode (encodeJson)
-import Data.Argonaut.Parser (jsonParser)
-import Data.Array (concat, groupBy, sort, sortBy, uncons, (!!), length)
-import Data.Array as Array
-import Data.DateTime (DateTime)
-import Data.Foldable (all, find, foldMap)
-import Data.Function (flip)
-import Data.Generic.Rep (class Generic)
-import Data.HeytingAlgebra (not)
-import Data.Map as Map
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Monoid (power)
-import Data.Newtype (class Newtype, unwrap)
-import Data.Rational as Rational
-import Data.Result (Result(..), toEither, fromEither)
-import Data.Set as Set
-import Data.Show.Generic (genericShow)
-import Data.String
-  ( joinWith
-  , Pattern(..)
-  , replace
-  , replaceAll
-  , Replacement(..)
-  , split
-  )
-import Data.String.Common (toLower)
-import Data.String.Utils (startsWith)
-import Data.Traversable (fold, foldr, intercalate, sequence)
-import Data.Tuple (Tuple(..))
-import Data.Unit (Unit, unit)
-import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Foreign (renderForeignError)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity, isZero)
@@ -67,9 +66,9 @@ import Transity.Data.Amount as Amount
 import Transity.Data.CommodityMap
   ( CommodityMap
   , addAmountToMap
-  , subtractAmountFromMap
   , isCommodityMapZero
   , isCommodityZero
+  , subtractAmountFromMap
   )
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..), toTransfers)
@@ -77,13 +76,13 @@ import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..), negateTransfer)
 import Transity.Utils
-  ( dateShowPretty
+  ( SortOrder(..)
+  , dateShowPretty
   , dateShowPrettyLong
   , getFieldMaybe
   , getObjField
   , mergeWidthRecords
   , resultWithJsonDecodeError
-  , SortOrder(..)
   , stringifyJsonDecodeError
   , utcToIsoDateString
   , utcToIsoString
@@ -409,10 +408,10 @@ showBalance balFilter colorFlag (Ledger ledger) =
     balanceMap :: Map.Map String (Map.Map Commodity Amount)
     balanceMap = foldr (flip addTransaction) Map.empty ledger.transactions
 
-    mapToEmpty
-      :: Tuple String (Map.Map Commodity Amount)
-      -> String
-      -> Tuple String (Map.Map Commodity Amount)
+    mapToEmpty ::
+      Tuple String (Map.Map Commodity Amount) ->
+      String ->
+      Tuple String (Map.Map Commodity Amount)
     mapToEmpty accTuple@(Tuple accId _) account =
       if accId == account || (accId # startsWith (account <> ":")) then accTuple
       else (Tuple "" Map.empty)
@@ -420,9 +419,9 @@ showBalance balFilter colorFlag (Ledger ledger) =
     balancesArray :: Array (Tuple String (Map.Map Commodity Amount))
     balancesArray = balanceMap
       #
-        ( Map.toUnfoldable
-            :: BalanceMap
-            -> Array (Tuple Account.Id CommodityMap)
+        ( Map.toUnfoldable ::
+            BalanceMap ->
+            Array (Tuple Account.Id CommodityMap)
         )
       <#>
         ( \accTuple -> case balFilter of
@@ -449,25 +448,25 @@ showBalance balFilter colorFlag (Ledger ledger) =
     normAccId accId =
       replace (Pattern ":_default_") (Replacement "") accId
 
-    accWidthRecs
-      :: Array
-           { account :: Int
-           , commodity :: Int
-           , fraction :: Int
-           , integer :: Int
-           }
+    accWidthRecs ::
+      Array
+        { account :: Int
+        , commodity :: Int
+        , fraction :: Int
+        , integer :: Int
+        }
     accWidthRecs = balancesArray
       <#>
         ( \(Tuple accId comMap) ->
             Account.toWidthRecord (normAccId accId) comMap
         )
 
-    widthRecord
-      :: { account :: Int
-         , commodity :: Int
-         , fraction :: Int
-         , integer :: Int
-         }
+    widthRecord ::
+      { account :: Int
+      , commodity :: Int
+      , fraction :: Int
+      , integer :: Int
+      }
     widthRecord = foldr mergeWidthRecords widthRecordZero accWidthRecs
 
     marginLeft = 2
@@ -551,13 +550,13 @@ maybeToArr m = case m of
 entriesToLedger :: Ledger -> String
 entriesToLedger (Ledger { transactions }) =
   let
-    print
-      :: DateTime
-      -> Maybe String
-      -> Account.Id
-      -> Account.Id
-      -> Amount
-      -> String
+    print ::
+      DateTime ->
+      Maybe String ->
+      Account.Id ->
+      Account.Id ->
+      Amount ->
+      String
     print dt maybeNote from to amount =
       let
         date = dt # utcToIsoDateString

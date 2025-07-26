@@ -3,12 +3,12 @@ module Test.Main where
 import Test.Fixtures
 
 import Control.Applicative (pure)
-import Control.Bind (discard, bind, (>>=))
+import Control.Bind (bind, discard, (>>=))
 import Data.Argonaut.Core (stringify)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
-import Data.Array (zipWith, find)
+import Data.Array (find, zipWith)
 import Data.Eq ((/=))
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
@@ -19,7 +19,7 @@ import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
 import Data.Newtype (modify, over)
 import Data.Rational (Rational, (%))
-import Data.Result (Result(Error, Ok), fromEither, isOk, isError)
+import Data.Result (Result(Error, Ok), fromEither, isError, isOk)
 import Data.Ring (negate)
 import Data.Semigroup ((<>))
 import Data.Show (show)
@@ -54,21 +54,21 @@ import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.Entity as Entity
-import Transity.Data.Ledger (Ledger(..), BalanceFilter(..))
+import Transity.Data.Ledger (BalanceFilter(..), Ledger(..))
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
-  ( digitsToRational
+  ( SortOrder(..)
+  , digitsToRational
   , indentSubsequent
   , ratioZero
-  , SortOrder(..)
-  , stringifyJsonDecodeError
   , stringToDateTime
+  , stringifyJsonDecodeError
   )
-import Transity.Xlsx (entriesAsXlsx, writeToZip, FileEntry(..))
+import Transity.Xlsx (FileEntry(..), entriesAsXlsx, writeToZip)
 
 rmWhitespace :: String -> String
 rmWhitespace str =

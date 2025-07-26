@@ -1,3 +1,10 @@
 {
-  "width": 80
+  "indent": 2,
+  "importSort": "ide",
+  "importWrap": "auto",
+  "width": 80,
+  "operatorsFile": null,
+  "ribbon": 1,
+  "typeArrowPlacement": "last",
+  "unicode": "source"
 }

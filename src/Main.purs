@@ -1,23 +1,7 @@
 module Main where
 
-import Prelude
-  ( Unit
-  , bind
-  , discard
-  , pure
-  , show
-  , unit
-  , (#)
-  , ($)
-  , (/=)
-  , (<#>)
-  , (<>)
-  , (>)
-  , (>>=)
-  )
-
 import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, foreground)
+import Ansi.Output (foreground, withGraphics)
 import Data.Array (concat, cons, difference, filter, fold, null, zip)
 import Data.Eq ((==))
 import Data.Foldable (foldMap)
@@ -33,13 +17,27 @@ import Effect.Class.Console (log)
 import Effect.Console (warn)
 import Node.Encoding (Encoding(UTF8))
 import Node.FS.Async (stat)
-import Node.FS.Stats (isFile, isDirectory)
+import Node.FS.Stats (isDirectory, isFile)
 import Node.FS.Sync as Sync
 import Node.Path as Path
 import Node.Process (cwd, setExitCode)
-
 import Oclis (ExecutorContext, callCliApp)
 import Oclis.Types (CliArgPrim(..), CliArgument(..))
+import Prelude
+  ( Unit
+  , bind
+  , discard
+  , pure
+  , show
+  , unit
+  , (#)
+  , ($)
+  , (/=)
+  , (<#>)
+  , (<>)
+  , (>)
+  , (>>=)
+  )
 import Transity.Data.Config (ColorFlag(..), config)
 import Transity.Data.Ledger
   ( BalanceFilter(..)
@@ -51,7 +49,7 @@ import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Plot as Plot
 import Transity.Utils (SortOrder(..), errorAndExit)
-import Transity.Xlsx (writeToZip, entriesAsXlsx)
+import Transity.Xlsx (entriesAsXlsx, writeToZip)
 
 -- TODO: Move validation to parsing
 utcError :: String
@@ -121,12 +119,12 @@ checkFilePaths ledgerFilePath (Ledger { transactions }) = do
 
   pure $ Ok ""
 
-execForLedger
-  :: String
-  -> String
-  -> String
-  -> Ledger
-  -> Effect (Result String String)
+execForLedger ::
+  String ->
+  String ->
+  String ->
+  Ledger ->
+  Effect (Result String String)
 execForLedger currentDir filePathRel command ledger = do
   filePathAbs <- Path.resolve [ currentDir ] filePathRel
   let
@@ -144,10 +142,10 @@ execForLedger currentDir filePathRel command ledger = do
     _ ->
       pure $ runSimpleCmd command filePathRel ledger
 
-loadAndExec
-  :: String
-  -> Array String
-  -> Effect (Result String String)
+loadAndExec ::
+  String ->
+  Array String ->
+  Effect (Result String String)
 loadAndExec currentDir [ command, filePathRel ] = do
   filePathAbs <- Path.resolve [ currentDir ] filePathRel
   ledgerFileContent <- Sync.readTextFile UTF8 filePathAbs
@@ -184,12 +182,12 @@ combineJournals currentDir paths = do
     <#> sequence
     <#> (\ledgerRes -> ledgerRes <#> fold)
 
-buildLedgerAndRun
-  :: String
-  -> String
-  -> Array CliArgPrim
-  -> (Ledger -> Effect (Result String Unit))
-  -> Effect (Result String Unit)
+buildLedgerAndRun ::
+  String ->
+  String ->
+  Array CliArgPrim ->
+  (Ledger -> Effect (Result String Unit)) ->
+  Effect (Result String Unit)
 buildLedgerAndRun currentDir journalPathRel extraJournalPaths callback = do
   let journalPaths = getJournalPaths journalPathRel extraJournalPaths
 
@@ -231,8 +229,8 @@ getAllFiles directoryPath =
   in
     addFiles directoryPath
 
-checkUnusedFiles
-  :: String -> String -> Array CliArgPrim -> Effect (Result String Unit)
+checkUnusedFiles ::
+  String -> String -> Array CliArgPrim -> Effect (Result String Unit)
 checkUnusedFiles filesDirPath jourPathRel extraJournalPaths = do
   currentDir <- cwd
   buildLedgerAndRun currentDir jourPathRel extraJournalPaths $

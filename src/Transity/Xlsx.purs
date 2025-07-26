@@ -1,25 +1,23 @@
 module Transity.Xlsx where
 
-import Prelude ((#), (<#>), (<>), ($), (==), bind, pure, show, Unit)
-
 import Control.Alt ((<|>))
-import Data.Array (sortBy, concat, take, catMaybes)
+import Data.Array (catMaybes, concat, sortBy, take)
 import Data.Foldable (fold, intercalate)
 import Data.Function.Uncurried (Fn3, runFn3)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Ord (compare)
 import Data.Rational (toNumber) as Rational
-import Data.String (joinWith, Pattern(..), Replacement(..), replaceAll)
+import Data.String (Pattern(..), Replacement(..), joinWith, replaceAll)
 import Data.Traversable (sequence)
 import Effect.Aff (Aff)
 import Effect.Aff.Compat (EffectFnAff, fromEffectFnAff)
-
-import Transity.Data.Amount as Amount
+import Prelude (Unit, bind, pure, show, (#), ($), (<#>), (<>), (==))
 import Transity.Data.Amount (Amount(..))
-import Transity.Data.Transfer (Transfer(..))
-import Transity.Data.Transaction (Transaction(..))
+import Transity.Data.Amount as Amount
 import Transity.Data.Ledger (Ledger(..), entitiesToInitialTransfers)
+import Transity.Data.Transaction (Transaction(..))
+import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils (utcToIsoString)
 
 newtype FileEntry = FileEntry
@@ -27,8 +25,8 @@ newtype FileEntry = FileEntry
   , content :: String
   }
 
-foreign import writeToZipImpl
-  :: forall a. Fn3 (Maybe a) (Maybe String) (Array FileEntry) (EffectFnAff Unit)
+foreign import writeToZipImpl ::
+  forall a. Fn3 (Maybe a) (Maybe String) (Array FileEntry) (EffectFnAff Unit)
 
 writeToZip :: Maybe String -> Array FileEntry -> Aff Unit
 writeToZip outPath files = fromEffectFnAff $
@@ -49,9 +47,9 @@ getSheetRows (Ledger { transactions, entities }) = do
     getQunty (Amount quantity _) = show $ Rational.toNumber quantity
     getCmdty (Amount _ commodity) = unwrap commodity
 
-    splitTransfer
-      :: { note :: Maybe String, files :: Array String, transfer :: Transfer }
-      -> Maybe (Array SheetRow)
+    splitTransfer ::
+      { note :: Maybe String, files :: Array String, transfer :: Transfer } ->
+      Maybe (Array SheetRow)
     splitTransfer { note: note, files: files, transfer: (Transfer tfer) } =
       let
         fromAmnt = Amount.negate tfer.amount

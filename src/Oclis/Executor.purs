@@ -4,26 +4,10 @@
 
 module Oclis where
 
-import Prelude
-  ( Unit
-  , bind
-  , const
-  , discard
-  , identity
-  , pure
-  , unit
-  , (#)
-  , ($)
-  , (+)
-  , (-)
-  , (<#>)
-  , (<>)
-  , (>)
-  , (||)
-  )
+import Oclis.Types
 
 import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, foreground)
+import Ansi.Output (foreground, withGraphics)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Error (printJsonDecodeError)
 import Data.Argonaut.Parser (jsonParser)
@@ -45,13 +29,28 @@ import Data.Result (Result(..), fromEither)
 import Data.String as Str
 import Data.String.Pattern (Pattern(..))
 import Effect (Effect)
-import Effect.Class.Console (log, error)
+import Effect.Class.Console (error, log)
 import Node.Process (argv, setExitCode)
-
 import Oclis.Parser (tokensToCliArguments)
 import Oclis.SpecEmbed (fileContent)
 import Oclis.Tokenizer (tokenizeCliArguments)
-import Oclis.Types
+import Prelude
+  ( Unit
+  , bind
+  , const
+  , discard
+  , identity
+  , pure
+  , unit
+  , (#)
+  , ($)
+  , (+)
+  , (-)
+  , (<#>)
+  , (<>)
+  , (>)
+  , (||)
+  )
 
 -- TODO: Automatically disable colors if not supported
 makeRed :: String -> String
@@ -86,13 +85,13 @@ type ExecutorContext =
   , arguments :: Array CliArgument
   }
 
-handleHelpOrVersion
-  :: CliSpecRaw
-  -> String
-  -> (String -> Effect Unit)
-  -> CliArgument
-  -> Effect (Result String String)
-  -> Effect (Result String String)
+handleHelpOrVersion ::
+  CliSpecRaw ->
+  String ->
+  (String -> Effect Unit) ->
+  CliArgument ->
+  Effect (Result String String) ->
+  Effect (Result String String)
 handleHelpOrVersion cliSpecRaw usageString logFunc arg otherwise =
   if
     arg == (CmdArg "help")
@@ -115,13 +114,13 @@ handleHelpOrVersion cliSpecRaw usageString logFunc arg otherwise =
 
 -- | Recursively calls the command with the given arguments.
 -- | The arguments include the command itself.
-callCommand
-  :: (String -> Effect Unit)
-  -> Oclis
-  -> String
-  -> Array CliArgument
-  -> (ExecutorContext -> Effect (Result String Unit))
-  -> Effect (Result String String)
+callCommand ::
+  (String -> Effect Unit) ->
+  Oclis ->
+  String ->
+  Array CliArgument ->
+  (ExecutorContext -> Effect (Result String Unit)) ->
+  Effect (Result String String)
 callCommand logFunc (Oclis cliSpecRaw) usageString args executor = do
   let
     mainCmd = args # head # case _ of
@@ -337,10 +336,10 @@ callCliApp executor =
 -- | Convenience function to call the CLI app with the default spec and args.
 -- | Use `callCliAppWith`` if you want to provide your own values.
 -- | Does not print the result of the executor for testing purposes.
-callCliAppWithOutput
-  :: Boolean
-  -> (ExecutorContext -> Effect (Result String Unit))
-  -> Effect Unit
+callCliAppWithOutput ::
+  Boolean ->
+  (ExecutorContext -> Effect (Result String Unit)) ->
+  Effect Unit
 callCliAppWithOutput doesPrint executor =
   case parseCliSpec fileContent of
     Error errMsg -> do
@@ -367,12 +366,12 @@ callCliAppWithOutput doesPrint executor =
           setExitCode 0
       pure unit
 
-callCliAppWith
-  :: Oclis
-  -> (ExecutorContext -> Effect (Result String Unit))
-  -> Boolean
-  -> Array String
-  -> Effect (Result String String)
+callCliAppWith ::
+  Oclis ->
+  (ExecutorContext -> Effect (Result String Unit)) ->
+  Boolean ->
+  Array String ->
+  Effect (Result String String)
 callCliAppWith cliSpec@(Oclis cliSpecRaw) executor doesPrint arguments = do
   let
     argsNoInterpreter = arguments # drop 1 -- Drop "node"

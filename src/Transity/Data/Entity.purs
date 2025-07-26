@@ -2,32 +2,32 @@ module Transity.Data.Entity where
 
 import Prelude
 
-import Data.Argonaut.Core (toObject, Json)
+import Data.Argonaut.Core (Json, toObject)
 import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array as Array
 import Data.DateTime (DateTime)
 import Data.Foldable (fold)
-import Data.Result (Result(..), toEither, fromEither)
-import Data.String (joinWith)
 import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
 import Data.Map (values)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Newtype (class Newtype)
+import Data.Result (Result(..), fromEither, toEither)
+import Data.Show.Generic (genericShow)
+import Data.String (joinWith)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
-import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.Balance (Balance(..))
+import Transity.Data.CommodityMap (CommodityMap)
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Utils
-  ( getObjField
+  ( dateShowPretty
   , getFieldMaybe
-  , stringToDateTime
-  , dateShowPretty
-  , stringifyJsonDecodeError
+  , getObjField
   , resultWithJsonDecodeError
+  , stringToDateTime
+  , stringifyJsonDecodeError
   )
 
 newtype Entity = Entity
@@ -114,12 +114,12 @@ toTransfers entity =
   let
     accounts = toAccountsWithId entity
 
-    comMapToTransfers
-      :: forall a
-       . { id :: String | a }
-      -> DateTime
-      -> CommodityMap
-      -> Array Transfer
+    comMapToTransfers ::
+      forall a.
+      { id :: String | a } ->
+      DateTime ->
+      CommodityMap ->
+      Array Transfer
     comMapToTransfers accountRec utc comMap =
       (values comMap)
         # Array.fromFoldable

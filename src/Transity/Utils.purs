@@ -3,12 +3,12 @@ module Transity.Utils where
 import Transity.Data.Config
 
 import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, foreground)
+import Ansi.Output (foreground, withGraphics)
 import Data.Argonaut.Core (Json)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Combinators (getField, getFieldOptional)
-import Data.Argonaut.Decode.Error (printJsonDecodeError, JsonDecodeError(..))
-import Data.Array (elem, all, (!!))
+import Data.Argonaut.Decode.Error (JsonDecodeError(..), printJsonDecodeError)
+import Data.Array (all, elem, (!!))
 import Data.DateTime (DateTime)
 import Data.DateTime.Instant (instant, toDateTime)
 import Data.Formatter.DateTime (Formatter, FormatterCommand(..), format) as Fmt
@@ -24,12 +24,12 @@ import Data.String
   , indexOf
   , length
   , replaceAll
+  , singleton
   , split
   , toUpper
-  , singleton
   , uncons
   )
-import Data.String.CodeUnits (toCharArray, fromCharArray)
+import Data.String.CodeUnits (fromCharArray, toCharArray)
 import Data.Time.Duration (Milliseconds(Milliseconds))
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable (replicate)
@@ -38,7 +38,27 @@ import Effect.Class.Console (error)
 import Foreign.Object (Object)
 import JS.BigInt (fromInt, fromString, pow)
 import Node.Process (setExitCode)
-import Prelude (class Eq, bind, discard, map, max, pure, show, Unit, (#), ($), (+), (-), (/=), (<#>), (<>), (==), (>=), (>>=), (>>>))
+import Prelude
+  ( class Eq
+  , Unit
+  , bind
+  , discard
+  , map
+  , max
+  , pure
+  , show
+  , (#)
+  , ($)
+  , (+)
+  , (-)
+  , (/=)
+  , (<#>)
+  , (<>)
+  , (==)
+  , (>=)
+  , (>>=)
+  , (>>>)
+  )
 
 -- | Flag to switch between different ways of sorting the output
 data SortOrder = CustomSort | Alphabetically
@@ -56,30 +76,30 @@ foreign import parseToUnixTimeImpl :: String -> Nullable Number
 parseToUnixTime :: String -> Maybe Number
 parseToUnixTime = parseToUnixTimeImpl >>> toMaybe
 
-resultWithJsonDecodeError
-  :: forall a
-   . Result String a
-  -> Result JsonDecodeError a
+resultWithJsonDecodeError ::
+  forall a.
+  Result String a ->
+  Result JsonDecodeError a
 resultWithJsonDecodeError result =
   case result of
     Error str -> Error $ TypeMismatch str
     Ok value -> Ok value
 
-stringifyJsonDecodeError
-  :: forall a
-   . Result JsonDecodeError a
-  -> Result String a
+stringifyJsonDecodeError ::
+  forall a.
+  Result JsonDecodeError a ->
+  Result String a
 stringifyJsonDecodeError result =
   case result of
     Error err -> Error $ printJsonDecodeError err
     Ok value -> Ok value
 
-getObjField
-  :: forall a
-   . DecodeJson a
-  => Object Json
-  -> String
-  -> Result String a
+getObjField ::
+  forall a.
+  DecodeJson a =>
+  Object Json ->
+  String ->
+  Result String a
 getObjField object name =
   let
     value = fromEither $ object `getField` name
@@ -90,21 +110,21 @@ getObjField object name =
         <> printJsonDecodeError error
       Ok success -> Ok success
 
-getFieldMaybe
-  :: forall a
-   . DecodeJson a
-  => Object Json
-  -> String
-  -> Result String (Maybe a)
+getFieldMaybe ::
+  forall a.
+  DecodeJson a =>
+  Object Json ->
+  String ->
+  Result String (Maybe a)
 getFieldMaybe object name =
   stringifyJsonDecodeError $ fromEither $ getFieldOptional object name
 
-getFieldVerbose
-  :: forall a
-   . DecodeJson a
-  => Object Json
-  -> String
-  -> Result String a
+getFieldVerbose ::
+  forall a.
+  DecodeJson a =>
+  Object Json ->
+  String ->
+  Result String a
 getFieldVerbose object name =
   let
     value = fromEither $ object `getField` name

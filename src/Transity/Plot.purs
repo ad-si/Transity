@@ -1,10 +1,9 @@
 module Transity.Plot where
 
-import Prelude (show, (#), (<>))
-
 import Data.Array ((:))
 import Data.Newtype (class Newtype)
 import Data.String (joinWith)
+import Prelude (show, (#), (<>))
 
 newtype GplotConfig = GplotConfig
   { title :: String

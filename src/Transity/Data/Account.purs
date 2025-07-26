@@ -1,9 +1,7 @@
 module Transity.Data.Account where
 
-import Prelude (class Eq, class Show, bind, max, pure, ($), (+), (<>), (==))
-
 import Ansi.Codes (Color(..))
-import Ansi.Output (withGraphics, foreground)
+import Ansi.Output (foreground, withGraphics)
 import Data.Argonaut.Core (Json, fromString, toObject)
 import Data.Argonaut.Core as A
 import Data.Argonaut.Decode.Class (class DecodeJson)
@@ -18,24 +16,25 @@ import Data.Show.Generic (genericShow)
 import Data.String (length)
 import Data.Tuple (Tuple(..))
 import Foreign.Object as Object
+import Prelude (class Eq, class Show, bind, max, pure, ($), (+), (<>), (==))
 import Text.Format (format, width)
 import Transity.Data.Amount (Amount)
 import Transity.Data.Balance (Balance)
 import Transity.Data.CommodityMap
   ( CommodityMap
-  , commodityMapZero
   , addAmountToMap
+  , commodityMapZero
   , subtractAmountFromMap
   )
 import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
   ( WidthRecord
-  , widthRecordZero
-  , indentSubsequent
-  , getObjField
   , getFieldMaybe
+  , getObjField
+  , indentSubsequent
   , resultWithJsonDecodeError
+  , widthRecordZero
   )
 
 -- | A physical account which can contain one or several commodities.

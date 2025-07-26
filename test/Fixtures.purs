@@ -1,23 +1,22 @@
 module Test.Fixtures where
 
-import Prelude ((<>), ($))
-
 import Data.Map (fromFoldable)
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Newtype (wrap, unwrap)
+import Data.Newtype (unwrap, wrap)
 import Data.Rational ((%))
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Transity.Data.Amount (Amount(..), Commodity(Commodity))
+import Prelude (($), (<>))
 import Transity.Data.Account (Account(..))
+import Transity.Data.Amount (Amount(..), Commodity(Commodity))
 import Transity.Data.Balance (Balance(..))
-import Transity.Data.Entity as Entity
 import Transity.Data.CommodityMap (CommodityMap)
-import Transity.Data.Ledger (Ledger(..), BalanceMap)
+import Transity.Data.Entity as Entity
+import Transity.Data.Ledger (BalanceMap, Ledger(..))
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transfer (Transfer(..))
-import Transity.Utils (stringToDateTime, indentSubsequent)
+import Transity.Utils (indentSubsequent, stringToDateTime)
 
 -- | Transfer Examples
 

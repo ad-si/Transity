@@ -1,11 +1,9 @@
 module Transity.Data.CommodityMap where
 
-import Prelude ((#))
-
 import Data.Array (fromFoldable)
-import Data.Foldable (foldr, all)
-import Data.Functor (map, (<#>))
+import Data.Foldable (all, foldr)
 import Data.Function (flip, ($))
+import Data.Functor (map, (<#>))
 import Data.Map as Map
 import Data.Maybe (Maybe(Nothing, Just), fromMaybe)
 import Data.Semigroup ((<>))
@@ -13,14 +11,14 @@ import Data.Semigroup ((<>))
 import Data.String (joinWith)
 -- import Data.Show (show)
 import Data.Tuple (Tuple(..), snd)
-
-import Transity.Data.Config (ColorFlag(..))
+import Prelude ((#))
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
+import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
   ( WidthRecord
-  , widthRecordZero
   , mergeWidthRecords
+  , widthRecordZero
   )
 
 type CommodityMap = Map.Map Commodity Amount

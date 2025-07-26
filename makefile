@@ -7,6 +7,13 @@ help: makefile
 all: changelog.md readme.md index.js docs output
 
 
+.PHONY: format
+format: | node_modules
+	bunx purs-tidy format-in-place \
+		"src/**/*.purs" \
+		"test/**/*.purs"
+
+
 .PHONY: build
 build: | node_modules
 	bun x spago build

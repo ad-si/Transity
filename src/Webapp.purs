@@ -1,8 +1,7 @@
 module Webapp where
 
-import Prelude (bind, ($), pure)
-
 import Data.Result (Result(..))
+import Prelude (bind, pure, ($))
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Ledger as Ledger
 

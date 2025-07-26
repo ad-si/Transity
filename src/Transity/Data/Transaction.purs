@@ -1,48 +1,46 @@
 module Transity.Data.Transaction where
 
+import Control.Alt ((<|>))
+import Control.Monad.Except (runExcept)
+import Data.Argonaut.Core (Json, toObject)
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Combinators (defaultField, getFieldOptional)
+import Data.Argonaut.Parser (jsonParser)
+import Data.DateTime (DateTime)
+import Data.Foldable (foldMap)
+import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe, fromMaybe, maybe)
+import Data.Monoid (power)
+import Data.Newtype (class Newtype)
+import Data.Result (Result(..), fromEither, toEither)
+import Data.Show.Generic (genericShow)
+import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
 import Prelude
-  ( class Show
-  , class Eq
+  ( class Eq
+  , class Show
   , bind
   , map
   , pure
   , (#)
   , ($)
+  , (<#>)
   , (<>)
   , (>>=)
-  , (<#>)
   )
-
-import Control.Alt ((<|>))
-import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (toObject, Json)
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Decode.Combinators (getFieldOptional, defaultField)
-import Data.Argonaut.Parser (jsonParser)
-import Data.DateTime (DateTime)
-import Data.Foldable (foldMap)
-import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe, fromMaybe, maybe)
-import Data.Monoid (power)
-import Data.Newtype (class Newtype)
-import Data.Result (Result(..), toEither, fromEither)
-import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Foreign (renderForeignError)
 import Text.Format (format, width)
-
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Transfer (Transfer(..))
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
-  ( getObjField
+  ( dateShowPretty
   , getFieldMaybe
-  , stringToDateTime
-  , dateShowPretty
+  , getObjField
   , indentSubsequent
-  , stringifyJsonDecodeError
   , resultWithJsonDecodeError
+  , stringToDateTime
+  , stringifyJsonDecodeError
   )
 
 -- newtype FilePath = FilePath String

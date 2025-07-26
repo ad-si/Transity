@@ -1,7 +1,7 @@
 module Transity.Data.Amount where
 
 import Control.Bind (bind)
-import Data.Argonaut.Core (toString, fromString, Json)
+import Data.Argonaut.Core (Json, fromString, toString)
 import Data.Argonaut.Decode.Class (class DecodeJson)
 import Data.Argonaut.Decode.Error (JsonDecodeError(..))
 import Data.Argonaut.Encode.Class (class EncodeJson)
@@ -13,29 +13,28 @@ import Data.Function (($))
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(Nothing, Just), maybe)
 import Data.Monoid (class Monoid)
-import Data.Newtype
+import Data.Newtype (class Newtype)
 import Data.Ord (class Ord)
 import Data.Rational (Rational)
 import Data.Rational (toNumber) as Rational
 import Data.Result (Result(..), toEither)
-import Data.Ring ((-))
 import Data.Ring (negate) as Ring
+import Data.Ring ((-))
 import Data.Semigroup (class Semigroup, (<>))
 import Data.Semiring ((+))
 import Data.Show (class Show)
 import Data.Show.Generic (genericShow)
 import Data.String (Pattern(..), length, split)
 import Data.Tuple (Tuple(..))
-
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
-  ( digitsToRational
-  , padEnd
+  ( WidthRecord
   , alignNumber
+  , digitsToRational
   , lengthOfNumParts
-  , WidthRecord
-  , widthRecordZero
+  , padEnd
   , ratioZero
+  , widthRecordZero
   )
 
 -- | Economic good or service that has full or substantial fungibility

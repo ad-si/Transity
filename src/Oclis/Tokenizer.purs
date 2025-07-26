@@ -8,13 +8,13 @@ module Oclis.Tokenizer
   , tokenizeCliArguments
   ) where
 
-import Oclis.Types (CliArgPrim(..))
 import Data.Array (concat, drop, groupBy, null, take, (:))
 import Data.Array.NonEmpty (toArray)
 import Data.Foldable (elem)
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
-import Data.String.CodeUnits (toCharArray, fromCharArray)
+import Data.String.CodeUnits (fromCharArray, toCharArray)
+import Oclis.Types (CliArgPrim(..))
 import Prelude (class Eq, class Show, map, (#), (&&), (/=), (<#>), (==))
 
 -- | Intermediate representation of CLI arguments.

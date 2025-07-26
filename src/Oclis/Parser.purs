@@ -4,17 +4,16 @@
 
 module Oclis.Parser where
 
-import Prelude (show, bind, (#), ($), (&&), (/=), (<#>), (<>), (==))
+import Data.Result
 
 import Data.Array (drop, find, foldl, head, last, zip)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Result
 import Data.String.CodeUnits (singleton)
 import Data.Traversable (sequence)
 import Data.Tuple (Tuple(Tuple))
-
 import Oclis.Tokenizer (CliArgToken(..))
 import Oclis.Types (CliArgPrim(..), CliArgument(..), Oclis(..), Option)
+import Prelude (bind, show, (#), ($), (&&), (/=), (<#>), (<>), (==))
 
 findFlagShort :: Maybe (Array Option) -> Char -> Maybe Option
 findFlagShort cliSpecOptionsMb flagChar = do
@@ -49,10 +48,10 @@ findSubCmd cliSpecCommands value = do
 -- | Verify that the remaining tokens are allowed
 -- | for the given command specification and return
 -- | the corresponding `CliArgument`s.
-verifyTokensAreAllowed
-  :: Oclis
-  -> Array CliArgToken
-  -> Result String (Array CliArgument)
+verifyTokensAreAllowed ::
+  Oclis ->
+  Array CliArgToken ->
+  Result String (Array CliArgument)
 verifyTokensAreAllowed (Oclis cliSpecRaw) tokens = do
   let
     argsAndTokens = zip
@@ -105,10 +104,10 @@ verifyTokensAreAllowed (Oclis cliSpecRaw) tokens = do
 -- | by matching them against the spec.
 -- | Especially for the differentiation between `Option`s and `Flag`s.
 -- | Includes the main command as the first `CliArgument`.
-tokensToCliArguments
-  :: Oclis
-  -> Array CliArgToken
-  -> Result String (Array CliArgument)
+tokensToCliArguments ::
+  Oclis ->
+  Array CliArgToken ->
+  Result String (Array CliArgument)
 tokensToCliArguments cliSpec@(Oclis cliSpecRaw) tokens = do
   mainCmd <- case tokens # head of
     Just (TextToken cmdName) ->

@@ -1,5 +1,25 @@
 module Transity.Data.Transfer where
 
+import Control.Monad.Except (runExcept)
+import Data.Argonaut.Core (Json, stringify, toObject)
+import Data.Argonaut.Decode (decodeJson)
+import Data.Argonaut.Decode.Class (class DecodeJson)
+import Data.Argonaut.Decode.Combinators (getFieldOptional)
+import Data.Argonaut.Parser (jsonParser)
+import Data.DateTime (DateTime)
+import Data.Foldable (fold)
+import Data.Generic.Rep (class Generic)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.Monoid (power)
+import Data.Newtype (class Newtype)
+import Data.Rational ((%))
+import Data.Result (Result(..), fromEither, toEither)
+import Data.Ring (negate)
+import Data.Show.Generic (genericShow)
+import Data.String (length)
+import Data.YAML.Foreign.Decode (parseYAMLToJson)
+import Foreign (renderForeignError)
+import JS.BigInt (fromInt)
 import Prelude
   ( class Eq
   , class Ord
@@ -14,29 +34,7 @@ import Prelude
   , (==)
   , (>>=)
   )
-
-import Control.Monad.Except (runExcept)
-import Data.Argonaut.Core (toObject, Json, stringify)
-import Data.Argonaut.Decode (decodeJson)
-import Data.Argonaut.Decode.Class (class DecodeJson)
-import Data.Argonaut.Decode.Combinators (getFieldOptional)
-import Data.Argonaut.Parser (jsonParser)
-import JS.BigInt (fromInt)
-import Data.DateTime (DateTime)
-import Data.Foldable (fold)
-import Data.Generic.Rep (class Generic)
-import Data.Show.Generic (genericShow)
-import Data.Maybe (Maybe(..), maybe, fromMaybe)
-import Data.Monoid (power)
-import Data.Newtype (class Newtype)
-import Data.Rational ((%))
-import Data.Result (Result(..), toEither, fromEither)
-import Data.Ring (negate)
-import Data.String (length)
-import Data.YAML.Foreign.Decode (parseYAMLToJson)
-import Foreign (renderForeignError)
 import Text.Format (format, width)
-
 import Transity.Data.Account (Id) as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
 import Transity.Data.Amount as Amount
@@ -44,10 +42,10 @@ import Transity.Data.Config (ColorFlag(..))
 import Transity.Utils
   ( dateShowPretty
   , getFieldVerbose
-  , stringToDateTime
   , ratioZero
-  , stringifyJsonDecodeError
   , resultWithJsonDecodeError
+  , stringToDateTime
+  , stringifyJsonDecodeError
   )
 
 newtype Transfer = Transfer
@@ -163,8 +161,8 @@ showPrettyColorized = showPrettyAligned ColorYes 15 15 5 3 10
 -- | - Fraction part width
 -- | - Commodity width
 
-showPrettyAligned
-  :: ColorFlag -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
+showPrettyAligned ::
+  ColorFlag -> Int -> Int -> Int -> Int -> Int -> Transfer -> String
 showPrettyAligned colorFlag fromW toW intW fracW comW (Transfer trans) =
   let
     datePretty = map dateShowPretty trans.utc
