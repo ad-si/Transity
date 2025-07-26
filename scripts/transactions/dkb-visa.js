@@ -78,8 +78,7 @@ async function normalizeAndPrint (filePathTemp) {
             transfers: [{
               from: account,
               to: "dkb:visa",
-              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === "0,00" ? "0 €" : amount,
+              amount,
               "original-amount": transaction["original-amount"],
             }],
           }

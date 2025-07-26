@@ -68,10 +68,7 @@ async function normalizeAndPrint (filePathTemp) {
             transfers: [{
               from: account,
               to: "hypo:giro",
-              // TODO: Remove when github.com/adius/csvnorm/issues/1 is solved
-              amount: transaction.amount === "0,00"
-                ? 0
-                : transaction.amount + currency,
+              amount: transaction.amount + currency,
             }],
           }
         const newTransaction = Object.assign(sortedTransaction, transfersObj)
