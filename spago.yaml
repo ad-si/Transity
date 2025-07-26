@@ -34,6 +34,7 @@ package:
     - prelude
     - rationals
     - result
+    - spec-node
     - strings
     - stringutils
     - transformers

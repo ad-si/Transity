@@ -1,6 +1,6 @@
 module Test.Main where
 
-import Prelude (Unit, (==))
+import Test.Fixtures
 
 import Control.Applicative (pure)
 import Control.Bind (discard, bind, (>>=))
@@ -31,20 +31,19 @@ import Data.String.Regex.Unsafe (unsafeRegex)
 import Data.Tuple (Tuple(..))
 import Data.Unit (unit)
 import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
+import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import JS.BigInt (fromString) as BigInt
+import Main (buildLedgerAndRun)
+import Oclis.Types (CliArgPrim(TextArg))
 import Partial.Unsafe (unsafePartial)
+import Prelude (Unit, (==))
+import Test.Fixtures as Fixtures
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (expectError, fail, shouldEqual, shouldSatisfy)
 import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
-import Test.Spec.Runner (runSpec)
-
-import Main (buildLedgerAndRun)
-import Oclis.Types (CliArgPrim(TextArg))
-import Test.Fixtures
-import Test.Fixtures as Fixtures
+import Test.Spec.Runner.Node (runSpecAndExitProcess)
 import Transity.Data.Account (Account(..))
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
@@ -120,7 +119,7 @@ compareChar actual expected =
       (length actual) `shouldEqual` (length expected)
 
 main :: Effect Unit
-main = launchAff_ $ runSpec [ consoleReporter ] do
+main = runSpecAndExitProcess [ consoleReporter ] do
   describe "Utils" do
     describe "digitsToRational" do
       it "converts 137 to 137/1" do
