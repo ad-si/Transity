@@ -1,23 +1,25 @@
 ## Related
 
-For a full list of plain text accounting tools check out
+For a full list of PTA (plain text accounting) tools check out
 [plaintextaccounting.org](https://plaintextaccounting.org).
-Here are some of the links
-that are especially relevant for Transity:
+
+Here are some of the links that are especially relevant for Transity:
 
 
 ### Other Plain Text Accounting Tools
 
-- [Ledger] - The original command line accounting tool (written in C++).
+- [Ledger] - The original command line accounting tool (C++).
 - [Hledger] - Ledger clone with a focus on UX, reliability,
-    and real-world practicality (written in Haskell).
-- [Beancount] - Double-entry accounting from text files (written in Python).
-- [Rust Ledger] - Ledger clone that uses YAML as well (written in Rust).
+    and real-world practicality (Haskell).
+- [Beancount] - Double-entry accounting from text files (Python).
+- [Rust Ledger] - Ledger clone that uses YAML as well (Rust).
+- [Tackler] - Fast & reliable PTA engine with native GIT SCM support (Rust).
 
 [Beancount]: https://beancount.github.io
 [Hledger]: https://hledger.org
 [Ledger]: https://ledger-cli.org
 [Rust Ledger]: https://github.com/ebcrowder/rust_ledger
+[Tackler]: https://github.com/tackler-ng/tackler
 
 
 ### Other Finance Management Apps
