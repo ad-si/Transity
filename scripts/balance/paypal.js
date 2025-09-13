@@ -1,7 +1,6 @@
 import assert from "assert"
 
 import inquirer from "inquirer"
-import Nightmare from "nightmare"
 
 import {prettyPrint} from "../helpers.js"
 
@@ -32,10 +31,10 @@ const log = process.env.NODE_DEBUG
 
 async function getBalance (options = {}) {
   const {
-    showBrowser = true,
     username,
     password,
     isDevMode = false,
+    nightmare,
   } = options
 
   assert(username)
@@ -45,7 +44,6 @@ async function getBalance (options = {}) {
     return ["1234.56 €", "1234.56 €"]
   }
 
-  const nightmare = new Nightmare({show: showBrowser})
   const baseUrl = "https://www.paypal.com"
   const balanceURl = "https://www.paypal.com/businessexp/money"
   const loginUrl = `${baseUrl}/signin?returnUri=${

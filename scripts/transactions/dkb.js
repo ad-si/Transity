@@ -1,7 +1,5 @@
 import fse from "fs-extra"
 
-import Nightmare from "nightmare"
-import nightmareDownloadManager from "nightmare-inline-download"
 import yaml from "js-yaml"
 import { temporaryFile } from "tempy"
 import converter from "converter"
@@ -15,8 +13,6 @@ import {
 } from "../helpers.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
-
-nightmareDownloadManager(Nightmare)
 
 
 function rmEmptyString (key, value) {
@@ -157,10 +153,9 @@ async function getTransactions (options = {}) {
     endDate = new Date(),
     username,
     password,
-    shallShowBrowser = false,
+    nightmare,
   } = options
 
-  const nightmare = new Nightmare({show: shallShowBrowser})
   const baseUrl = "https://www.dkb.de"
   const filePathTemp = temporaryFile({name: "dkb-transactions.csv"})
   const log = process.env.NODE_DEBUG

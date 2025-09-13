@@ -70,7 +70,6 @@ async function main () {
     const envYaml = await fse.readFile(envFilePath)
     const env = yaml.safeLoad(envYaml)
     const config = {
-      showBrowser: false,
       isDevMode: false,
     }
     const merge = Object.assign

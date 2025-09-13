@@ -2,11 +2,8 @@ import fse from "fs-extra"
 
 import converter from "converter"
 import inquirer from "inquirer"
-import Nightmare from "nightmare"
 import { temporaryFile } from "tempy"
 import yaml from "js-yaml"
-
-import nightmareDownloadManager from "nightmare-inline-download"
 
 import {
   rmEmptyString,
@@ -17,8 +14,6 @@ import {
 } from "../helpers.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
-
-nightmareDownloadManager(Nightmare)
 
 
 async function normalizeAndPrint (filePathTemp) {
@@ -165,10 +160,9 @@ async function getTransactions (options = {}) {
     endDate = new Date(),
     username,
     password,
-    shallShowBrowser = false,
+    nightmare,
   } = options
 
-  const nightmare = new Nightmare({show: shallShowBrowser})
   const baseUrl = "https://www.mbs.de"
   const filePathTemp = temporaryFile({name: "transactions.csv"})
   const log = process.env.NODE_DEBUG

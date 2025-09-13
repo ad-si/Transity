@@ -1,5 +1,4 @@
 import inquirer from "inquirer"
-import Nightmare from "nightmare"
 
 import {prettyPrint} from "../helpers.js"
 
@@ -11,15 +10,14 @@ const log = process.env.NODE_DEBUG
 
 async function getBalance (options = {}) {
   const {
-    showBrowser = true,
     username,
     password,
     isDevMode,
+    nightmare,
   } = options
 
   if (isDevMode) return "1234.56 €"
 
-  const nightmare = new Nightmare({show: showBrowser})
   const baseUrl = "https://portokasse.deutschepost.de"
 
 

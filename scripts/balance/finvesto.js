@@ -1,7 +1,6 @@
 import assert from "assert"
 
 import inquirer from "inquirer"
-import Nightmare from "nightmare"
 
 import {prettyPrint} from "../helpers.js"
 
@@ -14,10 +13,10 @@ const log = process.env.NODE_DEBUG
 
 async function getBalance (options = {}) {
   const {
-    showBrowser = true,
     username,
     password,
     isDevMode = false,
+    nightmare,
   } = options
 
   assert(username)
@@ -25,7 +24,6 @@ async function getBalance (options = {}) {
 
   if (isDevMode) return "1234.56 €"
 
-  const nightmare = new Nightmare({show: showBrowser})
   const baseUrl = "https://portal.ebase.com"
   const loginUrl = `${baseUrl}/(e1)/finvesto`
 
