@@ -36,34 +36,33 @@
     "url": "https://github.com/feramhq/transity.git"
   },
   "dependencies": {
-    "@eslint/js": "^9.19.0",
-    "@swc/helpers": "^0.5.15",
-    "@types/eslint__js": "^8.42.3",
+    "@eslint/js": "^9.38.0",
+    "@swc/helpers": "^0.5.17",
+    "@types/eslint__js": "^9.14.0",
     "archiver": "^7.0.1",
     "big-integer": "^1.6.52",
-    "chrono-node": "^2.7.8",
+    "chrono-node": "^2.9.0",
     "csvnorm": "^1.1.0",
     "js-yaml": "^4.1.0"
   },
   "optionalDependencies": {
     "converter": "0.0.5",
-    "inquirer": "^12.4.1",
+    "inquirer": "^12.10.0",
     "tempy": "^3.1.0"
   },
   "devDependencies": {
     "@highlightjs/cdn-assets": "^11.11.1",
     "assert": "^2.1.0",
     "conventional-changelog-cli": "^5.0.0",
-    "esbuild": "^0.24.2",
-    "eslint": "^9.19.0",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.38.0",
     "eslint-config-javascript": "^3.0.0",
     "events": "^3.3.0",
     "highlight.js": "^11.11.1",
     "markdown-toc": "^1.2.0",
-    "parcel": "^2.13.3",
+    "parcel": "^2.16.0",
     "process": "^0.11.10",
-    "purescript": "^0.15.15",
-    "purs-tidy": "^0.11.0",
+    "pursfmt": "^0.12.0",
     "spago": "^0.93.44",
     "util": "^0.12.5"
   },

@@ -62,7 +62,8 @@ verifyTokensAreAllowed (Oclis cliSpecRaw) tokens = do
     #
       ( foldl
           ( \(Tuple cliArgs remainingTokens) (Tuple arg token) ->
-              if remainingTokens == [] then
+              if remainingTokens == []
+              then
                 -- Finish looping, but don't change cliArgs anymore
                 Tuple cliArgs []
               else
@@ -113,7 +114,8 @@ tokensToCliArguments cliSpec@(Oclis cliSpecRaw) tokens = do
     Just (TextToken cmdName) ->
       if
         cliSpecRaw.name /= cmdName &&
-          cliSpecRaw.enforceValidName == Just true then Error $
+          cliSpecRaw.enforceValidName == Just true
+      then Error $
         "ERROR: \""
           <> cliSpecRaw.name
           <> "\" is executed with the differently named executable \""

@@ -111,7 +111,8 @@ checkFilePaths ledgerFilePath (Ledger { transactions }) = do
   for_ files \filePathRel -> do
     filePathAbs <- Path.resolve [ ledgerFilePath ] filePathRel
     stat filePathAbs $ \statsResult ->
-      if isOk $ fromEither statsResult then pure unit
+      if isOk $ fromEither statsResult
+      then pure unit
       else
         log $ withGraphics
           (foreground Yellow)
@@ -129,7 +130,8 @@ execForLedger currentDir filePathRel command ledger = do
   filePathAbs <- Path.resolve [ currentDir ] filePathRel
   let
     journalDir =
-      if indexOf (Pattern "/dev/fd/") filePathAbs == Just 0 then currentDir
+      if indexOf (Pattern "/dev/fd/") filePathAbs == Just 0
+      then currentDir
       else Path.dirname filePathAbs
   _ <- checkFilePaths journalDir ledger
 
@@ -220,8 +222,8 @@ getAllFiles directoryPath =
         dirTuples = filter (\tuple -> isDirectory $ snd tuple) pathStatsTuples
         files = fileTuples <#> fst
 
-      if null dirTuples then
-        pure $ files
+      if null dirTuples
+      then pure $ files
       else do
         filesNested <- sequence $ dirTuples
           <#> (\(Tuple dir _) -> addFiles dir)
@@ -237,8 +239,8 @@ checkUnusedFiles filesDirPath jourPathRel extraJournalPaths = do
     \ledger@(Ledger { transactions }) -> do
       let
         journalDir =
-          if indexOf (Pattern "/dev/fd/") jourPathRel == Just 0 then
-            currentDir
+          if indexOf (Pattern "/dev/fd/") jourPathRel == Just 0
+          then currentDir
           else Path.dirname jourPathRel
 
       _ <- checkFilePaths journalDir ledger
@@ -257,8 +259,8 @@ checkUnusedFiles filesDirPath jourPathRel extraJournalPaths = do
         makeGreen = withGraphics (foreground Green)
         makeYellow = withGraphics (foreground Yellow)
 
-      if null unusedFiles then
-        log $ makeGreen $ "No unused files found in " <> filesDir
+      if null unusedFiles
+      then log $ makeGreen $ "No unused files found in " <> filesDir
       else do
         warn $ makeYellow $ "Warning: "
           <> "Following files are not referenced in the journal"
@@ -289,7 +291,8 @@ executor context = do
 
       case result of
         Ok output ->
-          if length output > 0 then do
+          if length output > 0
+          then do
             log output
             pure $ Ok unit
           else

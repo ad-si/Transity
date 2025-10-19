@@ -83,7 +83,8 @@ wrapWithOk string =
 
 testEqualityTo :: String -> String -> Result String String
 testEqualityTo actual expected =
-  if (actual /= expected) then Error
+  if (actual /= expected)
+  then Error
     $ indentSubsequent 2
     $ "=========== Actual ===========\n"
         <> replaceAll (Pattern "\n") (Replacement "|\n") actual

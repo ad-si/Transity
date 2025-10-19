@@ -238,7 +238,9 @@ buildUsageString cliSpecRaw = do
         # foldl
             ( \acc opt -> do
                 let totalLength = Str.length $ shortAndLongFlag opt
-                if acc > totalLength then acc else totalLength
+                if acc > totalLength
+                then acc
+                else totalLength
             )
             0
 
@@ -261,7 +263,9 @@ buildUsageString cliSpecRaw = do
         # foldl
             ( \acc (Oclis cmd) -> do
                 let totalLength = calcTotalLength cmd
-                if acc > totalLength then acc else totalLength
+                if acc > totalLength
+                then acc
+                else totalLength
             )
             0
 

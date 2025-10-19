@@ -61,13 +61,18 @@ tokenizeCliArgument arg = do
 
   case chars # take 2 of
     [ '-', '-' ] ->
-      if charsRest == [] then [ SeparatorToken ]
-      else if '=' `elem` charsRest then optionLongTokenFromChars charsRest
+      if charsRest == []
+      then [ SeparatorToken ]
       else
-        [ FlagLongToken (charsRest # fromCharArray) ]
+        ( if '=' `elem` charsRest
+          then optionLongTokenFromChars charsRest
+          else
+            [ FlagLongToken (charsRest # fromCharArray) ]
+        )
 
     [ '-', singleFlag ] ->
-      if (charsRest # take 1) == [ '=' ] then
+      if (charsRest # take 1) == [ '=' ]
+      then
         [ OptionShortToken
             singleFlag
             (TextArg (charsRest # drop 1 # fromCharArray))
@@ -75,7 +80,8 @@ tokenizeCliArgument arg = do
       else
         FlagShortToken singleFlag
           :
-            if null charsRest then []
+            if null charsRest
+            then []
             else charsRest # map FlagShortToken
 
     _ -> [ TextToken arg ]

@@ -185,8 +185,10 @@ verifyBalances balanceMap balancingTransfers =
         getCommodity { amount: Amount _ commodity } = commodity
         targetCom = getCommodity tfHeadRec
       in
-        if tfHeadRec.note == Just "___BALANCE___" then
-          if not $ isAmountInMapZero newBal tfHeadRec.from targetCom then Error
+        if tfHeadRec.note == Just "___BALANCE___"
+        then
+          if not $ isAmountInMapZero newBal tfHeadRec.from targetCom
+          then Error
             ( "ERROR:\nThe verification balance of account '" <> tfHeadRec.from
                 <> "' on '"
                 <> (fromMaybe "" $ tfHeadRec.utc <#> dateShowPretty)
@@ -228,7 +230,8 @@ verifyLedgerBalances wholeLedger@(Ledger { transactions, entities }) =
           )
     result = verifyBalances Map.empty combined
   in
-    if entities == Nothing || entities == Just [] then Ok wholeLedger
+    if entities == Nothing || entities == Just []
+    then Ok wholeLedger
     else
       case result of
         Ok _ -> Ok wholeLedger
@@ -413,7 +416,8 @@ showBalance balFilter colorFlag (Ledger ledger) =
       String ->
       Tuple String (Map.Map Commodity Amount)
     mapToEmpty accTuple@(Tuple accId _) account =
-      if accId == account || (accId # startsWith (account <> ":")) then accTuple
+      if accId == account || (accId # startsWith (account <> ":"))
+      then accTuple
       else (Tuple "" Map.empty)
 
     balancesArray :: Array (Tuple String (Map.Map Commodity Amount))
@@ -438,7 +442,8 @@ showBalance balFilter colorFlag (Ledger ledger) =
             Tuple accId
               ( comMap # Map.mapMaybe
                   ( \amount ->
-                      if isZero amount then Nothing
+                      if isZero amount
+                      then Nothing
                       else Just amount
                   )
               )

@@ -120,11 +120,14 @@ verifyTransfer json transfer@(Transfer transRec) =
   let
     (Amount quantity _) = transRec.amount
   in
-    if (length transRec.from == 0) then Error $ "Field 'from' in " <> json <>
+    if (length transRec.from == 0)
+    then Error $ "Field 'from' in " <> json <>
       " must not be empty"
-    else if (length transRec.to == 0) then Error $ "Field 'to' in " <> json <>
+    else if (length transRec.to == 0)
+    then Error $ "Field 'to' in " <> json <>
       " must not be empty"
-    else if (quantity == (fromInt 0 % fromInt 1)) then Error $
+    else if (quantity == (fromInt 0 % fromInt 1))
+    then Error $
       "Field 'amount' in " <> json <> " must not be 0"
     else Ok transfer
 

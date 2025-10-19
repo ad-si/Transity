@@ -1,0 +1,9 @@
+indent: 2
+importSort: ide
+importWrap: auto
+width: 80
+operatorsFile: null
+ribbon: 1
+thenPlacement: new-line
+typeArrowPlacement: last
+unicode: never

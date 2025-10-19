@@ -126,11 +126,13 @@ showPrettyAligned colorFlag widthRec accountId commodityMap =
     accountWidth = max widthRec.account (length accountId)
     accName = format (width accountWidth) accountId
     accColor =
-      if colorFlag == ColorYes then foreground Blue
+      if colorFlag == ColorYes
+      then foreground Blue
       else foreground White
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
-    ( if colorFlag == ColorYes then withGraphics accColor accName
+    ( if colorFlag == ColorYes
+      then withGraphics accColor accName
       else accName
     )
       <> " " `power` gap

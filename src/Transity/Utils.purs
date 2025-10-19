@@ -279,7 +279,8 @@ alignNumber :: ColorFlag -> Int -> Int -> Number -> String
 alignNumber colorFlag intWidth fracWidth number =
   let
     ifSet flag color =
-      if flag == ColorYes then foreground color
+      if flag == ColorYes
+      then foreground color
       else foreground White
     colorMap =
       { positive: ifSet colorFlag Green
@@ -296,17 +297,20 @@ alignNumber colorFlag intWidth fracWidth number =
       _ -> emptyFrac
   in
     -- TODO: Fix after https://github.com/hdgarrood/purescript-ansi/issues/7
-    if colorFlag == ColorNo then intPart <> fracPart
-    else if number >= 0.0 then
-      withGraphics colorMap.positive intPart
-        <> withGraphics colorMap.neutral fracPart
+    if colorFlag == ColorNo
+    then intPart <> fracPart
     else
-      withGraphics colorMap.negative intPart
-        <> withGraphics colorMap.neutral fracPart
+      ( if number >= 0.0
+        then withGraphics colorMap.positive intPart
+          <> withGraphics colorMap.neutral fracPart
+        else withGraphics colorMap.negative intPart
+          <> withGraphics colorMap.neutral fracPart
+      )
 
 makeRed :: Config -> String -> String
 makeRed conf str =
-  if conf.colorState == ColorYes then withGraphics (foreground Red) str
+  if conf.colorState == ColorYes
+  then withGraphics (foreground Red) str
   else str
 
 errorAndExit :: Config -> String -> Effect (Result String Unit)

@@ -176,7 +176,8 @@ entriesAsXml ledger = do
         "formula" ->
           "<c t=\"str\">"
             <>
-              ( if val == "" then ""
+              ( if val == ""
+                then ""
                 else
                   ( "<f>"
                       <>

@@ -9,20 +9,20 @@ all: changelog.md readme.md index.js docs output
 
 .PHONY: format
 format: | node_modules
-	bunx purs-tidy format-in-place \
+	bunx pursfmt format-in-place \
 		"src/**/*.purs" \
 		"test/**/*.purs"
 
 
 .PHONY: build
 build: | node_modules
-	bun x spago build
+	bunx spago build
 
 
 changelog.md: .git | node_modules
 	# git config changelog.format '- %s (%h)'
 	# git changelog
-	bun x conventional-changelog \
+	bunx conventional-changelog \
 		--infile $@ \
 		--same-file \
 		--output-unreleased
@@ -30,7 +30,7 @@ changelog.md: .git | node_modules
 
 srcFiles := $(shell find src -type f -name "*.purs")
 index.js: $(srcFiles) spago.yaml | node_modules
-	bun x spago bundle \
+	bunx spago bundle \
 		--platform node \
 		--minify
 
@@ -60,7 +60,7 @@ docs-watch: output | node_modules
 
 
 output: src spago.yaml | node_modules
-	bun x spago build
+	bunx spago build
 
 
 node_modules: package.json
@@ -68,14 +68,14 @@ node_modules: package.json
 
 
 readme.md: | node_modules
-	bun x markdown-toc -i $@
+	bunx markdown-toc -i $@
 
 
 ##### TESTING ######
 
 .PHONY: lint-js
 lint-js: | node_modules
-	bun x eslint \
+	bunx eslint \
 		--max-warnings 0 \
 		--ignore-pattern .gitignore \
 		scripts
@@ -83,30 +83,30 @@ lint-js: | node_modules
 
 .PHONY: test-spago
 test-spago: | node_modules
-	bun x spago test
+	bunx spago test
 
 
 .PHONY: test-cli
 test-cli: | node_modules
-	bun x spago run -- \
+	bunx spago run -- \
 		balance examples/journal.yaml \
 		> /dev/null
 
-	bun x spago run -- \
+	bunx spago run -- \
 		balance examples/journal.yaml examples/journal-only-transactions.yaml \
 		> /dev/null
 
 	# Following command should fail
-	@bun x spago run -- \
+	@bunx spago run -- \
 		balance examples/journal.yaml examples/journal-broken-transaction.yaml \
 		&& echo "❌ This must fail" && exit 1 \
 		|| echo "✅ Balance printed an error"
 
-	bun x spago run -- \
+	bunx spago run -- \
 		unused-files examples/receipts examples/journal.yaml \
 		2> /dev/null
 
-	bun x spago run -- \
+	bunx spago run -- \
 		unused-files \
 			examples/receipts \
 			examples/journal.yaml \
@@ -122,7 +122,7 @@ test: test-spago test-cli lint-js
 test-watch: | node_modules
 	watchexec \
 		--exts purs \
-		'bun x spago test'
+		'bunx spago test'
 
 
 
