@@ -45,9 +45,10 @@ package:
     main: Test.Main
     dependencies:
       - spec
+
 workspace:
   packageSet:
-    registry: 61.2.0
+    registry: 67.0.0
   extraPackages:
     format:
       git: https://github.com/feramhq/purescript-format
@@ -82,17 +83,3 @@ workspace:
         - aff-promise
         - node-buffer
         - node-path
-    yaml-next:
-      git: https://github.com/archaeron/purescript-yaml-next
-      ref: cd4833a32458e06ebb4338c3e00f98723c681891
-      dependencies:
-        - argonaut-codecs
-        - argonaut-core
-        - console
-        - effect
-        - foreign
-        - functions
-        - ordered-collections
-        - psci-support
-        - spec
-        - unsafe-coerce
