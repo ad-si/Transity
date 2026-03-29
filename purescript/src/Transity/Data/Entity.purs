@@ -143,4 +143,3 @@ toTransfers entity =
         # fold
   in
     accounts <#> accToTrans # fold
-

@@ -1,0 +1,81 @@
+{
+  "name": "transity",
+  "description": "Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 or anything else.",
+  "version": "0.8.0",
+  "main": "output/Main/index.js",
+  "type": "module",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
+  "bin": {
+    "transity": "index.js"
+  },
+  "scripts": {
+    "prepublishOnly": "make test && make bundle"
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "files": [
+    "index.js",
+    "/scripts",
+    "!.DS_Store"
+  ],
+  "keywords": [
+    "accounting",
+    "cli",
+    "command-line-tool",
+    "ledger",
+    "money",
+    "plaintext-accounting",
+    "purescript",
+    "tui"
+  ],
+  "author": "Adrian Sieber",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feramhq/transity.git"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.38.0",
+    "@swc/helpers": "^0.5.17",
+    "@types/eslint__js": "^9.14.0",
+    "archiver": "^7.0.1",
+    "big-integer": "^1.6.52",
+    "chrono-node": "^2.9.0",
+    "csvnorm": "^1.1.0",
+    "js-yaml": "^4.1.0"
+  },
+  "optionalDependencies": {
+    "converter": "0.0.5",
+    "inquirer": "^12.10.0",
+    "tempy": "^3.1.0"
+  },
+  "devDependencies": {
+    "@highlightjs/cdn-assets": "^11.11.1",
+    "assert": "^2.1.0",
+    "conventional-changelog-cli": "^5.0.0",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.38.0",
+    "eslint-config-javascript": "^3.0.0",
+    "events": "^3.3.0",
+    "highlight.js": "^11.11.1",
+    "markdown-toc": "^1.2.0",
+    "parcel": "^2.16.0",
+    "process": "^0.11.10",
+    "purescript": "^0.15.16",
+    "pursfmt": "^0.12.0",
+    "spago": "^0.93.44",
+    "util": "^0.12.5"
+  },
+  "targets": {
+    "docs": {
+      "distDir": "docs"
+    },
+    "docs-dev": {
+      "distDir": "docs-dev"
+    },
+    "library": {
+      "distDir": "."
+    }
+  }
+}

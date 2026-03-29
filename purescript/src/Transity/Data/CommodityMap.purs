@@ -93,4 +93,3 @@ toWidthRecord commodityMap =
     # map snd
     # map Amount.toWidthRecord
     # foldr mergeWidthRecords widthRecordZero
-

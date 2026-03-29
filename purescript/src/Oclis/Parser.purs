@@ -237,4 +237,3 @@ tokensToCliArguments cliSpec@(Oclis cliSpecRaw) tokens = do
       opts <- sequence optionResults
 
       Ok $ [ mainCmdArg ] <> opts
-

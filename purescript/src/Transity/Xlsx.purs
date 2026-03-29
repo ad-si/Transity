@@ -564,4 +564,3 @@ entriesAsXlsx ledger = do
           , content: rowsToSheet rowsString
           }
       ]
-

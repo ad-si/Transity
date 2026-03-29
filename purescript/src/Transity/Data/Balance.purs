@@ -57,4 +57,3 @@ decodeJsonBalance json = do
   utcResult <- note "UTC string is invalid" $ stringToDateTime utc
   let balance = Balance utcResult (fromAmounts amountList)
   pure balance
-
