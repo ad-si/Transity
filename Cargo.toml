@@ -3,9 +3,25 @@ name = "transity"
 version = "0.8.0"
 edition = "2021"
 
+[lib]
+name = "transity"
+path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
 [[bin]]
 name = "transity"
 path = "src/main.rs"
+
+[features]
+default = ["cli"]
+cli = [
+  "dep:clap",
+  "dep:rust_xlsxwriter",
+]
+wasm = [
+  "dep:wasm-bindgen",
+  "dep:console_error_panic_hook",
+]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -16,9 +32,11 @@ num-rational = { version = "0.4", features = ["serde"] }
 num-bigint = "0.4"
 num-traits = "0.2"
 colored = "2"
-rust_xlsxwriter = "0.80"
 anyhow = "1"
-clap = { version = "4", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
+rust_xlsxwriter = { version = "0.80", optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+console_error_panic_hook = { version = "0.1", optional = true }
 
 [dev-dependencies]
 insta = { version = "1", features = ["yaml"] }

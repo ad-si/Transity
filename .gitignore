@@ -13,3 +13,4 @@
 /src/CliSpec/JsonEmbed.purs
 /test/_deletable_*
 target/
+/webapp/pkg/

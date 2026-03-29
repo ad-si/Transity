@@ -1,15 +1,19 @@
-const Webapp = require("../output/Webapp")
+import init, { get_balance } from "./pkg/transity.js"
+
 const inputElement = document.getElementById("input")
 
-function writeToOutput () {
-  const journal = inputElement.value
-  document
-      .getElementById("output")
-      .innerHTML = Webapp.getBalance(journal)
+async function setup() {
+  await init()
+  writeToOutput()
 }
 
-inputElement.addEventListener("input", event => {
+function writeToOutput() {
+  const journal = inputElement.value
+  document.getElementById("output").innerHTML = get_balance(journal)
+}
+
+inputElement.addEventListener("input", () => {
   writeToOutput()
 })
 
-writeToOutput()
+setup()

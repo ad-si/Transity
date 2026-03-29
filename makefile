@@ -35,9 +35,39 @@ format:
 
 .PHONY: install
 install:
-	cargo install --debug --path .
+	cargo install --path .
+
+
+.PHONY: wasm-build
+wasm-build:
+	touch src/lib.rs
+	wasm-pack build \
+		--out-dir webapp/pkg \
+		--target web \
+		--dev \
+		--no-default-features \
+		--features wasm
+
+
+.PHONY: wasm-build-production
+wasm-build-production:
+	wasm-pack build \
+		--out-dir webapp/pkg \
+		--target web \
+		--release \
+		--no-default-features \
+		--features wasm
+
+
+.PHONY: docs
+docs: wasm-build-production
+	rm -rf docs
+	mkdir -p docs/docs
+	cp -R webapp/. docs/
+	mdbook build --dest-dir ../docs/docs docs_src
 
 
 .PHONY: clean
 clean:
 	cargo clean
+	rm -rf webapp/pkg docs

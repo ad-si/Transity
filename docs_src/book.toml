@@ -1,0 +1,8 @@
+[book]
+title = "Transity"
+authors = ["Adrian Sieber"]
+language = "en"
+src = "."
+
+[output.html]
+site-url = "/docs/"

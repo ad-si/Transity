@@ -34,17 +34,16 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Install dependencies
-        run: bun install
-
-      - name: Install Cargo
+      - name: Install Rust with wasm32 target
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
-      - name: Install Nickel
-        run: cargo install nickel-lang-cli
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+
+      - name: Install mdbook
+        run: cargo install mdbook
 
       - name: Build project and run tests
         run: make test
