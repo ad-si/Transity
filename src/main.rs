@@ -127,7 +127,10 @@ pub struct Amount {
 
 impl Amount {
     pub fn new(quantity: BigRational, commodity: String) -> Self {
-        Amount { quantity, commodity }
+        Amount {
+            quantity,
+            commodity,
+        }
     }
 
     pub fn negate(&self) -> Self {
@@ -154,13 +157,15 @@ impl Amount {
             }
         }
     }
-
 }
 
 fn parse_amount(s: &str) -> Result<Amount> {
     let parts: Vec<&str> = s.splitn(2, ' ').collect();
     if parts.len() != 2 {
-        return Err(anyhow!("Amount does not contain a value and a commodity: {}", s));
+        return Err(anyhow!(
+            "Amount does not contain a value and a commodity: {}",
+            s
+        ));
     }
     let quantity = digits_to_rational(parts[0])
         .ok_or_else(|| anyhow!("Amount does not contain a valid value: {}", parts[0]))?;
@@ -349,7 +354,6 @@ impl Transfer {
             note: raw.note.clone(),
         })
     }
-
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -567,9 +571,19 @@ fn align_number(color: bool, int_width: usize, frac_width: usize, f: f64) -> Str
     }
 }
 
-fn show_amount_aligned(color: bool, int_w: usize, frac_w: usize, com_w: usize, amount: &Amount) -> String {
+fn show_amount_aligned(
+    color: bool,
+    int_w: usize,
+    frac_w: usize,
+    com_w: usize,
+    amount: &Amount,
+) -> String {
     let f = rational_to_f64(&amount.quantity);
-    format!("{} {}", align_number(color, int_w, frac_w, f), pad_end(com_w, &amount.commodity))
+    format!(
+        "{} {}",
+        align_number(color, int_w, frac_w, f),
+        pad_end(com_w, &amount.commodity)
+    )
 }
 
 fn show_commodity_map_aligned(
@@ -586,8 +600,9 @@ fn show_commodity_map_aligned(
 }
 
 fn commodity_map_to_width_record(map: &CommodityMap) -> WidthRecord {
-    map.values()
-        .fold(WidthRecord::zero(), |acc, a| acc.merge(&amount_to_width_record(a)))
+    map.values().fold(WidthRecord::zero(), |acc, a| {
+        acc.merge(&amount_to_width_record(a))
+    })
 }
 
 fn account_to_width_record(account_id: &str, map: &CommodityMap) -> WidthRecord {
@@ -601,7 +616,23 @@ fn indent_subsequent(indentation: usize, s: &str) -> String {
     s.replace('\n', &format!("\n{}", pad))
 }
 
-fn show_account_aligned(color: bool, width_rec: &WidthRecord, account_id: &str, map: &CommodityMap) -> String {
+fn trim_lines(s: &str) -> String {
+    let trimmed: Vec<&str> = s.lines().map(|l| l.trim_end()).collect();
+    let result = trimmed.join("\n");
+    // Preserve trailing newline if original had one
+    if s.ends_with('\n') {
+        format!("{}\n", result.trim_end_matches('\n'))
+    } else {
+        result
+    }
+}
+
+fn show_account_aligned(
+    color: bool,
+    width_rec: &WidthRecord,
+    account_id: &str,
+    map: &CommodityMap,
+) -> String {
     let gap = 2;
     let account_width = width_rec.account.max(account_id.len());
     // Right-align (pad on left) to match PureScript Text.Format behavior
@@ -835,20 +866,15 @@ pub fn show_balance(filter: BalanceFilter, color: bool, ledger: &Ledger) -> Stri
             let include = match filter {
                 BalanceFilter::All => true,
                 BalanceFilter::OnlyOwner => match &ledger.owner {
-                    Some(owner) => {
-                        acc_id == *owner
-                            || acc_id.starts_with(&format!("{}:", owner))
-                    }
+                    Some(owner) => acc_id == *owner || acc_id.starts_with(&format!("{}:", owner)),
                     None => true,
                 },
             };
             if !include {
                 return None;
             }
-            let non_zero: CommodityMap = com_map
-                .into_iter()
-                .filter(|(_, a)| !a.is_zero())
-                .collect();
+            let non_zero: CommodityMap =
+                com_map.into_iter().filter(|(_, a)| !a.is_zero()).collect();
             if non_zero.is_empty() {
                 None
             } else {
@@ -861,9 +887,11 @@ pub fn show_balance(filter: BalanceFilter, color: bool, ledger: &Ledger) -> Stri
     filtered.sort_by(|a, b| a.0.cmp(&b.0));
 
     // Compute global width record
-    let global_wr = filtered.iter().fold(WidthRecord::zero(), |acc, (acc_id, map)| {
-        acc.merge(&account_to_width_record(&norm_acc_id(acc_id), map))
-    });
+    let global_wr = filtered
+        .iter()
+        .fold(WidthRecord::zero(), |acc, (acc_id, map)| {
+            acc.merge(&account_to_width_record(&norm_acc_id(acc_id), map))
+        });
     let margin_left = 2;
     let global_wr = WidthRecord {
         account: global_wr.account + margin_left,
@@ -872,11 +900,16 @@ pub fn show_balance(filter: BalanceFilter, color: bool, ledger: &Ledger) -> Stri
 
     let mut result = String::new();
     for (acc_id, map) in &filtered {
-        result.push_str(&show_account_aligned(color, &global_wr, &norm_acc_id(acc_id), map));
+        result.push_str(&show_account_aligned(
+            color,
+            &global_wr,
+            &norm_acc_id(acc_id),
+            map,
+        ));
     }
     result.push('\n');
     result.push('\n');
-    result
+    trim_lines(&result)
 }
 
 pub fn show_transfer_aligned(
@@ -949,12 +982,12 @@ pub fn show_pretty_aligned(color: bool, ledger: &Ledger) -> String {
         .map(|tx| show_transaction_pretty_aligned(color, tx))
         .collect();
 
-    format!(
+    trim_lines(&format!(
         "Journal for \"{}\"\n{}\n{}\n",
         ledger.owner.as_deref().unwrap_or("UNKNOWN"),
         "=".repeat(80),
         transactions_pretty
-    )
+    ))
 }
 
 pub fn show_transfers(color: bool, ledger: &Ledger) -> String {
@@ -972,12 +1005,12 @@ pub fn show_transfers(color: bool, ledger: &Ledger) -> String {
         })
         .collect();
 
-    format!(
+    trim_lines(&format!(
         "Journal for \"{}\"\n{}\n{}\n",
         ledger.owner.as_deref().unwrap_or("UNKNOWN"),
         "=".repeat(80),
         transfers_pretty
-    )
+    ))
 }
 
 fn show_number(f: f64) -> String {
@@ -1054,8 +1087,16 @@ pub fn show_entries_by_account(ledger: &Ledger) -> Option<String> {
     // Sort by account+commodity
     let mut sorted = rows.clone();
     sorted.sort_by(|a, b| {
-        let key_a = format!("{} {}", a.get(1).unwrap_or(&String::new()), a.get(3).unwrap_or(&String::new()));
-        let key_b = format!("{} {}", b.get(1).unwrap_or(&String::new()), b.get(3).unwrap_or(&String::new()));
+        let key_a = format!(
+            "{} {}",
+            a.get(1).unwrap_or(&String::new()),
+            a.get(3).unwrap_or(&String::new())
+        );
+        let key_b = format!(
+            "{} {}",
+            b.get(1).unwrap_or(&String::new()),
+            b.get(3).unwrap_or(&String::new())
+        );
         key_a.cmp(&key_b)
     });
 
@@ -1118,7 +1159,10 @@ fn encode_balance_json(balance: &Balance) -> String {
 
 fn encode_account_json(account: &Account) -> String {
     if account.balances.is_empty() {
-        format!("{{\"id\":\"{}\",\"commodityMap\":[],\"balances\":null}}", account.id)
+        format!(
+            "{{\"id\":\"{}\",\"commodityMap\":[],\"balances\":null}}",
+            account.id
+        )
     } else {
         let balances_json: Vec<String> = account.balances.iter().map(encode_balance_json).collect();
         format!(
@@ -1161,7 +1205,7 @@ pub fn show_entities(alphabetically: bool, ledger: &Ledger) -> String {
             result.push_str(&format!("    tags: [{}]\n", tags_str));
         }
         if !entity.accounts.is_empty() {
-            result.push_str("    accounts: \n");
+            result.push_str("    accounts:\n");
             for acc in &entity.accounts {
                 result.push_str(&format!("      - {}\n", encode_account_json(acc)));
             }
@@ -1169,7 +1213,7 @@ pub fn show_entities(alphabetically: bool, ledger: &Ledger) -> String {
         result.push('\n');
     }
     result.push('\n');
-    result
+    trim_lines(&result)
 }
 
 pub fn entries_to_ledger(ledger: &Ledger) -> String {
@@ -1183,16 +1227,12 @@ pub fn entries_to_ledger(ledger: &Ledger) -> String {
                 let amount_str = show_amount_plain(f, &t.amount.commodity);
                 lines.push(format!(
                     "{} {}\n  {}  {}\n  {}\n",
-                    date,
-                    note,
-                    t.to,
-                    amount_str,
-                    t.from
+                    date, note, t.to, amount_str, t.from
                 ));
             }
         }
     }
-    format!("{}\n", lines.join("\n"))
+    trim_lines(&format!("{}\n", lines.join("\n")))
 }
 
 fn show_amount_plain(f: f64, commodity: &str) -> String {
@@ -1342,10 +1382,7 @@ fn check_unused_files(directory: &Path, journal_paths: &[PathBuf]) -> Result<()>
 
     // Determine journal directory from first path
     let journal_path = &journal_paths[0];
-    let journal_dir = if journal_path
-        .to_string_lossy()
-        .starts_with("/dev/fd/")
-    {
+    let journal_dir = if journal_path.to_string_lossy().starts_with("/dev/fd/") {
         std::env::current_dir()?
     } else {
         journal_path
@@ -1359,7 +1396,12 @@ fn check_unused_files(directory: &Path, journal_paths: &[PathBuf]) -> Result<()>
         .transactions
         .iter()
         .flat_map(|tx| tx.files.iter())
-        .map(|f| journal_dir.join(f).canonicalize().unwrap_or_else(|_| journal_dir.join(f)))
+        .map(|f| {
+            journal_dir
+                .join(f)
+                .canonicalize()
+                .unwrap_or_else(|_| journal_dir.join(f))
+        })
         .collect();
 
     // Get all files in directory
@@ -1374,7 +1416,10 @@ fn check_unused_files(directory: &Path, journal_paths: &[PathBuf]) -> Result<()>
         .collect();
 
     if unused.is_empty() {
-        println!("{}", format!("No unused files found in {}", dir_canonical.display()).green());
+        println!(
+            "{}",
+            format!("No unused files found in {}", dir_canonical.display()).green()
+        );
     } else {
         eprintln!(
             "{}",
@@ -1390,8 +1435,7 @@ fn check_unused_files(directory: &Path, journal_paths: &[PathBuf]) -> Result<()>
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 
-const UTC_ERROR: &str =
-    "All transfers or their parent transaction must have a valid UTC field";
+const UTC_ERROR: &str = "All transfers or their parent transaction must have a valid UTC field";
 
 fn main() -> Result<()> {
     let cli = Cli::parse();

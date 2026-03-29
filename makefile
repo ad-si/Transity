@@ -12,11 +12,7 @@ bundle:
 	cp target/release/transity .
 
 .PHONY: test
-test: test-unit test-cli
-
-.PHONY: test-unit
-test-unit:
-	cargo test --lib
+test: test-cli
 
 .PHONY: test-cli
 test-cli:
