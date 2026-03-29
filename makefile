@@ -12,7 +12,11 @@ bundle:
 	cp target/release/transity .
 
 .PHONY: test
-test: test-cli
+test: test-unit test-cli test-spago
+
+.PHONY: test-unit
+test-unit:
+	cargo test --bin transity
 
 .PHONY: test-cli
 test-cli:
