@@ -2,6 +2,34 @@
 name = "transity"
 version = "0.8.0"
 edition = "2021"
+description = "The plain text accounting tool of the future"
+license = "AGPL-3.0-or-later"
+repository = "https://github.com/ad-si/Transity"
+homepage = "https://github.com/ad-si/Transity"
+keywords = ["accounting", "finance", "ledger", "plain-text", "cli"]
+categories = ["command-line-utilities", "finance"]
+exclude = [
+  "docs_src/",
+  "examples/",
+  "images/",
+  "purescript/",
+  "recordings/",
+  "scripts/",
+  "test/",
+  "webapp/",
+  ".github/",
+  ".gitpod.yml",
+  ".pursfmt.yaml",
+  "flake.lock",
+  "flake.nix",
+  "eslint.config.js",
+  "bun.lock",
+  "package.json",
+  "oclis.ncl",
+  "spago.lock",
+  "spago.yaml",
+  "ledger2transity.sh",
+]
 
 [lib]
 name = "transity"
