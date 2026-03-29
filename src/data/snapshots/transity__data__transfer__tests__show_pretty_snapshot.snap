@@ -1,0 +1,6 @@
+---
+source: src/data/transfer.rs
+assertion_line: 179
+expression: output
+---
+                   john:giro       -> evil-corp       :    15    €          |
