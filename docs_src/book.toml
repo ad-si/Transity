@@ -9,3 +9,5 @@ build-dir = "../docs/docs"
 
 [output.html]
 site-url = "/docs/"
+git-repository-url = "https://github.com/ad-si/Transity"
+edit-url-template = "https://github.com/ad-si/Transity/edit/main/docs_src/{path}"
