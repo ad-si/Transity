@@ -809,11 +809,13 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
     let mut balance_map: BalanceMap = BalanceMap::new();
 
     for transfer in &combined {
-        balance_map_add_transfer(&mut balance_map, transfer);
-
         if transfer.note.as_deref() == Some("___BALANCE___") {
+            // Temporarily apply the balancing transfer to check, but don't keep it
+            let mut check_map = balance_map.clone();
+            balance_map_add_transfer(&mut check_map, transfer);
+
             let acc_id = add_account_default(&transfer.from);
-            if let Some(com_map) = balance_map.get(&acc_id) {
+            if let Some(com_map) = check_map.get(&acc_id) {
                 let commodity = &transfer.amount.commodity;
                 if let Some(bal_amount) = com_map.get(commodity) {
                     if !bal_amount.is_zero() {
@@ -833,6 +835,11 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
                     }
                 }
             }
+            // Balance check passed — do NOT apply to balance_map,
+            // matching PureScript behavior where the balancing transfer
+            // is used only for verification, not to drain the account.
+        } else {
+            balance_map_add_transfer(&mut balance_map, transfer);
         }
     }
 
@@ -2053,15 +2060,8 @@ transactions:
 
     #[test]
     fn verify_ledger_balances_passes_at_different_utcs() {
-        // Each verification balance is an absolute snapshot: the balancing transfer
-        // drains the account to zero at that point, so subsequent transactions build
-        // on top of a zero baseline. In this case:
-        //   2005: ben:wallet → anna:wallet 3€  (anna gets 3€)
-        //   2006: balance check: 3€ expected → balancing transfer anna:wallet → _void_ 3€
-        //         after check anna:wallet = 0€
-        //   2007: ben:wallet → anna:wallet 4$  (anna gets 4$)
-        //   2010: balance check: 4$ expected → balancing transfer anna:wallet → _void_ 4$
-        //         after check anna:wallet = 0$
+        // Balance checkpoints are non-destructive: passing a check does not reset
+        // the running balance. Each checkpoint verifies the cumulative state.
         let yaml = r#"
 owner: John Doe
 entities:
@@ -2089,6 +2089,44 @@ transactions:
       - from: ben:wallet
         to: anna:wallet
         amount: 4 $
+"#;
+        let ledger = parse_ledger(yaml);
+        assert!(verify_ledger_balances(&ledger).is_ok());
+    }
+
+    #[test]
+    fn verify_ledger_balances_sequential_checkpoints_do_not_drain_account() {
+        // Regression: a passing balance checkpoint must not drain the running
+        // balance. Prior to the fix, the balancing transfer was applied to the
+        // balance map even on success, so each subsequent checkpoint saw a zero
+        // baseline instead of the real cumulative balance.
+        let yaml = r#"
+owner: alice
+entities:
+  - id: alice
+    accounts:
+      - id: depot
+        balances:
+          - utc: '2010-01-01'
+            amounts: [0 FUND]
+          - utc: '2010-07-01'
+            amounts: [10 FUND]
+          - utc: '2011-01-01'
+            amounts: [25 FUND]
+  - id: broker
+    accounts:
+      - id: account
+transactions:
+  - utc: '2010-04-01'
+    transfers:
+      - from: broker:account
+        to: alice:depot
+        amount: 10 FUND
+  - utc: '2010-09-01'
+    transfers:
+      - from: broker:account
+        to: alice:depot
+        amount: 15 FUND
 "#;
         let ledger = parse_ledger(yaml);
         assert!(verify_ledger_balances(&ledger).is_ok());
