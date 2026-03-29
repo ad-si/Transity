@@ -1,0 +1,6 @@
+---
+source: src/data/amount.rs
+assertion_line: 181
+expression: a.show_pretty()
+---
+20 €
