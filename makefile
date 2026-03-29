@@ -64,7 +64,7 @@ docs: wasm-build-production
 	rm -rf docs
 	mkdir -p docs/docs
 	cp -R webapp/. docs/
-	mdbook build --dest-dir ../docs/docs docs_src
+	mdbook build docs_src
 
 
 .PHONY: clean

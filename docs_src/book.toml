@@ -4,5 +4,8 @@ authors = ["Adrian Sieber"]
 language = "en"
 src = "."
 
+[build]
+build-dir = "../docs/docs"
+
 [output.html]
 site-url = "/docs/"
