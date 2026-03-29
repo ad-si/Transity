@@ -39,8 +39,10 @@ purescript/node_modules: purescript/package.json
 
 .PHONY: format
 format:
-	cargo fmt
-	cd purescript && bunx pursfmt format-in-place "src/**/*.purs" "test/**/*.purs"
+	-cargo fmt 2>/dev/null || true
+	@if [ -d purescript ] && [ -d purescript/node_modules ]; then \
+		cd purescript && bunx pursfmt format-in-place "src/**/*.purs" "test/**/*.purs"; \
+	fi
 
 .PHONY: clean
 clean:
