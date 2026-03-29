@@ -145,31 +145,3 @@ Several features are missing in Ledger and Hledger:
 
 [Report Scripts for Ledger CLI with Gnuplot]:
   https://www.sundialdreams.com/report-scripts-for-ledger-cli-with-gnuplot
-
-
-### Performance
-
-Measured with hyperfine including 3 warmups on an early 2015 MacBook Pro.
-
-*For a journal file with around 2000 entries:*
-
-Transity:
-```txt
-Benchmark #1: transity balance journals/main.yaml
-  Time (mean ± σ):      1.287 s ±  0.021 s    [User: 1.790 s, System: 0.140 s]
-  Range (min … max):    1.250 s …  1.324 s    10 runs
-```
-
-Hledger:
-```txt
-Benchmark #1: hledger -f test.ledger balance
-  Time (mean ± σ):     409.6 ms ±   6.1 ms    [User: 366.6 ms, System: 28.5 ms]
-  Range (min … max):   398.8 ms … 417.6 ms    10 runs
-```
-
-Ledger:
-```txt
-Benchmark #1: ledger -f test.ledger balance
-  Time (mean ± σ):      76.3 ms ±   9.1 ms    [User: 62.7 ms, System: 9.4 ms]
-  Range (min … max):    65.1 ms … 101.8 ms    28 runs
-```

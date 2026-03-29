@@ -6,7 +6,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 <img
   src="images/screenshot-balance.svg"
   alt="Screenshot Balance"
-  style="width: 100%; max-width: 30rem;"
+  style="width: 100%; max-width: 50rem;"
 />
 
 Also check out the [playground](/) on the landing page!

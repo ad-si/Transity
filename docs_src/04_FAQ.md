@@ -69,23 +69,3 @@ Wallet | Food   |   20 €
 Together with some further changes it yields an
 **easier to understand, more robust and more complete**
 representation of accounting!
-
-
-### Why is it written in PureScript?
-
-[PureScript](https://www.purescript.org/) leverages strong static typing
-and can therefore give more guarantees about the functionality of the code
-than weakly typed or untyped languages like JavaScript.
-
-You wouldn't want your money to get lost in rounding errors or
-be turned to `undefined`, would you? 😉
-
-
-### Why is it not written in Haskell?
-
-PureScript can also easily be used in the browser or get deployed
-as a cloud function as it simply compiles to JavaScript.
-With Haskell you'd have to use another language for a web frontend
-or quarrel with experimental stuff like [GHC's WebAssembly backend][ghc-wasm].
-
-[ghc-wasm]: https://downloads.haskell.org/ghc/latest/docs/users_guide/wasm.html

@@ -1,13 +1,12 @@
 ## Import
 
-### AI Powered
+### With LLMs
 
-We built a dedicated OpenAI GPT to convert any financial data
-(e.g. CSVs, bank statements, chat history, …) to a Transity journal file.
-
-Check it out at
-[chat.openai.com/g/g-aUph953Vj-transity](
-  https://chat.openai.com/g/g-aUph953Vj-transity).
+LLMs are surprisingly good at converting any financial data
+(e.g. CSVs, bank statements, chat history, images, photos, …)
+to a Transity journal file.
+Just provide them with an example journal file
+and prompt them to convert it to this format.
 
 
 ### From Ledger CLI
