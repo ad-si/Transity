@@ -1,0 +1,7 @@
+         john  212.19     €  
+    john:giro   50        $  
+                60.752114 BTC
+                85        €  
+  john:wallet   66.05     €  
+
+
