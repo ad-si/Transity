@@ -10,3 +10,5 @@
 /output
 /src/CliSpec/JsonEmbed.purs
 /test/_deletable_*
+/target
+*.snap.new
