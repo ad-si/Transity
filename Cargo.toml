@@ -7,11 +7,6 @@ edition = "2021"
 name = "transity"
 path = "src/main.rs"
 
-[lib]
-name = "transity"
-crate-type = ["cdylib", "rlib"]
-path = "src/lib.rs"
-
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
@@ -21,10 +16,10 @@ num-rational = { version = "0.4", features = ["serde"] }
 num-bigint = "0.4"
 num-traits = "0.2"
 colored = "2"
-rust_xlsxwriter = "0.7"
+rust_xlsxwriter = "0.80"
 anyhow = "1"
-wasm-bindgen = "0.2"
-walkdir = "2"
+clap = { version = "4", features = ["derive"] }
 
 [dev-dependencies]
 insta = { version = "1", features = ["yaml"] }
+regex = "1"

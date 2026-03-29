@@ -1,9 +1,0 @@
----
-source: src/display/plot.rs
-assertion_line: 134
-expression: gplot_code(&config)
----
-$data << EOD
-2024-01-01T00:00:00 account1 100 USD
-EOD
-set terminal pngcairo size 840, 420;set title 'Made with Transity';set key outside nobox;set style line 12 lc rgb'#808080' lt 0 lw 1;set grid back ls 12;set grid xtics ytics mxtics;set style fill solid;set xdata time;set timefmt '%Y-%m-%dT%H:%M:%S';set format x '%Y-W%W';set xlabel 'ISO Week';set xtics rotate by 30 right;set zeroaxis;set ylabel 'Commodity';plot for [i=0:*] $data index i using 1:3 with impulses title columnhead(1);
