@@ -28,6 +28,7 @@ Here are some of the links that are especially relevant for Transity:
 - [Copilot] - Track spending, budgets, investments, and net worth.
 - [Empower] - Budget planner.
 - [Fidelity] - Financial planning, wealth management, trading, and brokerage.
+- [FiTui] - Terminal based expense tracker written in Rust
 - [Monarch] - Track your account balances, transactions, and investments.
 - [Roi] - All-in-one investing platform to track & trade existing accounts.
 - [Track Your Dividends] - Track your dividend portfolio and its performance.
@@ -37,6 +38,7 @@ Here are some of the links that are especially relevant for Transity:
 [Copilot]: https://copilot.money/
 [Empower]: https://empower.me/
 [Fidelity]: https://www.fidelity.com/
+[FiTui]: https://github.com/ayanchavand/FiTui
 [Monarch]: https://www.monarchmoney.com/
 [Roi]: https://getroi.app/
 [Track Your Dividends]: https://trackyourdividends.com/
