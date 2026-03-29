@@ -1,0 +1,25 @@
+[package]
+name = "transity"
+version = "0.8.0"
+edition = "2021"
+
+[[bin]]
+name = "transity"
+path = "src/main.rs"
+
+[lib]
+name = "transity"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+chrono = { version = "0.4", features = ["serde"] }
+num-rational = { version = "0.4", features = ["serde"] }
+num-traits = "0.2"
+rust_xlsxwriter = "0.84"
+anyhow = "1"
+
+[dev-dependencies]
+insta = { version = "1", features = ["yaml"] }
