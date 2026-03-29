@@ -21,11 +21,17 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             bash
-            bun
+            cargo
+            cargo-insta
+            cargo-nextest
+            clippy
             coreutils
             gnumake
-            purescript
-            watchexec
+            gnused
+            mdbook
+            rustc
+            rustfmt
+            wasm-pack
           ];
         };
         formatter = pkgs.nixfmt-tree; # Format this file with `nix fmt`
