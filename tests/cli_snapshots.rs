@@ -151,8 +151,7 @@ fn test_version() {
 #[test]
 fn test_help() {
     let output = run_transity(&["--help"]);
-    let has_commands = output.contains("balance")
-        || output.contains("COMMANDS")
-        || output.contains("Commands:");
+    let has_commands =
+        output.contains("balance") || output.contains("COMMANDS") || output.contains("Commands:");
     assert!(has_commands, "Help should mention commands: {}", output);
 }

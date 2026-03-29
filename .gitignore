@@ -1,4 +1,6 @@
+.claude
 .direnv
+.spec-results
 /.parcel-cache
 /.psc*
 /.spago

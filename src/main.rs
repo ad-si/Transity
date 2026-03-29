@@ -690,11 +690,11 @@ fn balance_map_add_transfer(map: &mut BalanceMap, transfer: &Transfer) {
     let to = add_account_default(&transfer.to);
 
     // Subtract from sender
-    let from_map = map.entry(from).or_insert_with(CommodityMap::new);
+    let from_map = map.entry(from).or_default();
     commodity_map_subtract(from_map, &transfer.amount);
 
     // Add to receiver
-    let to_map = map.entry(to).or_insert_with(CommodityMap::new);
+    let to_map = map.entry(to).or_default();
     commodity_map_add(to_map, transfer.amount.clone());
 }
 
@@ -1722,10 +1722,7 @@ mod tests {
         assert!(result.is_some(), "Expected Some for big-int rational");
         let r = result.unwrap();
         // 15555555555 / 10000000000 reduces to 3111111111 / 2000000000
-        let expected = BigRational::new(
-            BigInt::from(3111111111i64),
-            BigInt::from(2000000000i64),
-        );
+        let expected = BigRational::new(BigInt::from(3111111111i64), BigInt::from(2000000000i64));
         assert_eq!(r, expected);
     }
 
@@ -1907,7 +1904,10 @@ transactions:
         assert_eq!(ledger.owner, Some("John Doe".to_string()));
         assert_eq!(ledger.entities.len(), 2);
         assert_eq!(ledger.transactions.len(), 1);
-        assert_eq!(ledger.transactions[0].transfers[0].amount, make_amount(3, 1, "€"));
+        assert_eq!(
+            ledger.transactions[0].transfers[0].amount,
+            make_amount(3, 1, "€")
+        );
     }
 
     #[test]
@@ -2146,8 +2146,16 @@ transactions:
     fn show_balance_all_filter_returns_all_accounts() {
         let ledger = simple_ledger();
         let result = show_balance(BalanceFilter::All, false, &ledger);
-        assert!(result.contains("john:giro"), "Expected 'john:giro' in: {}", result);
-        assert!(result.contains("evil-corp"), "Expected 'evil-corp' in: {}", result);
+        assert!(
+            result.contains("john:giro"),
+            "Expected 'john:giro' in: {}",
+            result
+        );
+        assert!(
+            result.contains("evil-corp"),
+            "Expected 'evil-corp' in: {}",
+            result
+        );
     }
 
     #[test]
@@ -2247,7 +2255,10 @@ transactions: []
         let result = show_entities(false, &ledger);
         let anna_pos = result.find("Anna").expect("Anna not found");
         let bob_pos = result.find("Bob").expect("Bob not found");
-        assert!(anna_pos < bob_pos, "Anna should appear before Bob in custom order");
+        assert!(
+            anna_pos < bob_pos,
+            "Anna should appear before Bob in custom order"
+        );
     }
 
     // ─── get_entries / show_entries / show_entries_by_account ────────────────
@@ -2301,9 +2312,21 @@ transactions:
         // Expected from Fixtures.ledgerLedger:
         // "2014-12-24 A short note about this transaction\n  evil-corp  15 €\n  john:giro\n"
         // Our simple_ledger has no note, so note field is empty
-        assert!(result.contains("2014-12-24"), "Expected date in: {}", result);
-        assert!(result.contains("evil-corp"), "Expected 'evil-corp' in: {}", result);
-        assert!(result.contains("john:giro"), "Expected 'john:giro' in: {}", result);
+        assert!(
+            result.contains("2014-12-24"),
+            "Expected date in: {}",
+            result
+        );
+        assert!(
+            result.contains("evil-corp"),
+            "Expected 'evil-corp' in: {}",
+            result
+        );
+        assert!(
+            result.contains("john:giro"),
+            "Expected 'john:giro' in: {}",
+            result
+        );
         assert!(result.contains("15"), "Expected amount in: {}", result);
         assert!(result.contains("€"), "Expected commodity in: {}", result);
     }
