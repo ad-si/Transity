@@ -14,5 +14,5 @@ Benchmark 1: transity balance journals/*.yaml
 
 ## Size
 
-The size of the bundled version for the
-[transity.ad-si.com](https://transity.ad-si.com) website is around **62 kB**.
+The size of the gzipped bundled version for the
+[transity.ad-si.com](https://transity.ad-si.com) website is around **150 kB**.
