@@ -1,0 +1,20 @@
+---
+source: tests/display_tests.rs
+assertion_line: 21
+expression: result
+---
+          anna     1        evil_machine
+                 214.7      €           
+        bakery    15.09     €           
+           ben   -50        $           
+                 -60.752114 BTC         
+                -100        €           
+     evil-corp    -1        evil_machine
+                 315        €           
+      good-inc  -820        €           
+  grocery-shop    11.97     €           
+          john   212.19     €           
+     john:giro    50        $           
+                  60.752114 BTC         
+                  85        €           
+   john:wallet    66.05     €

@@ -1,0 +1,10 @@
+---
+source: tests/display_tests.rs
+assertion_line: 14
+expression: result
+---
+         john  212.19     €  
+    john:giro   50        $  
+                60.752114 BTC
+                85        €  
+  john:wallet   66.05     €
