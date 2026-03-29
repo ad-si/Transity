@@ -1,0 +1,11 @@
+/Users/adrian/Dropbox/Projects/Transity/.claude/worktrees/agent-a2974201/rust/target/debug/deps/powerfmt-3b430729442713d5.d: /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/lib.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/buf.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/ext.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display_impls.rs
+
+/Users/adrian/Dropbox/Projects/Transity/.claude/worktrees/agent-a2974201/rust/target/debug/deps/libpowerfmt-3b430729442713d5.rlib: /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/lib.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/buf.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/ext.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display_impls.rs
+
+/Users/adrian/Dropbox/Projects/Transity/.claude/worktrees/agent-a2974201/rust/target/debug/deps/libpowerfmt-3b430729442713d5.rmeta: /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/lib.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/buf.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/ext.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display.rs /Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display_impls.rs
+
+/Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/lib.rs:
+/Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/buf.rs:
+/Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/ext.rs:
+/Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display.rs:
+/Users/adrian/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/powerfmt-0.2.0/src/smart_display_impls.rs:
