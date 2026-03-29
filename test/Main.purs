@@ -9,6 +9,7 @@ import Data.Argonaut.Decode (decodeJson)
 import Data.Argonaut.Encode (encodeJson)
 import Data.Argonaut.Parser (jsonParser)
 import Data.Array (find, zipWith)
+import Data.Array as Array
 import Data.Eq ((/=))
 import Data.Foldable (fold)
 import Data.Function ((#), ($))
@@ -17,7 +18,7 @@ import Data.Map (fromFoldable)
 import Data.Map as Map
 import Data.Maybe (Maybe(Just, Nothing), fromJust)
 import Data.Monoid (power)
-import Data.Newtype (modify, over)
+import Data.Newtype (modify, over, unwrap, wrap)
 import Data.Rational (Rational, (%))
 import Data.Result (Result(Error, Ok), fromEither, isError, isOk)
 import Data.Ring (negate)
@@ -45,28 +46,52 @@ import Test.Spec.Assertions.String (shouldContain)
 import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner.Node (runSpecAndExitProcess)
 import Transity.Data.Account (Account(..))
+import Transity.Data.Account (Account(..), addAmount, subtractAmount) as AccountModule
 import Transity.Data.Account as Account
 import Transity.Data.Amount (Amount(..), Commodity(..))
-import Transity.Data.Amount (showPretty, showPrettyAligned) as Amount
+import Transity.Data.Amount
+  ( isZero
+  , negate
+  , parseAmount
+  , showPretty
+  , showPrettyAligned
+  , subtract
+  , toWidthRecord
+  ) as Amount
 import Transity.Data.Balance (Balance(..))
-import Transity.Data.CommodityMap (CommodityMap, isCommodityMapZero)
+import Transity.Data.CommodityMap
+  ( CommodityMap
+  , fromAmounts
+  , isCommodityMapZero
+  )
 import Transity.Data.CommodityMap as CommodityMap
 import Transity.Data.Config (ColorFlag(..))
 import Transity.Data.Entity (Entity(..))
 import Transity.Data.Entity as Entity
-import Transity.Data.Ledger (BalanceFilter(..), Ledger(..))
+import Transity.Data.Ledger (BalanceFilter(..), Ledger(..), getEntries)
 import Transity.Data.Ledger as Ledger
 import Transity.Data.Transaction (Transaction(..))
 import Transity.Data.Transaction as Transaction
-import Transity.Data.Transfer (Transfer(..))
+import Transity.Data.Transfer (Transfer(..), negateTransfer)
 import Transity.Data.Transfer as Transfer
 import Transity.Utils
   ( SortOrder(..)
+  , alignNumber
+  , capitalize
+  , dateShowPretty
+  , dateShowPrettyLong
   , digitsToRational
   , indentSubsequent
+  , lengthOfNumParts
+  , mergeWidthRecords
+  , padEnd
+  , padStart
   , ratioZero
   , stringToDateTime
   , stringifyJsonDecodeError
+  , utcToIsoDateString
+  , utcToIsoString
+  , widthRecordZero
   )
 import Transity.Xlsx (FileEntry(..), entriesAsXlsx, writeToZip)
 
@@ -897,3 +922,400 @@ main = runSpecAndExitProcess [ consoleReporter ] do
                 <> (Fixtures.ledger2 # modify (_ { owner = Nothing }))
 
           combined.owner `shouldEqual` (Just "John Doe")
+
+        it "serializes to entries format" do
+          let actual = Ledger.showEntries "," ledger
+          actual `shouldSatisfy` (\x -> x /= Nothing)
+
+        it "serializes to entries-by-account format" do
+          let actual = Ledger.showEntriesByAccount ledger
+          actual `shouldSatisfy` (\x -> x /= Nothing)
+
+        it "pretty shows transfers" do
+          let actual = Ledger.showTransfers ColorNo ledger
+          actual `shouldContain` "john:giro"
+
+        it "shows balance filtered to owner only" do
+          (Ledger.showBalance BalanceOnlyOwner ColorNo ledger)
+            `shouldEqualString` ""
+
+        it "verifies accounts — passes when all accounts are declared" do
+          let
+            result =
+              Ledger.fromYaml
+                """
+                owner: John Doe
+                entities:
+                  - id: anna
+                    accounts:
+                      - id: wallet
+                  - id: ben
+                    accounts: [id: wallet]
+                transactions:
+                  - utc: '2005-01-01 12:00'
+                    transfers:
+                      - from: ben:wallet
+                        to: anna:wallet
+                        amount: 3 €
+              """
+                >>= Ledger.verifyAccounts
+
+          (isOk result) `shouldEqual` true
+
+        it "verifies accounts — fails when an account is undeclared" do
+          let
+            result =
+              Ledger.fromYaml
+                """
+                owner: John Doe
+                entities:
+                  - id: anna
+                    accounts:
+                      - id: wallet
+                transactions:
+                  - utc: '2005-01-01 12:00'
+                    transfers:
+                      - from: undeclared:wallet
+                        to: anna:wallet
+                        amount: 3 €
+              """
+                >>= Ledger.verifyAccounts
+
+          (isError result) `shouldEqual` true
+
+        it "shows entities sorted alphabetically" do
+          let
+            sortedLedger = Ledger
+              { owner: Just "John Doe"
+              , entities: Just
+                  [ wrap $ (unwrap Entity.zero) { id = "Zara" }
+                  , wrap $ (unwrap Entity.zero) { id = "Anna" }
+                  , wrap $ (unwrap Entity.zero) { id = "mike" }
+                  ]
+              , transactions: []
+              }
+          let output = Ledger.showEntities Alphabetically sortedLedger
+          output `shouldContain` "Anna"
+
+        it "returns message when ledger has no entities" do
+          let output = Ledger.showEntities CustomSort ledger
+          output `shouldEqual` "Journal does not contain any entities"
+
+    describe "Amount" do
+      it "parses a valid amount string" do
+        (Amount.parseAmount "15 €")
+          `shouldEqual` (Ok (Amount (15 % 1) (Commodity "€")))
+
+      it "fails to parse an amount with missing commodity" do
+        (Amount.parseAmount "15")
+          `shouldSatisfy` isError
+
+      it "negates an amount" do
+        (Amount.negate (Amount (15 % 1) (Commodity "€")))
+          `shouldEqual` (Amount (-15 % 1) (Commodity "€"))
+
+      it "subtracts two amounts of the same commodity" do
+        ( Amount.subtract
+            (Amount (10 % 1) (Commodity "€"))
+            (Amount (3 % 1) (Commodity "€"))
+        ) `shouldEqual` (Amount (7 % 1) (Commodity "€"))
+
+      it "isZero returns true for zero amount" do
+        (Amount.isZero (Amount ratioZero (Commodity "€")))
+          `shouldEqual` true
+
+      it "isZero returns false for non-zero amount" do
+        (Amount.isZero (Amount (1 % 1) (Commodity "€")))
+          `shouldEqual` false
+
+      it "toWidthRecord computes correct widths" do
+        let wr = Amount.toWidthRecord (Amount (1234 % 10) (Commodity "EUR"))
+        wr.integer `shouldEqual` 3
+        wr.fraction `shouldEqual` 2
+        wr.commodity `shouldEqual` 3
+
+    describe "CommodityMap" do
+      it "builds a commodity map from an array of amounts" do
+        let
+          amounts =
+            [ Amount (10 % 1) (Commodity "€")
+            , Amount (5 % 1) (Commodity "€")
+            , Amount (3 % 1) (Commodity "$")
+            ]
+          result = fromAmounts amounts
+          euroAmount = Map.lookup (Commodity "€") result
+          usdAmount = Map.lookup (Commodity "$") result
+        euroAmount `shouldEqual` Just (Amount (15 % 1) (Commodity "€"))
+        usdAmount `shouldEqual` Just (Amount (3 % 1) (Commodity "$"))
+
+      it "toWidthRecord computes correct widths across commodities" do
+        let
+          cm = Map.fromFoldable
+            [ Tuple (Commodity "€") (Amount (1234 % 10) (Commodity "€"))
+            , Tuple (Commodity "USD") (Amount (5 % 1) (Commodity "USD"))
+            ]
+          wr = CommodityMap.toWidthRecord cm
+        wr.commodity `shouldEqual` 3
+
+    describe "Transfer" do
+      it "parses a transfer from YAML" do
+        let
+          actual = transferSimpleYaml
+            # Transfer.fromYaml
+            # show
+            # rmWhitespace
+          expected = transferSimpleShowed
+            # wrapWithOk
+            # rmWhitespace
+        actual `shouldEqualString` expected
+
+      it "negates a transfer" do
+        let negated = negateTransfer transferSimple
+        (show negated) `shouldContain` "-15"
+
+      it "fails if 'from' is empty" do
+        let
+          result = Transfer.fromJson
+            """{"from":"","to":"anna","amount":"5 €"}"""
+        (isError result) `shouldEqual` true
+
+      it "fails if 'to' is empty" do
+        let
+          result = Transfer.fromJson
+            """{"from":"john","to":"","amount":"5 €"}"""
+        (isError result) `shouldEqual` true
+
+      it "fails if amount is zero" do
+        let
+          result = Transfer.fromJson
+            """{"from":"john","to":"anna","amount":"0 €"}"""
+        (isError result) `shouldEqual` true
+
+    describe "Utils" do
+      it "capitalizes a string" do
+        (capitalize "hello") `shouldEqual` "Hello"
+
+      it "capitalize on empty string returns empty" do
+        (capitalize "") `shouldEqual` ""
+
+      it "indents subsequent lines" do
+        (indentSubsequent 2 "line1\nline2\nline3")
+          `shouldEqual` "line1\n  line2\n  line3"
+
+      it "padStart pads a string on the left" do
+        (padStart 5 "ab") `shouldEqual` "   ab"
+
+      it "padEnd pads a string on the right" do
+        (padEnd 5 "ab") `shouldEqual` "ab   "
+
+      it "lengthOfNumParts for integer" do
+        let Tuple i f = lengthOfNumParts 42.0
+        i `shouldEqual` 2
+        f `shouldEqual` 0
+
+      it "lengthOfNumParts for decimal" do
+        let Tuple i f = lengthOfNumParts 3.14
+        i `shouldEqual` 1
+        f `shouldEqual` 3
+
+      it "mergeWidthRecords takes max of each field" do
+        let
+          a = widthRecordZero { account = 5, integer = 3 }
+          b = widthRecordZero { account = 2, integer = 7 }
+          m = mergeWidthRecords a b
+        m.account `shouldEqual` 5
+        m.integer `shouldEqual` 7
+
+      it "utcToIsoString formats a datetime" do
+        let
+          dt = unsafePartial $ fromJust $ stringToDateTime "2014-12-24 10:30:45"
+        (utcToIsoString dt) `shouldEqual` "2014-12-24T10:30:45"
+
+      it "utcToIsoDateString formats a date only" do
+        let
+          dt = unsafePartial $ fromJust $ stringToDateTime "2014-12-24 10:30:45"
+        (utcToIsoDateString dt) `shouldEqual` "2014-12-24"
+
+      it "dateShowPretty formats a datetime without seconds" do
+        let
+          dt = unsafePartial $ fromJust $ stringToDateTime "2014-12-24 10:30:00"
+        (dateShowPretty dt) `shouldEqual` "2014-12-24 10:30"
+
+      it "dateShowPrettyLong formats a datetime with seconds" do
+        let
+          dt = unsafePartial $ fromJust $ stringToDateTime "2014-12-24 10:30:45"
+        (dateShowPrettyLong dt) `shouldEqual` "2014-12-24 10:30:45"
+
+    describe "Account" do
+      it "adds an amount to an account" do
+        let
+          acc = AccountModule.addAmount Account.zero
+            (Amount (10 % 1) (Commodity "€"))
+          (Account { commodityMap }) = acc
+          result = Map.lookup (Commodity "€") commodityMap
+        result `shouldEqual` Just (Amount (10 % 1) (Commodity "€"))
+
+      it "subtracts an amount from an account" do
+        let
+          acc0 = AccountModule.addAmount Account.zero
+            (Amount (10 % 1) (Commodity "€"))
+          acc1 = AccountModule.subtractAmount acc0
+            (Amount (3 % 1) (Commodity "€"))
+          (Account { commodityMap }) = acc1
+          result = Map.lookup (Commodity "€") commodityMap
+        result `shouldEqual` Just (Amount (7 % 1) (Commodity "€"))
+
+      it "toWidthRecord accounts for id length" do
+        let
+          cm = Map.fromFoldable
+            [ Tuple (Commodity "€") (Amount (5 % 1) (Commodity "€")) ]
+          wr = Account.toWidthRecord "long-account-name" cm
+        wr.account `shouldEqual` 17
+
+    describe "Amount" do
+      it "appends two amounts of the same commodity" do
+        let
+          result = Amount (3 % 1) (Commodity "€") <> Amount (4 % 1)
+            (Commodity "€")
+        result `shouldEqual` Amount (7 % 1) (Commodity "€")
+
+      it "append with mismatched commodities yields INVALID COMPUTATION" do
+        let
+          result = Amount (3 % 1) (Commodity "€") <> Amount (4 % 1)
+            (Commodity "$")
+        result `shouldEqual` Amount ratioZero (Commodity "INVALID COMPUTATION")
+
+      it "subtract with mismatched commodities yields INVALID COMPUTATION" do
+        let
+          result = Amount.subtract (Amount (3 % 1) (Commodity "€"))
+            (Amount (4 % 1) (Commodity "$"))
+        result `shouldEqual` Amount ratioZero (Commodity "INVALID COMPUTATION")
+
+    describe "Transaction" do
+      it "toTransfers promotes transaction UTC to transfers without one" do
+        let
+          transfers = Transaction.toTransfers [ transactionSimple ]
+          Transfer { utc } = unsafePartial $ fromJust $ find
+            (\(Transfer t) -> t.from == "john:giro")
+            transfers
+        utc `shouldEqual` stringToDateTime "2014-12-24"
+
+      it "showTransfersWithDate includes account names" do
+        let output = Transaction.showTransfersWithDate ColorNo transactionSimple
+        output `shouldContain` "john:giro"
+
+    describe "Transfer" do
+      it "showPrettyColorized includes account names" do
+        let output = Transfer.showPrettyColorized transferSimple
+        output `shouldContain` "john:giro"
+
+    describe "Entity" do
+      it "fromJson parses an entity" do
+        let result = Entity.fromJson entityJson
+        (isOk result) `shouldEqual` true
+
+      it "showPretty includes entity id" do
+        let
+          entity = Entity
+            { id: "john"
+            , name: Just "John Doe"
+            , note: Just "A note"
+            , utc: Nothing
+            , tags: Just [ "person" ]
+            , accounts: Nothing
+            }
+        (Entity.showPretty entity) `shouldContain` "john"
+
+    describe "Ledger" do
+      it "showBalance BalanceOnly with non-matching filter returns empty" do
+        (Ledger.showBalance (BalanceOnly "nonexistent") ColorNo ledger)
+          `shouldEqual` ""
+
+      it "getEntries returns Nothing when transfers lack UTC" do
+        let
+          noUtcLedger = Ledger
+            { owner: Just "Test"
+            , entities: Nothing
+            , transactions:
+                [ Transaction
+                    { id: Nothing
+                    , utc: Nothing
+                    , note: Nothing
+                    , files: []
+                    , transfers: [ transferMinimal ]
+                    }
+                ]
+            }
+        (Ledger.getEntries noUtcLedger) `shouldEqual` Nothing
+
+      it "getEntries includes initial entity balance entries" do
+        let
+          entityLedger = Ledger
+            { owner: Just "John Doe"
+            , entities: Just
+                [ Entity.Entity
+                    { id: "anna"
+                    , name: Nothing
+                    , note: Nothing
+                    , utc: Nothing
+                    , tags: Nothing
+                    , accounts: Just
+                        [ Account
+                            { id: "wallet"
+                            , commodityMap: Map.empty
+                            , balances: Just
+                                [ Balance
+                                    ( unsafePartial $ fromJust
+                                        $ stringToDateTime "2020-01-01"
+                                    )
+                                    ( Map.fromFoldable
+                                        [ Tuple (Commodity "€")
+                                            (Amount (100 % 1) (Commodity "€"))
+                                        ]
+                                    )
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            , transactions: []
+            }
+        let result = Ledger.getEntries entityLedger
+        result `shouldSatisfy` (\x -> x /= Nothing)
+
+      it "showEntries content contains account and commodity" do
+        let result = Ledger.showEntries "," ledger
+        case result of
+          Nothing -> fail "Expected entries"
+          Just s -> do
+            s `shouldContain` "john:giro"
+            s `shouldContain` "€"
+
+      it "showEntriesByAccount groups by account and commodity" do
+        let result = Ledger.showEntriesByAccount ledger
+        case result of
+          Nothing -> fail "Expected entries"
+          Just s -> do
+            s `shouldContain` "john:giro"
+            s `shouldContain` "evil-corp"
+
+      it "combines transactions from two ledgers" do
+        let
+          Ledger combined = Fixtures.ledger <> Fixtures.ledger2
+        (Array.length combined.transactions) `shouldEqual` 2
+
+    describe "Transfer" do
+      it "showPretty with no UTC date uses spaces instead" do
+        let output = Transfer.showPretty transferMinimal
+        -- Without a UTC, the date area is blank spaces
+        output `shouldContain` "john:giro"
+
+    describe "Utils" do
+      it "alignNumber with ColorNo formats a positive number" do
+        let result = alignNumber ColorNo 5 3 42.5
+        result `shouldContain` "42"
+        result `shouldContain` ".5"
+
+      it "alignNumber with ColorNo formats a negative number" do
+        let result = alignNumber ColorNo 5 3 (-7.0)
+        result `shouldContain` "-7"
