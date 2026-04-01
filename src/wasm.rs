@@ -11,7 +11,7 @@ pub fn init() {
 #[wasm_bindgen]
 pub fn get_balance(yaml: &str) -> String {
     match parse_ledger_str(yaml) {
-        Ok(ledger) => show_balance(BalanceFilter::All, false, &ledger),
+        Ok(ledger) => show_balance(BalanceFilter::All, false, &ledger, None, None),
         Err(e) => format!("Error: {e}"),
     }
 }

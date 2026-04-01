@@ -22,30 +22,54 @@ enum Commands {
     /// Simple balance of the owner's accounts
     Balance {
         journal: String,
+        /// Only include transactions at or after this date (e.g. 2024-01-01)
+        #[arg(long)]
+        begin: Option<String>,
+        /// Only include transactions before this date (e.g. 2025-01-01)
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// Simple balance of all accounts
     BalanceAll {
         journal: String,
+        /// Only include transactions at or after this date (e.g. 2024-01-01)
+        #[arg(long)]
+        begin: Option<String>,
+        /// Only include transactions before this date (e.g. 2025-01-01)
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// All transactions and their transfers
     Transactions {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// All transfers with one transfer per line
     Transfers {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// All individual deposits & withdrawals, space separated
     Entries {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -64,42 +88,70 @@ enum Commands {
     /// All entries in Ledger format
     LedgerEntries {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// Transfers, comma separated (printed to stdout)
     Csv {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// Transfers, tab separated (printed to stdout)
     Tsv {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// XLSX file with all transfers (printed to stdout)
     Xlsx {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// All individual deposits & withdrawals, grouped by account
     EntriesByAccount {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// Code and data for gnuplot impulse diagram
     Gplot {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
     /// Code and data for cumulative gnuplot step chart
     GplotCumul {
         journal: String,
+        #[arg(long)]
+        begin: Option<String>,
+        #[arg(long)]
+        end: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -121,6 +173,15 @@ fn collect_paths(journal: &str, extra: &[String]) -> Vec<PathBuf> {
     paths.extend(extra.iter().map(PathBuf::from));
     paths
 }
+
+fn parse_date_flag(s: &str) -> DateTime<Utc> {
+    parse_datetime(s).unwrap_or_else(|e| {
+        eprintln!("{}", e.to_string().red());
+        std::process::exit(1);
+    })
+}
+
+use chrono::{DateTime, Utc};
 
 fn get_all_files(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut result = Vec::new();
@@ -195,48 +256,95 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Balance { journal, extra } => {
+        Commands::Balance {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
-            print!("{}", show_balance(BalanceFilter::OnlyOwner, true, &ledger));
+            let begin = begin.map(|s| parse_date_flag(&s));
+            let end = end.map(|s| parse_date_flag(&s));
+            print!(
+                "{}",
+                show_balance(BalanceFilter::OnlyOwner, true, &ledger, begin, end)
+            );
         }
 
-        Commands::BalanceAll { journal, extra } => {
+        Commands::BalanceAll {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
-            print!("{}", show_balance(BalanceFilter::All, true, &ledger));
+            let begin = begin.map(|s| parse_date_flag(&s));
+            let end = end.map(|s| parse_date_flag(&s));
+            print!(
+                "{}",
+                show_balance(BalanceFilter::All, true, &ledger, begin, end)
+            );
         }
 
-        Commands::Transactions { journal, extra } => {
+        Commands::Transactions {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             println!("{}", show_pretty_aligned(true, &ledger));
         }
 
-        Commands::Transfers { journal, extra } => {
+        Commands::Transfers {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             println!("{}", show_transfers(true, &ledger));
         }
 
-        Commands::Entries { journal, extra } => {
+        Commands::Entries {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries(" ", &ledger) {
                 Some(s) => println!("{}", s),
                 None => {
@@ -264,21 +372,39 @@ fn main() -> Result<()> {
             println!("{}", show_entities(true, &ledger));
         }
 
-        Commands::LedgerEntries { journal, extra } => {
+        Commands::LedgerEntries {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             println!("{}", entries_to_ledger(&ledger));
         }
 
-        Commands::Csv { journal, extra } => {
+        Commands::Csv {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries(",", &ledger) {
                 Some(s) => println!("{}", s),
                 None => {
@@ -288,12 +414,21 @@ fn main() -> Result<()> {
             }
         }
 
-        Commands::Tsv { journal, extra } => {
+        Commands::Tsv {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries("\t", &ledger) {
                 Some(s) => println!("{}", s),
                 None => {
@@ -303,12 +438,21 @@ fn main() -> Result<()> {
             }
         }
 
-        Commands::Xlsx { journal, extra } => {
+        Commands::Xlsx {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match entries_as_xlsx(&ledger) {
                 Ok(bytes) => {
                     use std::io::Write;
@@ -321,12 +465,21 @@ fn main() -> Result<()> {
             }
         }
 
-        Commands::EntriesByAccount { journal, extra } => {
+        Commands::EntriesByAccount {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries_by_account(&ledger) {
                 Some(s) => println!("{}", s),
                 None => {
@@ -336,12 +489,21 @@ fn main() -> Result<()> {
             }
         }
 
-        Commands::Gplot { journal, extra } => {
+        Commands::Gplot {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries_by_account(&ledger) {
                 Some(data) => println!("{}", gplot_code(&data, &journal)),
                 None => {
@@ -351,12 +513,21 @@ fn main() -> Result<()> {
             }
         }
 
-        Commands::GplotCumul { journal, extra } => {
+        Commands::GplotCumul {
+            journal,
+            begin,
+            end,
+            extra,
+        } => {
             let paths = collect_paths(&journal, &extra);
             let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            let ledger = ledger.filter_by_date(
+                begin.map(|s| parse_date_flag(&s)),
+                end.map(|s| parse_date_flag(&s)),
+            );
             match show_entries_by_account(&ledger) {
                 Some(data) => {
                     let title = format!("{} - Cumulative", journal);
@@ -914,7 +1085,7 @@ transactions:
     fn show_balance_owner_only_filter_returns_owner_accounts() {
         // OnlyOwner uses ledger.owner as the prefix filter; owner must match account prefix
         let ledger = owner_ledger();
-        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger);
+        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
         assert!(
             result.contains("john:giro"),
             "Expected 'john:giro' in: {}",
@@ -930,7 +1101,7 @@ transactions:
     #[test]
     fn show_balance_all_filter_returns_all_accounts() {
         let ledger = simple_ledger();
-        let result = show_balance(BalanceFilter::All, false, &ledger);
+        let result = show_balance(BalanceFilter::All, false, &ledger, None, None);
         assert!(
             result.contains("john:giro"),
             "Expected 'john:giro' in: {}",
@@ -956,7 +1127,7 @@ transactions:
         amount: 15 €
 "#;
         let ledger = parse_ledger(yaml);
-        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger);
+        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
         assert!(
             result.trim().is_empty(),
             "Expected empty for non-matching owner, got: {:?}",
@@ -981,9 +1152,291 @@ transactions:
         amount: 7 €
 "#;
         let ledger = parse_ledger(yaml);
-        let result = show_balance(BalanceFilter::All, false, &ledger);
+        let result = show_balance(BalanceFilter::All, false, &ledger, None, None);
         // evil-corp should show 22 € total (15 + 7)
         assert!(result.contains("22"), "Expected '22' in: {}", result);
+    }
+
+    // ─── show_balance with --begin / --end ─────────────────────────────────────
+
+    fn multi_date_ledger() -> Ledger {
+        let yaml = r#"
+owner: john
+entities:
+  - id: john
+    accounts:
+      - id: giro
+        balances:
+          - utc: '2015-01-01'
+            amounts: ['100 €']
+  - id: shop
+    accounts:
+      - id: register
+transactions:
+  - utc: '2015-03-01'
+    transfers:
+      - from: john:giro
+        to: shop:register
+        amount: 10 €
+  - utc: '2015-06-01'
+    transfers:
+      - from: john:giro
+        to: shop:register
+        amount: 20 €
+  - utc: '2015-09-01'
+    transfers:
+      - from: john:giro
+        to: shop:register
+        amount: 30 €
+"#;
+        parse_ledger(yaml)
+    }
+
+    #[test]
+    fn show_balance_end_excludes_later_transactions() {
+        let ledger = multi_date_ledger();
+        let end = parse_datetime("2015-07-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, None, Some(end));
+        // Only first two transactions: 10 + 20 = 30
+        assert!(result.contains("30"), "Expected '30' in: {}", result);
+        assert!(!result.contains("60"), "Did not expect '60' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_excludes_earlier_transactions() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2015-07-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, Some(begin), None);
+        // Only the last transaction (30 €), no balance seed since
+        // the balance checkpoint is before begin
+        assert!(result.contains("30"), "Expected '30' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_and_end_window() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2015-04-01").unwrap();
+        let end = parse_datetime("2015-08-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, Some(begin), Some(end));
+        // Only the middle transaction: 20 €
+        assert!(result.contains("20"), "Expected '20' in: {}", result);
+        assert!(!result.contains("30"), "Did not expect '30' in: {}", result);
+        assert!(!result.contains("10"), "Did not expect '10' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_seeds_from_entity_balances() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2015-04-01").unwrap();
+        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger, Some(begin), None);
+        // Balance checkpoint at 2015-01-01 = 100 €
+        // Transfers in range: -20 (June) -30 (Sep) = -50
+        // Net: 100 - 50 = 50
+        assert!(result.contains("50"), "Expected '50' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_seeds_uses_latest_checkpoint() {
+        // Two balance checkpoints: the one closest to (but not after) begin
+        // should be used as the opening balance.
+        let yaml = r#"
+owner: alice
+entities:
+  - id: alice
+    accounts:
+      - id: savings
+        balances:
+          - utc: '2020-01-01'
+            amounts: ['500 €']
+          - utc: '2021-01-01'
+            amounts: ['800 €']
+          - utc: '2023-01-01'
+            amounts: ['1200 €']
+  - id: shop
+    accounts:
+      - id: register
+transactions:
+  - utc: '2022-06-01'
+    transfers:
+      - from: alice:savings
+        to: shop:register
+        amount: 50 €
+"#;
+        let ledger = parse_ledger(yaml);
+        // begin is 2022-01-01, so the latest checkpoint at or before is
+        // 2021-01-01 with 800 €. The 2023 checkpoint is after begin, ignored.
+        let begin = parse_datetime("2022-01-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, Some(begin), None);
+        // alice:savings = 800 (seed) - 50 (transfer) = 750
+        assert!(result.contains("750"), "Expected '750' in: {}", result);
+        // shop:register = 0 (no seed) + 50 (transfer) = 50
+        assert!(result.contains("50"), "Expected '50' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_no_checkpoint_before_begin_no_seed() {
+        // If all balance checkpoints are after begin, no seeding occurs.
+        let yaml = r#"
+owner: alice
+entities:
+  - id: alice
+    accounts:
+      - id: savings
+        balances:
+          - utc: '2025-01-01'
+            amounts: ['999 €']
+  - id: shop
+    accounts:
+      - id: register
+transactions:
+  - utc: '2022-06-01'
+    transfers:
+      - from: alice:savings
+        to: shop:register
+        amount: 50 €
+"#;
+        let ledger = parse_ledger(yaml);
+        let begin = parse_datetime("2022-01-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, Some(begin), None);
+        // No seed (checkpoint is in the future), just the transfer
+        assert!(
+            !result.contains("999"),
+            "Did not expect '999' in: {}",
+            result
+        );
+        assert!(result.contains("50"), "Expected '50' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_begin_seeds_multiple_commodities() {
+        let yaml = r#"
+owner: alice
+entities:
+  - id: alice
+    accounts:
+      - id: wallet
+        balances:
+          - utc: '2020-01-01'
+            amounts: ['100 €', '5 BTC']
+  - id: shop
+    accounts:
+      - id: register
+transactions:
+  - utc: '2021-06-01'
+    transfers:
+      - from: alice:wallet
+        to: shop:register
+        amount: 30 €
+"#;
+        let ledger = parse_ledger(yaml);
+        let begin = parse_datetime("2021-01-01").unwrap();
+        let result = show_balance(BalanceFilter::All, false, &ledger, Some(begin), None);
+        // alice:wallet = 100 € (seed) - 30 € (transfer) = 70 €, and 5 BTC (seed, untouched)
+        assert!(result.contains("70"), "Expected '70' in: {}", result);
+        assert!(result.contains("BTC"), "Expected 'BTC' in: {}", result);
+        assert!(result.contains("5"), "Expected '5' in: {}", result);
+    }
+
+    #[test]
+    fn show_balance_no_flags_includes_all() {
+        let ledger = multi_date_ledger();
+        let result = show_balance(BalanceFilter::All, false, &ledger, None, None);
+        // All three transactions: 10 + 20 + 30 = 60
+        assert!(result.contains("60"), "Expected '60' in: {}", result);
+    }
+
+    // ─── filter_by_date ────────────────────────────────────────────────────────
+
+    #[test]
+    fn filter_by_date_no_flags_returns_all() {
+        let ledger = multi_date_ledger();
+        let filtered = ledger.filter_by_date(None, None);
+        assert_eq!(filtered.transactions.len(), 3);
+    }
+
+    #[test]
+    fn filter_by_date_end_only() {
+        let ledger = multi_date_ledger();
+        let end = parse_datetime("2015-07-01").unwrap();
+        let filtered = ledger.filter_by_date(None, Some(end));
+        assert_eq!(filtered.transactions.len(), 2);
+    }
+
+    #[test]
+    fn filter_by_date_begin_only() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2015-07-01").unwrap();
+        let filtered = ledger.filter_by_date(Some(begin), None);
+        assert_eq!(filtered.transactions.len(), 1);
+    }
+
+    #[test]
+    fn filter_by_date_begin_and_end() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2015-04-01").unwrap();
+        let end = parse_datetime("2015-08-01").unwrap();
+        let filtered = ledger.filter_by_date(Some(begin), Some(end));
+        assert_eq!(filtered.transactions.len(), 1);
+        // The single transaction should be the June one
+        let utc = filtered.transactions[0].utc.unwrap();
+        assert_eq!(utc_to_iso_date_string(&utc), "2015-06-01");
+    }
+
+    #[test]
+    fn filter_by_date_begin_is_inclusive() {
+        let ledger = multi_date_ledger();
+        // Begin exactly on a transaction date
+        let begin = parse_datetime("2015-06-01").unwrap();
+        let filtered = ledger.filter_by_date(Some(begin), None);
+        assert_eq!(filtered.transactions.len(), 2);
+    }
+
+    #[test]
+    fn filter_by_date_end_is_exclusive() {
+        let ledger = multi_date_ledger();
+        // End exactly on a transaction date
+        let end = parse_datetime("2015-06-01").unwrap();
+        let filtered = ledger.filter_by_date(None, Some(end));
+        assert_eq!(filtered.transactions.len(), 1);
+    }
+
+    #[test]
+    fn filter_by_date_preserves_entities() {
+        let ledger = multi_date_ledger();
+        let begin = parse_datetime("2020-01-01").unwrap();
+        let filtered = ledger.filter_by_date(Some(begin), None);
+        assert_eq!(filtered.transactions.len(), 0);
+        assert_eq!(filtered.entities.len(), ledger.entities.len());
+        assert_eq!(filtered.owner, ledger.owner);
+    }
+
+    #[test]
+    fn filter_by_date_filters_individual_transfers() {
+        // Transaction with two transfers at different dates
+        let yaml = r#"
+owner: john
+transactions:
+  - utc: '2015-01-01'
+    transfers:
+      - utc: '2015-03-01'
+        from: john:giro
+        to: shop:register
+        amount: 10 €
+      - utc: '2015-09-01'
+        from: john:giro
+        to: shop:register
+        amount: 20 €
+"#;
+        let ledger = parse_ledger(yaml);
+        let end = parse_datetime("2015-06-01").unwrap();
+        let filtered = ledger.filter_by_date(None, Some(end));
+        // Transaction should still exist but with only the first transfer
+        assert_eq!(filtered.transactions.len(), 1);
+        assert_eq!(filtered.transactions[0].transfers.len(), 1);
+        assert_eq!(
+            filtered.transactions[0].transfers[0].amount,
+            make_amount(10, 1, "€")
+        );
     }
 
     // ─── show_transfers ───────────────────────────────────────────────────────

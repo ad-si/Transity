@@ -344,6 +344,56 @@ impl Ledger {
         self.transactions.extend(other.transactions);
         self
     }
+
+    /// Return a new ledger with only transfers in [begin, end).
+    /// Transactions whose transfers are all filtered out are removed entirely.
+    pub fn filter_by_date(
+        &self,
+        begin: Option<DateTime<Utc>>,
+        end: Option<DateTime<Utc>>,
+    ) -> Ledger {
+        if begin.is_none() && end.is_none() {
+            return self.clone();
+        }
+        let transactions = self
+            .transactions
+            .iter()
+            .filter_map(|tx| {
+                let filtered_transfers: Vec<Transfer> = tx
+                    .transfers_with_date()
+                    .into_iter()
+                    .filter(|t| {
+                        if let Some(begin_dt) = &begin {
+                            match &t.utc {
+                                Some(t_utc) if t_utc < begin_dt => return false,
+                                _ => {}
+                            }
+                        }
+                        if let Some(end_dt) = &end {
+                            match &t.utc {
+                                Some(t_utc) if t_utc >= end_dt => return false,
+                                _ => {}
+                            }
+                        }
+                        true
+                    })
+                    .collect();
+                if filtered_transfers.is_empty() {
+                    None
+                } else {
+                    Some(Transaction {
+                        transfers: filtered_transfers,
+                        ..tx.clone()
+                    })
+                }
+            })
+            .collect();
+        Ledger {
+            owner: self.owner.clone(),
+            entities: self.entities.clone(),
+            transactions,
+        }
+    }
 }
 
 pub fn parse_ledger_str(yaml: &str) -> Result<Ledger> {
@@ -599,6 +649,30 @@ pub fn balance_map_add_transfer(map: &mut BalanceMap, transfer: &Transfer) {
     commodity_map_add(to_map, transfer.amount.clone());
 }
 
+/// Seed the balance map with entity balance declarations effective at `at`.
+/// For each entity account, finds the latest balance checkpoint at or before
+/// `at` and adds those amounts to the balance map.
+pub fn seed_balance_map_from_entities(map: &mut BalanceMap, ledger: &Ledger, at: &DateTime<Utc>) {
+    for entity in &ledger.entities {
+        for account in &entity.accounts {
+            // Find the latest balance checkpoint at or before `at`
+            let latest = account
+                .balances
+                .iter()
+                .filter(|b| b.utc <= *at)
+                .max_by_key(|b| b.utc);
+
+            if let Some(balance) = latest {
+                let full_id = add_account_default(&format!("{}:{}", entity.id, account.id));
+                let acc_map = map.entry(full_id).or_default();
+                for amount in balance.commodity_map.values() {
+                    commodity_map_add(acc_map, amount.clone());
+                }
+            }
+        }
+    }
+}
+
 // ─── ENTITIES → TRANSFERS ────────────────────────────────────────────────────
 
 pub fn entity_to_transfers(entity: &Entity) -> Vec<Transfer> {
@@ -759,9 +833,23 @@ pub enum BalanceFilter {
     All,
 }
 
-pub fn show_balance(filter: BalanceFilter, color: bool, ledger: &Ledger) -> String {
+pub fn show_balance(
+    filter: BalanceFilter,
+    color: bool,
+    ledger: &Ledger,
+    begin: Option<DateTime<Utc>>,
+    end: Option<DateTime<Utc>>,
+) -> String {
+    let filtered_ledger = ledger.filter_by_date(begin, end);
     let mut balance_map: BalanceMap = BalanceMap::new();
-    for tx in &ledger.transactions {
+
+    // When --begin is set, seed the balance map with entity balance
+    // declarations that are effective at that point in time.
+    if let Some(begin_dt) = &begin {
+        seed_balance_map_from_entities(&mut balance_map, &filtered_ledger, begin_dt);
+    }
+
+    for tx in &filtered_ledger.transactions {
         for t in &tx.transfers_with_date() {
             balance_map_add_transfer(&mut balance_map, t);
         }
