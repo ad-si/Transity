@@ -25,7 +25,7 @@ enum Commands {
     /// Only include transactions at or after this date (e.g. 2024-01-01)
     #[arg(long)]
     begin: Option<String>,
-    /// Only include transactions before this date (e.g. 2025-01-01)
+    /// Only include transactions before this date (defaults to now)
     #[arg(long)]
     end: Option<String>,
     /// Override the owner set in the journal file
@@ -40,7 +40,7 @@ enum Commands {
     /// Only include transactions at or after this date (e.g. 2024-01-01)
     #[arg(long)]
     begin: Option<String>,
-    /// Only include transactions before this date (e.g. 2025-01-01)
+    /// Only include transactions before this date (defaults to now)
     #[arg(long)]
     end: Option<String>,
     /// Override the owner set in the journal file
@@ -316,7 +316,7 @@ fn main() -> Result<()> {
       });
       apply_owner_override(&mut ledger, owner);
       let begin = begin.map(|s| parse_date_flag(&s));
-      let end = end.map(|s| parse_date_flag(&s));
+      let end = Some(end.map(|s| parse_date_flag(&s)).unwrap_or_else(Utc::now));
       print!(
         "{}",
         show_balance(BalanceFilter::OnlyOwner, true, &ledger, begin, end)
@@ -337,7 +337,7 @@ fn main() -> Result<()> {
       });
       apply_owner_override(&mut ledger, owner);
       let begin = begin.map(|s| parse_date_flag(&s));
-      let end = end.map(|s| parse_date_flag(&s));
+      let end = Some(end.map(|s| parse_date_flag(&s)).unwrap_or_else(Utc::now));
       print!(
         "{}",
         show_balance(BalanceFilter::All, true, &ledger, begin, end)
