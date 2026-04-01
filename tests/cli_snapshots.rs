@@ -34,6 +34,12 @@ fn test_balance_multi() {
 }
 
 #[test]
+fn test_balance_owner_override() {
+    let output = run_transity(&["balance", "examples/journal.yaml", "--owner", "anna"]);
+    insta::assert_snapshot!("balance_owner_override", output);
+}
+
+#[test]
 fn test_balance_all() {
     let output = run_transity(&["balance-all", "examples/journal.yaml"]);
     insta::assert_snapshot!("balance_all", output);

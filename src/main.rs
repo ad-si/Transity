@@ -28,6 +28,9 @@ enum Commands {
         /// Only include transactions before this date (e.g. 2025-01-01)
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -40,6 +43,9 @@ enum Commands {
         /// Only include transactions before this date (e.g. 2025-01-01)
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -50,6 +56,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -60,6 +69,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -70,6 +82,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -92,6 +107,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -102,6 +120,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -112,6 +133,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -122,6 +146,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -132,6 +159,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -142,6 +172,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -152,6 +185,9 @@ enum Commands {
         begin: Option<String>,
         #[arg(long)]
         end: Option<String>,
+        /// Override the owner set in the journal file
+        #[arg(long)]
+        owner: Option<String>,
         #[arg(trailing_var_arg = true)]
         extra: Vec<String>,
     },
@@ -172,6 +208,12 @@ fn collect_paths(journal: &str, extra: &[String]) -> Vec<PathBuf> {
     let mut paths = vec![PathBuf::from(journal)];
     paths.extend(extra.iter().map(PathBuf::from));
     paths
+}
+
+fn apply_owner_override(ledger: &mut Ledger, owner: Option<String>) {
+    if let Some(o) = owner {
+        ledger.owner = Some(o);
+    }
 }
 
 fn parse_date_flag(s: &str) -> DateTime<Utc> {
@@ -260,13 +302,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let begin = begin.map(|s| parse_date_flag(&s));
             let end = end.map(|s| parse_date_flag(&s));
             print!(
@@ -279,13 +323,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let begin = begin.map(|s| parse_date_flag(&s));
             let end = end.map(|s| parse_date_flag(&s));
             print!(
@@ -298,13 +344,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -316,13 +364,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -334,13 +384,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -376,13 +428,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -394,13 +448,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -418,13 +474,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -442,13 +500,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -469,13 +529,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -493,13 +555,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -517,13 +581,15 @@ fn main() -> Result<()> {
             journal,
             begin,
             end,
+            owner,
             extra,
         } => {
             let paths = collect_paths(&journal, &extra);
-            let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+            let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
                 eprintln!("{}", e.to_string().red());
                 std::process::exit(1);
             });
+            apply_owner_override(&mut ledger, owner);
             let ledger = ledger.filter_by_date(
                 begin.map(|s| parse_date_flag(&s)),
                 end.map(|s| parse_date_flag(&s)),
@@ -1110,6 +1176,33 @@ transactions:
         assert!(
             result.contains("evil-corp"),
             "Expected 'evil-corp' in: {}",
+            result
+        );
+    }
+
+    #[test]
+    fn show_balance_owner_override_filters_by_new_owner() {
+        let yaml = r#"
+owner: john
+transactions:
+  - utc: '2014-12-24'
+    transfers:
+      - from: john:giro
+        to: anna:wallet
+        amount: 15 €
+"#;
+        let mut ledger = parse_ledger(yaml);
+        // Override owner from "john" to "anna"
+        ledger.owner = Some("anna".to_string());
+        let result = show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
+        assert!(
+            result.contains("anna:wallet"),
+            "Expected 'anna:wallet' in: {}",
+            result
+        );
+        assert!(
+            !result.contains("john:giro"),
+            "Did not expect 'john:giro' in: {}",
             result
         );
     }

@@ -1,0 +1,7 @@
+---
+source: tests/cli_snapshots.rs
+assertion_line: 39
+expression: output
+---
+  anna    1   evil_machine
+        214.7 €
