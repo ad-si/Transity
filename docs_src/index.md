@@ -1,7 +1,9 @@
 # Transity Documentation
 
-The plain text accounting tool of the future.
+The [plain text accounting] tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
+
+[plain text accounting](https://plaintextaccounting.org)
 
 <img
   src="images/screenshot-balance.svg"
@@ -11,6 +13,7 @@ Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
 Also check out the [playground](/) on the landing page!
 
-For help, please come visit us on our [GitHub Discussions] page!
+For help or feature requests,
+please visit our [GitHub Discussions] page!
 
 [GitHub Discussions]: https://github.com/feramhq/Transity/discussions
