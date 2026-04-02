@@ -63,22 +63,21 @@ expression: output
 2020-01-06T12:17:00 john -7.8 €
 
 
-"john:giro $"
-2018-01-07T00:00:00 john:giro 50.0 $
+"john/giro $"
+2018-01-07T00:00:00 john/giro 50.0 $
 
 
-"john:giro BTC"
-2018-03-07T00:00:00 john:giro 0.434114 BTC
-2018-03-12T00:00:00 john:giro 60.318 BTC
+"john/giro BTC"
+2018-03-07T00:00:00 john/giro 0.434114 BTC
+2018-03-12T00:00:00 john/giro 60.318 BTC
 
 
-"john:giro €"
-2017-12-24T00:00:00 john:giro -15.0 €
-2018-01-07T00:00:00 john:giro 100.0 €
+"john/giro €"
+2017-12-24T00:00:00 john/giro -15.0 €
+2018-01-07T00:00:00 john/giro 100.0 €
 
 
-"john:wallet €"
-2017-05-01T12:00:00 john:wallet 0.0 €
-2018-01-04T17:05:00 john:wallet -33.95 €
-2018-01-05T00:00:00 john:wallet 100.0 €
-
+"john/wallet €"
+2017-05-01T12:00:00 john/wallet 0.0 €
+2018-01-04T17:05:00 john/wallet -33.95 €
+2018-01-05T00:00:00 john/wallet 100.0 €

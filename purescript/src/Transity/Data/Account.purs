@@ -42,8 +42,9 @@ import Transity.Utils
 -- | You shouldn't misuse this for abstract concepts like expenses or income.
 -- | To assign a meaning to a transaction you can use notes and tags.
 -- |
--- | The Id must be a `:` separated String where the first element
+-- | The Id must be a separator-delimited String where the first element
 -- | is the owner of the account. E.g. `john:evil-bank:savings`
+-- | or `john/evil-bank/savings`. Both `:` and `/` are accepted.
 
 type Id = String
 newtype Account = Account

@@ -12,25 +12,25 @@ Journal for "john"
     2017-03-05 00:00 |       evil-corp ->            anna :     1    evil_machine |
 
 2017-12-24 00:00 |            Money for evil deal
-                             john:giro ->       evil-corp :    15    €          |
+                             john/giro ->       evil-corp :    15    €          |
 
 2018-01-04 17:05 |                Christmas Gifts
-                           john:wallet ->            anna :    33.95 €          |
+                           john/wallet ->            anna :    33.95 €          |
 
 2018-01-05 00:00 |
-                              good-inc ->     john:wallet :   100    €          |
+                              good-inc ->     john/wallet :   100    €          |
 
 2018-01-07 00:00 |              Financial support
-                                   ben ->       john:giro :   100    €          |
+                                   ben ->       john/giro :   100    €          |
 
 2018-01-07 00:00 |    Financial support in Dollar
-                                   ben ->       john:giro :    50    $          |
+                                   ben ->       john/giro :    50    $          |
 
 2018-03-07 00:00 |   Financial support in Bitcoin
-                                   ben ->       john:giro :     0.434114 BTC        |
+                                   ben ->       john/giro :     0.434114 BTC        |
 
 2018-03-12 00:00 | More financial support in Bitcoin
-                                   ben ->       john:giro :    60.318 BTC        |
+                                   ben ->       john/giro :    60.318 BTC        |
 
 2018-07-05 17:13 |                           Food
                                   anna ->    grocery-shop :    11.97 €          |
@@ -48,10 +48,7 @@ Journal for "john"
                                   john ->          bakery :     7.8  €          |
 
 2020-09-28 14:55 |               Bread and butter
-                             john:giro ->          bakery :     7.64 £          |
+                             john/giro ->          bakery :     7.64 £          |
 
 2021-02-13 07:29 |                        NO NOTE
                                   anna ->       evil-corp :   122    £          |
-
-
-

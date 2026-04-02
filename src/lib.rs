@@ -308,8 +308,14 @@ impl Transaction {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct ConfigRaw {
+  pub separator: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct LedgerRaw {
   pub owner: Option<String>,
+  pub config: Option<ConfigRaw>,
   pub entities: Option<Vec<EntityRaw>>,
   pub transactions: Vec<TransactionRaw>,
 }
@@ -317,33 +323,167 @@ pub struct LedgerRaw {
 #[derive(Debug, Clone)]
 pub struct Ledger {
   pub owner: Option<String>,
+  pub separator: String,
+  /// When true, only the configured separator character is recognized.
+  /// `:` and `/` are NOT interchangeable — they are literal characters.
+  /// When false (no config), both `:` and `/` are accepted and normalized.
+  pub separator_is_explicit: bool,
   pub entities: Vec<Entity>,
   pub transactions: Vec<Transaction>,
+  /// Mapping from normalized account ID to the original form as
+  /// written in the source file. Only populated when normalization
+  /// changes an ID (e.g. `:` → `/`). Used for error messages.
+  pub original_account_ids: HashMap<String, String>,
 }
 
 impl Ledger {
   pub fn from_raw(raw: LedgerRaw) -> Result<Ledger> {
+    let explicit_separator =
+      raw.config.as_ref().and_then(|c| c.separator.clone());
+    let separator = explicit_separator
+      .clone()
+      .unwrap_or_else(|| "/".to_string());
+    if separator.chars().count() != 1 {
+      return Err(anyhow!(
+        "separator must be exactly one character, got: {:?}",
+        separator
+      ));
+    }
     let entities = raw
       .entities
       .unwrap_or_default()
       .iter()
       .map(Entity::from_raw)
       .collect::<Result<Vec<_>>>()?;
-    let transactions = raw
+    let transactions: Vec<Transaction> = raw
       .transactions
       .iter()
       .map(Transaction::from_raw)
       .collect::<Result<Vec<_>>>()?;
+    // When no explicit separator is configured, both : and / are
+    // accepted and normalized to the default.  When a separator IS
+    // configured, only that character is a separator — all other
+    // characters are literal parts of the account name.
+    let mut original_account_ids: HashMap<String, String> = HashMap::new();
+    let is_explicit = explicit_separator.is_some();
+    let (entities, transactions, owner) = if !is_explicit {
+      let entities = entities
+        .into_iter()
+        .map(|mut e| {
+          e.id = normalize_account_id(&e.id, &separator);
+          e.accounts = e
+            .accounts
+            .into_iter()
+            .map(|mut a| {
+              a.id = normalize_account_id(&a.id, &separator);
+              a
+            })
+            .collect();
+          e
+        })
+        .collect();
+      let transactions = transactions
+        .into_iter()
+        .map(|mut tx| {
+          tx.transfers = tx
+            .transfers
+            .into_iter()
+            .map(|mut t| {
+              let norm_from = normalize_account_id(&t.from, &separator);
+              if norm_from != t.from {
+                original_account_ids
+                  .entry(norm_from.clone())
+                  .or_insert(t.from.clone());
+              }
+              let norm_to = normalize_account_id(&t.to, &separator);
+              if norm_to != t.to {
+                original_account_ids
+                  .entry(norm_to.clone())
+                  .or_insert(t.to.clone());
+              }
+              t.from = norm_from;
+              t.to = norm_to;
+              t
+            })
+            .collect();
+          tx
+        })
+        .collect();
+      let owner = raw.owner.map(|o| normalize_account_id(&o, &separator));
+      (entities, transactions, owner)
+    } else {
+      (entities, transactions, raw.owner)
+    };
     Ok(Ledger {
-      owner: raw.owner,
+      owner,
+      separator,
+      separator_is_explicit: is_explicit,
       entities,
       transactions,
+      original_account_ids,
     })
   }
 
   pub fn merge(mut self, other: Ledger) -> Ledger {
-    self.entities.extend(other.entities);
-    self.transactions.extend(other.transactions);
+    // Merge original ID mappings (keep first-seen)
+    for (k, v) in other.original_account_ids {
+      self.original_account_ids.entry(k).or_insert(v);
+    }
+    if self.separator != other.separator {
+      let sep = self.separator.clone();
+      // Normalize entity and account IDs from the other ledger
+      let normalized_entities: Vec<Entity> = other
+        .entities
+        .into_iter()
+        .map(|mut e| {
+          e.id = normalize_account_id(&e.id, &sep);
+          e.accounts = e
+            .accounts
+            .into_iter()
+            .map(|mut a| {
+              a.id = normalize_account_id(&a.id, &sep);
+              a
+            })
+            .collect();
+          e
+        })
+        .collect();
+      self.entities.extend(normalized_entities);
+      let normalized: Vec<Transaction> = other
+        .transactions
+        .into_iter()
+        .map(|mut tx| {
+          tx.transfers = tx
+            .transfers
+            .into_iter()
+            .map(|mut t| {
+              let norm_from = normalize_account_id(&t.from, &sep);
+              if norm_from != t.from {
+                self
+                  .original_account_ids
+                  .entry(norm_from.clone())
+                  .or_insert(t.from.clone());
+              }
+              let norm_to = normalize_account_id(&t.to, &sep);
+              if norm_to != t.to {
+                self
+                  .original_account_ids
+                  .entry(norm_to.clone())
+                  .or_insert(t.to.clone());
+              }
+              t.from = norm_from;
+              t.to = norm_to;
+              t
+            })
+            .collect();
+          tx
+        })
+        .collect();
+      self.transactions.extend(normalized);
+    } else {
+      self.entities.extend(other.entities);
+      self.transactions.extend(other.transactions);
+    }
     self
   }
 
@@ -392,8 +532,11 @@ impl Ledger {
       .collect();
     Ledger {
       owner: self.owner.clone(),
+      separator: self.separator.clone(),
+      separator_is_explicit: self.separator_is_explicit,
       entities: self.entities.clone(),
       transactions,
+      original_account_ids: self.original_account_ids.clone(),
     }
   }
 }
@@ -402,6 +545,20 @@ pub fn parse_ledger_str(yaml: &str) -> Result<Ledger> {
   let raw: LedgerRaw = serde_yaml::from_str(yaml)
     .with_context(|| "Cannot parse YAML".to_string())?;
   Ledger::from_raw(raw)
+}
+
+/// Normalize account separator characters in an account ID.
+/// Both `:` and `/` are recognized as hierarchy separators and
+/// replaced with the configured separator character.
+pub fn normalize_account_id(id: &str, separator: &str) -> String {
+  let mut result = id.to_string();
+  if separator != ":" {
+    result = result.replace(':', separator);
+  }
+  if separator != "/" {
+    result = result.replace('/', separator);
+  }
+  result
 }
 
 // ─── DATE PARSING ────────────────────────────────────────────────────────────
@@ -643,18 +800,21 @@ pub fn utc_to_iso_date_string(dt: &DateTime<Utc>) -> String {
 
 pub type BalanceMap = HashMap<String, CommodityMap>;
 
-pub fn add_account_default(account_id: &str) -> String {
-  let parts: Vec<&str> = account_id.split(':').collect();
-  if parts.len() == 1 {
-    format!("{}:_default_", account_id)
+pub fn add_account_default(account_id: &str, separator: &str) -> String {
+  if !account_id.contains(separator) {
+    format!("{}{}_default_", account_id, separator)
   } else {
     account_id.to_string()
   }
 }
 
-pub fn balance_map_add_transfer(map: &mut BalanceMap, transfer: &Transfer) {
-  let from = add_account_default(&transfer.from);
-  let to = add_account_default(&transfer.to);
+pub fn balance_map_add_transfer(
+  map: &mut BalanceMap,
+  transfer: &Transfer,
+  separator: &str,
+) {
+  let from = add_account_default(&transfer.from, separator);
+  let to = add_account_default(&transfer.to, separator);
 
   // Subtract from sender
   let from_map = map.entry(from).or_default();
@@ -673,6 +833,7 @@ pub fn seed_balance_map_from_entities(
   ledger: &Ledger,
   at: &DateTime<Utc>,
 ) {
+  let separator = &ledger.separator;
   for entity in &ledger.entities {
     for account in &entity.accounts {
       // Find the latest balance checkpoint at or before `at`
@@ -683,8 +844,10 @@ pub fn seed_balance_map_from_entities(
         .max_by_key(|b| b.utc);
 
       if let Some(balance) = latest {
-        let full_id =
-          add_account_default(&format!("{}:{}", entity.id, account.id));
+        let full_id = add_account_default(
+          &format!("{}{}{}", entity.id, separator, account.id),
+          separator,
+        );
         let acc_map = map.entry(full_id).or_default();
         for amount in balance.commodity_map.values() {
           commodity_map_add(acc_map, amount.clone());
@@ -696,10 +859,10 @@ pub fn seed_balance_map_from_entities(
 
 // ─── ENTITIES → TRANSFERS ────────────────────────────────────────────────────
 
-pub fn entity_to_transfers(entity: &Entity) -> Vec<Transfer> {
+pub fn entity_to_transfers(entity: &Entity, separator: &str) -> Vec<Transfer> {
   let mut result = Vec::new();
   for account in &entity.accounts {
-    let full_id = format!("{}:{}", entity.id, account.id);
+    let full_id = format!("{}{}{}", entity.id, separator, account.id);
     for balance in &account.balances {
       for amount in balance.commodity_map.values() {
         result.push(Transfer {
@@ -715,12 +878,21 @@ pub fn entity_to_transfers(entity: &Entity) -> Vec<Transfer> {
   result
 }
 
-pub fn entities_to_transfers(entities: &[Entity]) -> Vec<Transfer> {
-  entities.iter().flat_map(entity_to_transfers).collect()
+pub fn entities_to_transfers(
+  entities: &[Entity],
+  separator: &str,
+) -> Vec<Transfer> {
+  entities
+    .iter()
+    .flat_map(|e| entity_to_transfers(e, separator))
+    .collect()
 }
 
-pub fn entities_to_balancing_transfers(entities: &[Entity]) -> Vec<Transfer> {
-  entities_to_transfers(entities)
+pub fn entities_to_balancing_transfers(
+  entities: &[Entity],
+  separator: &str,
+) -> Vec<Transfer> {
+  entities_to_transfers(entities, separator)
     .into_iter()
     .map(|t| Transfer {
       note: Some("___BALANCE___".to_string()),
@@ -729,8 +901,11 @@ pub fn entities_to_balancing_transfers(entities: &[Entity]) -> Vec<Transfer> {
     .collect()
 }
 
-pub fn entities_to_initial_transfers(entities: &[Entity]) -> Vec<Transfer> {
-  entities_to_transfers(entities)
+pub fn entities_to_initial_transfers(
+  entities: &[Entity],
+  separator: &str,
+) -> Vec<Transfer> {
+  entities_to_transfers(entities, separator)
     .into_iter()
     .filter(|t| t.amount.is_zero() && t.from != "_void_")
     .collect()
@@ -741,13 +916,14 @@ pub fn entities_to_initial_transfers(entities: &[Entity]) -> Vec<Transfer> {
 pub fn verify_accounts(ledger: &Ledger) -> Result<()> {
   use std::collections::HashSet;
 
+  let separator = &ledger.separator;
   let defined: HashSet<String> = ledger
     .entities
     .iter()
     .flat_map(|e| {
       let mut ids = vec![e.id.clone()];
       for acc in &e.accounts {
-        ids.push(format!("{}:{}", e.id, acc.id));
+        ids.push(format!("{}{}{}", e.id, separator, acc.id));
       }
       ids
     })
@@ -773,7 +949,10 @@ pub fn verify_accounts(ledger: &Ledger) -> Result<()> {
     sorted.sort();
     let list = sorted
       .iter()
-      .map(|s| format!("\n  - id: {}", s))
+      .map(|s| {
+        let display = ledger.original_account_ids.get(s.as_str()).unwrap_or(s);
+        format!("\n  - id: {}", display)
+      })
       .collect::<Vec<_>>()
       .join("");
     Err(anyhow!(
@@ -788,7 +967,9 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
     return Ok(());
   }
 
-  let mut balancing = entities_to_balancing_transfers(&ledger.entities);
+  let separator = &ledger.separator;
+  let mut balancing =
+    entities_to_balancing_transfers(&ledger.entities, separator);
   let mut tx_transfers: Vec<Transfer> = ledger
     .transactions
     .iter()
@@ -808,9 +989,9 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
     if transfer.note.as_deref() == Some("___BALANCE___") {
       // Temporarily apply the balancing transfer to check, but don't keep it
       let mut check_map = balance_map.clone();
-      balance_map_add_transfer(&mut check_map, transfer);
+      balance_map_add_transfer(&mut check_map, transfer, separator);
 
-      let acc_id = add_account_default(&transfer.from);
+      let acc_id = add_account_default(&transfer.from, separator);
       if let Some(com_map) = check_map.get(&acc_id) {
         let commodity = &transfer.amount.commodity;
         if let Some(bal_amount) = com_map.get(commodity) {
@@ -835,7 +1016,7 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
       // matching PureScript behavior where the balancing transfer
       // is used only for verification, not to drain the account.
     } else {
-      balance_map_add_transfer(&mut balance_map, transfer);
+      balance_map_add_transfer(&mut balance_map, transfer, separator);
     }
   }
 
@@ -844,8 +1025,8 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
 
 // ─── DISPLAY COMMANDS ────────────────────────────────────────────────────────
 
-pub fn norm_acc_id(id: &str) -> String {
-  id.replace(":_default_", "")
+pub fn norm_acc_id(id: &str, separator: &str) -> String {
+  id.replace(&format!("{}_default_", separator), "")
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -860,11 +1041,14 @@ pub enum BalanceFilter {
 /// For example, given leaf accounts `john:visa`, `john:bank:savings`, and
 /// `john:bank:depot`, this produces additional entries for `john:bank`
 /// (sum of savings + depot) and `john` (sum of all three).
-pub fn expand_account_hierarchy(balance_map: BalanceMap) -> BalanceMap {
-  // Step 1: Normalize all keys (remove :_default_ suffix)
+pub fn expand_account_hierarchy(
+  balance_map: BalanceMap,
+  separator: &str,
+) -> BalanceMap {
+  // Step 1: Normalize all keys (remove <sep>_default_ suffix)
   let mut normalized: BalanceMap = BalanceMap::new();
   for (acc_id, com_map) in balance_map {
-    let norm_id = norm_acc_id(&acc_id);
+    let norm_id = norm_acc_id(&acc_id, separator);
     let entry = normalized.entry(norm_id).or_default();
     for amount in com_map.into_values() {
       commodity_map_add(entry, amount);
@@ -878,9 +1062,9 @@ pub fn expand_account_hierarchy(balance_map: BalanceMap) -> BalanceMap {
     .collect();
 
   for (acc_id, com_map) in &leaves {
-    let parts: Vec<&str> = acc_id.split(':').collect();
+    let parts: Vec<&str> = acc_id.split(separator).collect();
     for i in 1..parts.len() {
-      let ancestor = parts[..i].join(":");
+      let ancestor = parts[..i].join(separator);
       let entry = normalized.entry(ancestor).or_default();
       for amount in com_map.values() {
         commodity_map_add(entry, amount.clone());
@@ -898,6 +1082,7 @@ pub fn show_balance(
   begin: Option<DateTime<Utc>>,
   end: Option<DateTime<Utc>>,
 ) -> String {
+  let separator = &ledger.separator;
   let filtered_ledger = ledger.filter_by_date(begin, end);
   let mut balance_map: BalanceMap = BalanceMap::new();
 
@@ -913,13 +1098,13 @@ pub fn show_balance(
 
   for tx in &filtered_ledger.transactions {
     for t in &tx.transfers_with_date() {
-      balance_map_add_transfer(&mut balance_map, t);
+      balance_map_add_transfer(&mut balance_map, t, separator);
     }
   }
 
   // Expand the account hierarchy so that parent accounts
   // (e.g. "john", "john:bank") aggregate their children.
-  let balance_map = expand_account_hierarchy(balance_map);
+  let balance_map = expand_account_hierarchy(balance_map, separator);
 
   // Apply filter and remove zero amounts
   let mut filtered: Vec<(String, CommodityMap)> = balance_map
@@ -929,7 +1114,8 @@ pub fn show_balance(
         BalanceFilter::All => true,
         BalanceFilter::OnlyOwner => match &ledger.owner {
           Some(owner) => {
-            acc_id == *owner || acc_id.starts_with(&format!("{}:", owner))
+            acc_id == *owner
+              || acc_id.starts_with(&format!("{}{}", owner, separator))
           }
           None => true,
         },
@@ -951,14 +1137,16 @@ pub fn show_balance(
   let account_ids: Vec<String> =
     filtered.iter().map(|(id, _)| id.clone()).collect();
   let is_group = |acc_id: &str| -> bool {
-    let prefix = format!("{}:", acc_id);
+    let prefix = format!("{}{}", acc_id, separator);
     account_ids.iter().any(|id| id.starts_with(&prefix))
   };
   // Find the most specific (deepest) parent group for an account
   let parent_group = |acc_id: &str| -> Option<String> {
     account_ids
       .iter()
-      .filter(|g| is_group(g) && acc_id.starts_with(&format!("{}:", g)))
+      .filter(|g| {
+        is_group(g) && acc_id.starts_with(&format!("{}{}", g, separator))
+      })
       .max_by_key(|g| g.len())
       .cloned()
   };
@@ -1005,7 +1193,10 @@ pub fn show_balance(
     ordered
       .iter()
       .fold(WidthRecord::zero(), |acc, (acc_id, map, _)| {
-        acc.merge(&account_to_width_record(&norm_acc_id(acc_id), map))
+        acc.merge(&account_to_width_record(
+          &norm_acc_id(acc_id, separator),
+          map,
+        ))
       });
   let margin_left = 2;
   let global_wr = WidthRecord {
@@ -1015,7 +1206,7 @@ pub fn show_balance(
 
   let mut result = String::new();
   for (acc_id, map, group) in &ordered {
-    let norm_id = norm_acc_id(acc_id);
+    let norm_id = norm_acc_id(acc_id, separator);
     if *group {
       result.push('\n');
     }
@@ -1174,11 +1365,12 @@ pub fn get_entries(ledger: &Ledger) -> Option<Vec<Vec<String>>> {
   }
 
   // Add initial transfers (zero-amount entity balances)
-  let initial = entities_to_initial_transfers(&ledger.entities);
+  let separator = &ledger.separator;
+  let initial = entities_to_initial_transfers(&ledger.entities, separator);
   for t in &initial {
     if let Some(utc) = &t.utc {
       let iso = utc_to_iso_string(utc);
-      let acc_id = norm_acc_id(&t.from);
+      let acc_id = norm_acc_id(&t.from, separator);
       let f = rational_to_f64(&t.amount.quantity);
       all_rows.push(vec![
         iso,
@@ -1461,15 +1653,41 @@ pub fn load_ledger(path: &Path) -> Result<Ledger> {
   Ledger::from_raw(raw)
 }
 
+/// Load a YAML file, but override its separator config so all files
+/// in a multi-file journal share the same separator.
+#[cfg(feature = "cli")]
+fn load_ledger_with_separator(
+  path: &Path,
+  separator: &ConfigRaw,
+) -> Result<Ledger> {
+  let content = std::fs::read_to_string(path)
+    .with_context(|| format!("Cannot read file: {}", path.display()))?;
+  let mut raw: LedgerRaw = serde_yaml::from_str(&content)
+    .with_context(|| format!("Cannot parse YAML in: {}", path.display()))?;
+  // Apply the shared separator config so all files are parsed consistently
+  raw.config = Some(separator.clone());
+  Ledger::from_raw(raw)
+}
+
 #[cfg(feature = "cli")]
 pub fn load_and_verify(paths: &[std::path::PathBuf]) -> Result<Ledger> {
   if paths.is_empty() {
     return Err(anyhow!("No journal files specified"));
   }
 
+  // Load the first file to determine the separator config
   let mut ledger = load_ledger(&paths[0])?;
+  let shared_config = ConfigRaw {
+    separator: if ledger.separator_is_explicit {
+      Some(ledger.separator.clone())
+    } else {
+      None
+    },
+  };
+
+  // Load remaining files with the same separator config
   for p in &paths[1..] {
-    let other = load_ledger(p)?;
+    let other = load_ledger_with_separator(p, &shared_config)?;
     ledger = ledger.merge(other);
   }
 

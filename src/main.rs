@@ -1133,7 +1133,7 @@ transactions:
     commodity_map_add(&mut child, make_amount(100, 1, "€"));
     map.insert("john:giro".to_string(), child);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     assert!(result.contains_key("john"), "Expected parent 'john'");
     assert!(
@@ -1162,7 +1162,7 @@ transactions:
     commodity_map_add(&mut visa, make_amount(20, 1, "€"));
     map.insert("john:visa".to_string(), visa);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     // john:bank = savings + depot = 80
     assert_eq!(result["john:bank"]["€"], make_amount(80, 1, "€"));
@@ -1184,7 +1184,7 @@ transactions:
     commodity_map_add(&mut entry, make_amount(10, 1, "€"));
     map.insert("shop:_default_".to_string(), entry);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     assert!(result.contains_key("shop"), "Expected normalized 'shop'");
     assert!(
@@ -1208,7 +1208,7 @@ transactions:
     commodity_map_add(&mut giro, make_amount(60, 1, "€"));
     map.insert("john:giro".to_string(), giro);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     // john = direct (40) + giro (60) = 100
     assert_eq!(result["john"]["€"], make_amount(100, 1, "€"));
@@ -1229,7 +1229,7 @@ transactions:
     commodity_map_add(&mut wallet, make_amount(20, 1, "€"));
     map.insert("john:wallet".to_string(), wallet);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     assert_eq!(result["john"]["€"], make_amount(70, 1, "€"));
     assert_eq!(result["john"]["BTC"], make_amount(3, 1, "BTC"));
@@ -1243,7 +1243,7 @@ transactions:
     commodity_map_add(&mut entry, make_amount(10, 1, "€"));
     map.insert("shop".to_string(), entry);
 
-    let result = expand_account_hierarchy(map);
+    let result = expand_account_hierarchy(map, ":");
 
     assert_eq!(result.len(), 1);
     assert!(result.contains_key("shop"));
@@ -1287,8 +1287,8 @@ transactions:
     let result =
       show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
     assert!(
-      result.contains("john:giro"),
-      "Expected 'john:giro' in: {}",
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
       result
     );
     assert!(
@@ -1303,8 +1303,8 @@ transactions:
     let ledger = simple_ledger();
     let result = show_balance(BalanceFilter::All, false, &ledger, None, None);
     assert!(
-      result.contains("john:giro"),
-      "Expected 'john:giro' in: {}",
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
       result
     );
     assert!(
@@ -1331,13 +1331,13 @@ transactions:
     let result =
       show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
     assert!(
-      result.contains("anna:wallet"),
-      "Expected 'anna:wallet' in: {}",
+      result.contains("anna/wallet"),
+      "Expected 'anna/wallet' in: {}",
       result
     );
     assert!(
-      !result.contains("john:giro"),
-      "Did not expect 'john:giro' in: {}",
+      !result.contains("john/giro"),
+      "Did not expect 'john/giro' in: {}",
       result
     );
   }
@@ -1682,8 +1682,8 @@ transactions:
     let ledger = simple_ledger();
     let result = show_transfers(false, &ledger);
     assert!(
-      result.contains("john:giro"),
-      "Expected 'john:giro' in: {}",
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
       result
     );
   }
@@ -1763,7 +1763,7 @@ transactions:
     let result = show_entries(",", &ledger);
     assert!(result.is_some());
     let s = result.unwrap();
-    assert!(s.contains("john:giro"), "Expected 'john:giro' in: {}", s);
+    assert!(s.contains("john/giro"), "Expected 'john/giro' in: {}", s);
     assert!(s.contains("€"), "Expected '€' in: {}", s);
   }
 
@@ -1773,7 +1773,7 @@ transactions:
     let result = show_entries_by_account(&ledger);
     assert!(result.is_some());
     let s = result.unwrap();
-    assert!(s.contains("john:giro"), "Expected 'john:giro' in: {}", s);
+    assert!(s.contains("john/giro"), "Expected 'john/giro' in: {}", s);
     assert!(s.contains("evil-corp"), "Expected 'evil-corp' in: {}", s);
   }
 
@@ -1797,8 +1797,8 @@ transactions:
       result
     );
     assert!(
-      result.contains("john:giro"),
-      "Expected 'john:giro' in: {}",
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
       result
     );
     assert!(result.contains("15"), "Expected amount in: {}", result);
@@ -1909,11 +1909,493 @@ transactions:
 
   #[test]
   fn add_account_default_single_segment() {
-    assert_eq!(add_account_default("john"), "john:_default_");
+    assert_eq!(add_account_default("john", ":"), "john:_default_");
   }
 
   #[test]
   fn add_account_default_multi_segment_unchanged() {
-    assert_eq!(add_account_default("john:giro"), "john:giro");
+    assert_eq!(add_account_default("john:giro", ":"), "john:giro");
+  }
+
+  #[test]
+  fn add_account_default_slash_separator() {
+    assert_eq!(add_account_default("john", "/"), "john/_default_");
+    assert_eq!(add_account_default("john/giro", "/"), "john/giro");
+  }
+
+  // ─── normalize_account_id ─────────────────────────────────────────────────
+
+  #[test]
+  fn normalize_account_id_slash_to_colon() {
+    assert_eq!(normalize_account_id("john/wallet", ":"), "john:wallet");
+  }
+
+  #[test]
+  fn normalize_account_id_colon_to_slash() {
+    assert_eq!(normalize_account_id("john:wallet", "/"), "john/wallet");
+  }
+
+  #[test]
+  fn normalize_account_id_colon_unchanged_with_colon_separator() {
+    assert_eq!(normalize_account_id("john:wallet", ":"), "john:wallet");
+  }
+
+  #[test]
+  fn normalize_account_id_slash_unchanged_with_slash_separator() {
+    assert_eq!(normalize_account_id("john/wallet", "/"), "john/wallet");
+  }
+
+  #[test]
+  fn normalize_account_id_custom_separator() {
+    assert_eq!(normalize_account_id("john:wallet", "."), "john.wallet");
+    assert_eq!(normalize_account_id("john/wallet", "."), "john.wallet");
+  }
+
+  #[test]
+  fn normalize_account_id_deep_hierarchy() {
+    assert_eq!(
+      normalize_account_id("john/bank/savings", ":"),
+      "john:bank:savings"
+    );
+  }
+
+  // ─── separator config ─────────────────────────────────────────────────────
+
+  #[test]
+  fn ledger_default_separator_is_slash() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john:wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert_eq!(ledger.separator, "/");
+  }
+
+  #[test]
+  fn ledger_custom_separator_from_yaml() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john/wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert_eq!(ledger.separator, "/");
+  }
+
+  #[test]
+  fn ledger_separator_must_be_single_char() {
+    let yaml = r#"
+owner: test
+config:
+  separator: "::"
+transactions: []
+"#;
+    let raw: LedgerRaw = serde_yaml::from_str(yaml).unwrap();
+    assert!(Ledger::from_raw(raw).is_err());
+  }
+
+  #[test]
+  fn colon_normalized_to_slash_by_default() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john:wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert_eq!(ledger.transactions[0].transfers[0].from, "john/wallet");
+  }
+
+  #[test]
+  fn slash_unchanged_by_default() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john/wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert_eq!(ledger.transactions[0].transfers[0].from, "john/wallet");
+  }
+
+  #[test]
+  fn explicit_separator_does_not_normalize() {
+    // With explicit separator, other characters are literal.
+    // "john:wallet" keeps its colon — it is NOT converted to /.
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: "john:wallet"
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert_eq!(
+      ledger.transactions[0].transfers[0].from, "john:wallet",
+      "Colon is literal when separator is explicitly /"
+    );
+  }
+
+  #[test]
+  fn verify_accounts_with_slash_separator() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+  - id: ben
+    accounts:
+      - id: wallet
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: ben/wallet
+        to: anna/wallet
+        amount: 3 €
+"#,
+    );
+    assert!(verify_accounts(&ledger).is_ok());
+  }
+
+  #[test]
+  fn explicit_separator_rejects_wrong_separator() {
+    // With explicit separator /, the : is a literal character.
+    // "ben:wallet" is an opaque ID, not a hierarchy — it does
+    // not match entity "ben" + account "wallet".
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+  - id: ben
+    accounts:
+      - id: wallet
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: "ben:wallet"
+        to: "anna:wallet"
+        amount: 3 €
+"#,
+    );
+    assert!(
+      verify_accounts(&ledger).is_err(),
+      "ben:wallet is opaque when separator is / — should not match ben + wallet"
+    );
+  }
+
+  #[test]
+  fn no_separator_config_normalizes_both() {
+    // Without an explicit separator, both : and / are accepted
+    let ledger = parse_ledger(
+      r#"
+owner: test
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+  - id: ben
+    accounts:
+      - id: wallet
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: ben/wallet
+        to: anna:wallet
+        amount: 3 €
+"#,
+    );
+    assert!(
+      verify_accounts(&ledger).is_ok(),
+      "Both / and : should work when no separator is configured"
+    );
+  }
+
+  #[test]
+  fn show_balance_with_slash_separator() {
+    let ledger = parse_ledger(
+      r#"
+owner: john
+config:
+  separator: /
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john/giro
+        to: shop
+        amount: 15 €
+"#,
+    );
+    let result =
+      show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
+    assert!(
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
+      result
+    );
+    assert!(
+      result.contains("john"),
+      "Expected parent 'john' in: {}",
+      result
+    );
+  }
+
+  #[test]
+  fn show_balance_colon_normalized_to_slash_in_default_mode() {
+    // Colon in transfers with default / separator gets normalized to /
+    let ledger = parse_ledger(
+      r#"
+owner: john
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john:giro
+        to: shop
+        amount: 15 €
+"#,
+    );
+    let result =
+      show_balance(BalanceFilter::OnlyOwner, false, &ledger, None, None);
+    assert!(
+      result.contains("john/giro"),
+      "Expected 'john/giro' in: {}",
+      result
+    );
+  }
+
+  #[test]
+  fn hierarchy_with_slash_separator() {
+    let mut map = BalanceMap::new();
+    let mut child = CommodityMap::new();
+    commodity_map_add(&mut child, make_amount(100, 1, "€"));
+    map.insert("john/giro".to_string(), child);
+
+    let result = expand_account_hierarchy(map, "/");
+
+    assert!(result.contains_key("john"), "Expected parent 'john'");
+    assert!(
+      result.contains_key("john/giro"),
+      "Expected leaf 'john/giro'"
+    );
+  }
+
+  #[test]
+  fn norm_acc_id_with_slash_separator() {
+    assert_eq!(norm_acc_id("shop/_default_", "/"), "shop");
+    assert_eq!(norm_acc_id("shop:_default_", ":"), "shop");
+  }
+
+  #[test]
+  fn verify_ledger_balances_with_slash_separator() {
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+        balances:
+          - utc: '2000-01-01 12:00'
+            amounts: []
+          - utc: '2010-01-01 12:00'
+            amounts: ['3 €']
+  - id: ben
+    accounts:
+      - id: wallet
+transactions:
+  - utc: '2005-01-01 12:00'
+    transfers:
+      - from: ben/wallet
+        to: anna/wallet
+        amount: 3 €
+"#,
+    );
+    assert!(verify_ledger_balances(&ledger).is_ok());
+  }
+
+  #[test]
+  fn merge_normalizes_separators() {
+    // l1 has explicit separator :, l2 has explicit separator /
+    let l1 = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: ":"
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john:wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    let l2 = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: john/wallet
+        to: shop
+        amount: 3 €
+"#,
+    );
+    let combined = l1.merge(l2);
+    // l1 separator is :, so l2's john/wallet should be normalized to john:wallet
+    assert_eq!(combined.transactions[1].transfers[0].from, "john:wallet");
+  }
+
+  #[test]
+  fn merge_records_originals_for_error_messages() {
+    let l1 = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: ":"
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: anna:wallet
+        to: shop
+        amount: 5 €
+"#,
+    );
+    let l2 = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: /
+transactions:
+  - utc: '2020-02-01'
+    transfers:
+      - from: john/wallet
+        to: shop
+        amount: 3 €
+"#,
+    );
+    let combined = l1.merge(l2);
+    // john/wallet was normalized to john:wallet during merge,
+    // but verify_accounts error should show the original john/wallet
+    let err = verify_accounts(&combined).unwrap_err().to_string();
+    assert!(
+      err.contains("john/wallet"),
+      "Error should show original 'john/wallet', got: {}",
+      err
+    );
+    assert!(
+      !err.contains("john:wallet"),
+      "Error should NOT show normalized 'john:wallet', got: {}",
+      err
+    );
+  }
+
+  #[test]
+  fn explicit_separator_slash_in_entity_id_is_literal() {
+    // With separator ":", a "/" in entity IDs and transfers is a
+    // literal character, not a hierarchy separator.
+    let ledger = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: ":"
+entities:
+  - id: "john/wallet"
+  - id: shop
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: "john/wallet"
+        to: shop
+        amount: 5 €
+"#,
+    );
+    assert!(
+      verify_accounts(&ledger).is_ok(),
+      "john/wallet should match as an opaque ID"
+    );
+  }
+
+  #[test]
+  fn multi_file_shares_separator_config() {
+    // Simulates multi-file loading: first ledger has explicit separator,
+    // second has no config.  Entity with / in its ID is defined in the
+    // first, transfer referencing it is in the second.  The shared
+    // separator ensures / is treated as literal everywhere.
+    let l1 = parse_ledger(
+      r#"
+owner: test
+config:
+  separator: ":"
+entities:
+  - id: "john/wallet"
+  - id: shop
+transactions: []
+"#,
+    );
+    // Simulate load_ledger_with_separator: parse l2 with l1's config
+    let yaml2 = r#"
+owner: test
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: "john/wallet"
+        to: shop
+        amount: 5 €
+"#;
+    let mut raw2: LedgerRaw =
+      serde_yaml::from_str(yaml2).expect("YAML parse failed");
+    // Apply shared config from first file
+    raw2.config = Some(ConfigRaw {
+      separator: Some(":".to_string()),
+    });
+    let l2 = Ledger::from_raw(raw2).expect("Ledger::from_raw failed");
+
+    let combined = l1.merge(l2);
+    assert!(
+      verify_accounts(&combined).is_ok(),
+      "john/wallet should match across files with shared separator"
+    );
   }
 }

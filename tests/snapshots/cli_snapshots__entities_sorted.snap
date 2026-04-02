@@ -34,6 +34,3 @@ entities:
       - {"id":"giro","commodityMap":[],"balances":null}
       - {"id":"visa","commodityMap":[],"balances":[{"utc":"2016-07-22T19:36:57","amounts":[],"commodityMap":[]}]}
       - {"id":"wallet","commodityMap":[],"balances":[{"utc":"2017-05-01T12:00:00","amounts":[],"commodityMap":[[{"values":["€"],"tag":"Commodity"},"TODO"]]},{"utc":"2019-04-02T19:33:28","amounts":[],"commodityMap":[[{"values":["€"],"tag":"Commodity"},"TODO"]]}]}
-
-
-

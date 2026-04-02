@@ -6,6 +6,8 @@ A minimal journal file is a YAML file with following format:
 
 ```yaml
 owner: anna
+config:
+  separator: ':'
 commodities:
   - id: €
     name: Euro
@@ -47,6 +49,43 @@ transactions:
         to: anna
         amount: 1 evil-machine
 ```
+
+
+### Account Separator
+
+Account IDs use a hierarchy separator to distinguish the entity
+from the account name (e.g. `anna:wallet`).
+
+When no separator is configured, both `:` and `/` are accepted
+and automatically normalized to `/`.
+This means `anna/wallet` and `anna:wallet` are equivalent.
+
+You can set a custom separator in the journal file under `config`:
+
+```yaml
+owner: anna
+
+config:
+  separator: "|"
+
+entities:
+  - id: anna
+    accounts:
+      - id: wallet
+
+transactions:
+  - transfers:
+      - utc: '2024-01-15'
+        from: anna|wallet
+        to: shop|cash
+        amount: 42 €
+```
+
+When a separator is explicitly configured, **only** that character is
+treated as a hierarchy separator.
+Other characters (like `:` when the separator is `/`)
+are treated as literal parts of the account name.
+The separator must be exactly one character.
 
 
 ### Analyzing Journal Files

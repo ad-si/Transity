@@ -16,30 +16,30 @@ expression: output
 
 2017-12-24 Money for evil deal
   evil-corp  15 €
-  john:giro
+  john/giro
 
 2018-01-04 Christmas Gifts
   anna  33.95 €
-  john:wallet
+  john/wallet
 
 2018-01-05
-  john:wallet  100 €
+  john/wallet  100 €
   good-inc
 
 2018-01-07 Financial support
-  john:giro  100 €
+  john/giro  100 €
   ben
 
 2018-01-07 Financial support in Dollar
-  john:giro  50 $
+  john/giro  50 $
   ben
 
 2018-03-07 Financial support in Bitcoin
-  john:giro  0.434114 BTC
+  john/giro  0.434114 BTC
   ben
 
 2018-03-12 More financial support in Bitcoin
-  john:giro  60.318 BTC
+  john/giro  60.318 BTC
   ben
 
 2018-07-05 Food
@@ -61,5 +61,3 @@ expression: output
 2020-01-06 Pizza
   bakery  7.8 €
   john
-
-
