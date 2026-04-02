@@ -41,6 +41,31 @@ fn test_balance_owner_override() {
 }
 
 #[test]
+fn test_balance_tag_person() {
+  let output =
+    run_transity(&["balance", "examples/journal.yaml", "--tag", "person"]);
+  insta::assert_snapshot!("balance_tag_person", output);
+}
+
+#[test]
+fn test_balance_tag_company() {
+  let output =
+    run_transity(&["balance", "examples/journal.yaml", "--tag", "company"]);
+  insta::assert_snapshot!("balance_tag_company", output);
+}
+
+#[test]
+fn test_balance_tag_expr() {
+  let output = run_transity(&[
+    "balance",
+    "examples/journal.yaml",
+    "--tag",
+    "person and not company",
+  ]);
+  insta::assert_snapshot!("balance_tag_expr", output);
+}
+
+#[test]
 fn test_balance_all() {
   let output = run_transity(&["balance-all", "examples/journal.yaml"]);
   insta::assert_snapshot!("balance_all", output);

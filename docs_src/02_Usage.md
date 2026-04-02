@@ -153,6 +153,56 @@ gplot-cumul         Code and data for cumuluative gnuplot step chart
 ```
 
 
+#### Filtering
+
+Most commands support `--begin`, `--end`, `--owner`, and `--tag` flags
+to narrow down results.
+
+**Date range** with `--begin` (inclusive) and `--end` (exclusive):
+
+```shell
+transity balance examples/journal.yaml --begin 2024-01-01 --end 2025-01-01
+```
+
+**Owner override** with `--owner`:
+
+```shell
+transity balance examples/journal.yaml --owner anna
+```
+
+**Tag filter** with `--tag`:
+
+The `--tag` flag accepts a boolean expression over entity tags.
+A transfer is included if at least one of its entities
+(the `from` or `to` side) satisfies the expression.
+
+```shell
+# Simple: include transfers involving entities tagged "person"
+transity balance examples/journal.yaml --tag person
+
+# OR: include transfers involving "person" or "company" entities
+transity balance examples/journal.yaml --tag 'person or company'
+
+# AND: only entities that have both tags
+transity balance examples/journal.yaml --tag 'person and owner'
+
+# NOT: exclude entities tagged "company"
+transity balance examples/journal.yaml --tag 'not company'
+
+# Parentheses for grouping
+transity balance examples/journal.yaml --tag '(person or company) and not owner'
+```
+
+Operator precedence from highest to lowest: `not`, `and`, `or`.
+Filters can be combined:
+
+```shell
+transity transfers examples/journal.yaml \
+  --begin 2024-01-01 \
+  --tag 'person and not company'
+```
+
+
 #### Transfers
 
 <img

@@ -539,6 +539,197 @@ impl Ledger {
       original_account_ids: self.original_account_ids.clone(),
     }
   }
+
+  /// Return a new ledger keeping only transactions where at least one
+  /// transfer involves an entity matching the tag expression.
+  /// A transfer matches if the `from` or `to` entity's tags satisfy
+  /// the expression.
+  pub fn filter_by_tags(&self, expr: &TagExpr) -> Ledger {
+    // Build map: entity_id -> set of tags
+    let entity_tags: HashMap<&str, std::collections::HashSet<&str>> = self
+      .entities
+      .iter()
+      .map(|e| {
+        let tags: std::collections::HashSet<&str> = e
+          .tags
+          .as_ref()
+          .map(|ts| ts.iter().map(|t| t.as_str()).collect())
+          .unwrap_or_default();
+        (e.id.as_str(), tags)
+      })
+      .collect();
+
+    let sep = &self.separator;
+    let empty: std::collections::HashSet<&str> =
+      std::collections::HashSet::new();
+
+    let transactions = self
+      .transactions
+      .iter()
+      .filter_map(|tx| {
+        let filtered_transfers: Vec<Transfer> = tx
+          .transfers
+          .iter()
+          .filter(|t| {
+            let from_entity = t
+              .from
+              .split_once(sep.as_str())
+              .map_or(t.from.as_str(), |(e, _)| e);
+            let to_entity = t
+              .to
+              .split_once(sep.as_str())
+              .map_or(t.to.as_str(), |(e, _)| e);
+            let from_tags = entity_tags.get(from_entity).unwrap_or(&empty);
+            let to_tags = entity_tags.get(to_entity).unwrap_or(&empty);
+            expr.eval(from_tags) || expr.eval(to_tags)
+          })
+          .cloned()
+          .collect();
+        if filtered_transfers.is_empty() {
+          None
+        } else {
+          Some(Transaction {
+            transfers: filtered_transfers,
+            ..tx.clone()
+          })
+        }
+      })
+      .collect();
+    Ledger {
+      owner: self.owner.clone(),
+      separator: self.separator.clone(),
+      separator_is_explicit: self.separator_is_explicit,
+      entities: self.entities.clone(),
+      transactions,
+      original_account_ids: self.original_account_ids.clone(),
+    }
+  }
+}
+
+// ─── TAG EXPRESSION ─────────────────────────────────────────────────────────
+
+/// Boolean expression over entity tags.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TagExpr {
+  Tag(String),
+  And(Box<TagExpr>, Box<TagExpr>),
+  Or(Box<TagExpr>, Box<TagExpr>),
+  Not(Box<TagExpr>),
+}
+
+impl TagExpr {
+  /// Evaluate the expression against a set of tags.
+  pub fn eval(&self, tags: &std::collections::HashSet<&str>) -> bool {
+    match self {
+      TagExpr::Tag(t) => tags.contains(t.as_str()),
+      TagExpr::And(a, b) => a.eval(tags) && b.eval(tags),
+      TagExpr::Or(a, b) => a.eval(tags) || b.eval(tags),
+      TagExpr::Not(a) => !a.eval(tags),
+    }
+  }
+}
+
+/// Parse a tag filter expression.
+///
+/// Grammar (precedence low→high):
+///   expr   = and_expr ('or' and_expr)*
+///   and    = unary ('and' unary)*
+///   unary  = 'not' unary | atom
+///   atom   = TAG | '(' expr ')'
+///
+/// TAG is any run of non-whitespace chars that isn't a keyword or paren.
+pub fn parse_tag_expr(input: &str) -> Result<TagExpr> {
+  let tokens = tokenize_tag_expr(input)?;
+  let mut pos = 0;
+  let result = parse_or(&tokens, &mut pos)?;
+  if pos != tokens.len() {
+    return Err(anyhow!(
+      "Unexpected token '{}' at position {}",
+      tokens[pos],
+      pos
+    ));
+  }
+  Ok(result)
+}
+
+fn tokenize_tag_expr(input: &str) -> Result<Vec<String>> {
+  let mut tokens = Vec::new();
+  let mut chars = input.chars().peekable();
+  while let Some(&c) = chars.peek() {
+    if c.is_whitespace() {
+      chars.next();
+      continue;
+    }
+    if c == '(' || c == ')' {
+      tokens.push(c.to_string());
+      chars.next();
+      continue;
+    }
+    // Collect a word
+    let mut word = String::new();
+    while let Some(&c) = chars.peek() {
+      if c.is_whitespace() || c == '(' || c == ')' {
+        break;
+      }
+      word.push(c);
+      chars.next();
+    }
+    tokens.push(word);
+  }
+  if tokens.is_empty() {
+    return Err(anyhow!("Empty tag expression"));
+  }
+  Ok(tokens)
+}
+
+fn parse_or(tokens: &[String], pos: &mut usize) -> Result<TagExpr> {
+  let mut left = parse_and(tokens, pos)?;
+  while *pos < tokens.len() && tokens[*pos] == "or" {
+    *pos += 1;
+    let right = parse_and(tokens, pos)?;
+    left = TagExpr::Or(Box::new(left), Box::new(right));
+  }
+  Ok(left)
+}
+
+fn parse_and(tokens: &[String], pos: &mut usize) -> Result<TagExpr> {
+  let mut left = parse_unary(tokens, pos)?;
+  while *pos < tokens.len() && tokens[*pos] == "and" {
+    *pos += 1;
+    let right = parse_unary(tokens, pos)?;
+    left = TagExpr::And(Box::new(left), Box::new(right));
+  }
+  Ok(left)
+}
+
+fn parse_unary(tokens: &[String], pos: &mut usize) -> Result<TagExpr> {
+  if *pos < tokens.len() && tokens[*pos] == "not" {
+    *pos += 1;
+    let inner = parse_unary(tokens, pos)?;
+    return Ok(TagExpr::Not(Box::new(inner)));
+  }
+  parse_atom(tokens, pos)
+}
+
+fn parse_atom(tokens: &[String], pos: &mut usize) -> Result<TagExpr> {
+  if *pos >= tokens.len() {
+    return Err(anyhow!("Unexpected end of tag expression"));
+  }
+  if tokens[*pos] == "(" {
+    *pos += 1;
+    let inner = parse_or(tokens, pos)?;
+    if *pos >= tokens.len() || tokens[*pos] != ")" {
+      return Err(anyhow!("Missing closing parenthesis in tag expression"));
+    }
+    *pos += 1;
+    return Ok(inner);
+  }
+  let tok = &tokens[*pos];
+  if tok == ")" || tok == "and" || tok == "or" {
+    return Err(anyhow!("Unexpected '{}' in tag expression", tok));
+  }
+  *pos += 1;
+  Ok(TagExpr::Tag(tok.clone()))
 }
 
 pub fn parse_ledger_str(yaml: &str) -> Result<Ledger> {

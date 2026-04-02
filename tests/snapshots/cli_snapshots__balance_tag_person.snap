@@ -1,0 +1,13 @@
+---
+source: tests/cli_snapshots.rs
+assertion_line: 51
+expression: output
+---
+
+         john   50        $
+                60.752114 BTC
+               363.24     €
+    john/giro   50        $
+                60.752114 BTC
+                85        €
+  john/wallet   66.05     €

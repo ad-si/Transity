@@ -31,6 +31,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -46,6 +50,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -59,6 +67,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -72,6 +84,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -85,6 +101,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -110,6 +130,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -123,6 +147,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -136,6 +164,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -149,6 +181,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -162,6 +198,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -175,6 +215,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -188,6 +232,10 @@ enum Commands {
     /// Override the owner set in the journal file
     #[arg(long)]
     owner: Option<String>,
+    /// Filter by entity tags (e.g. 'person', 'person or store',
+    /// '(person or user) and store', 'not store')
+    #[arg(long)]
+    tag: Option<String>,
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
@@ -209,6 +257,22 @@ fn collect_paths(journal: &str, extra: &[String]) -> Vec<PathBuf> {
   let mut paths = vec![PathBuf::from(journal)];
   paths.extend(extra.iter().map(PathBuf::from));
   paths
+}
+
+fn parse_tag_flag(tag: &Option<String>) -> Option<TagExpr> {
+  tag.as_ref().map(|s| {
+    parse_tag_expr(s).unwrap_or_else(|e| {
+      eprintln!("{}", e.to_string().red());
+      std::process::exit(1);
+    })
+  })
+}
+
+fn apply_tag_filter(ledger: Ledger, expr: &Option<TagExpr>) -> Ledger {
+  match expr {
+    Some(e) => ledger.filter_by_tags(e),
+    None => ledger,
+  }
 }
 
 fn apply_owner_override(ledger: &mut Ledger, owner: Option<String>) {
@@ -307,6 +371,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -315,6 +380,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr);
       let begin = begin.map(|s| parse_date_flag(&s));
       let end = Some(end.map(|s| parse_date_flag(&s)).unwrap_or_else(Utc::now));
       print!(
@@ -328,6 +395,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -336,6 +404,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr);
       let begin = begin.map(|s| parse_date_flag(&s));
       let end = Some(end.map(|s| parse_date_flag(&s)).unwrap_or_else(Utc::now));
       print!(
@@ -349,6 +419,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -357,7 +428,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -369,6 +441,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -377,7 +450,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -389,6 +463,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -397,7 +472,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -433,6 +509,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -441,7 +518,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -453,6 +531,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -461,7 +540,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -479,6 +559,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -487,7 +568,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -505,6 +587,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -513,7 +596,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -534,6 +618,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -542,7 +627,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -560,6 +646,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -568,7 +655,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -586,6 +674,7 @@ fn main() -> Result<()> {
       begin,
       end,
       owner,
+      tag,
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
@@ -594,7 +683,8 @@ fn main() -> Result<()> {
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
-      let ledger = ledger.filter_by_date(
+      let tag_expr = parse_tag_flag(&tag);
+      let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
         begin.map(|s| parse_date_flag(&s)),
         end.map(|s| parse_date_flag(&s)),
       );
@@ -1673,6 +1763,226 @@ transactions:
       filtered.transactions[0].transfers[0].amount,
       make_amount(10, 1, "€")
     );
+  }
+
+  // ─── filter_by_tags ─────────────────────────────────────────────────────────
+
+  fn tagged_ledger() -> Ledger {
+    let yaml = r#"
+owner: john
+entities:
+  - id: john
+    tags: [person, owner]
+    accounts:
+      - id: giro
+  - id: anna
+    tags: [person]
+    accounts:
+      - id: wallet
+  - id: shop
+    tags: [store]
+    accounts:
+      - id: register
+transactions:
+  - utc: '2015-03-01'
+    transfers:
+      - from: john:giro
+        to: anna:wallet
+        amount: 10 €
+  - utc: '2015-06-01'
+    transfers:
+      - from: john:giro
+        to: shop:register
+        amount: 20 €
+  - utc: '2015-09-01'
+    transfers:
+      - from: anna:wallet
+        to: shop:register
+        amount: 5 €
+"#;
+    parse_ledger(yaml)
+  }
+
+  fn tag(name: &str) -> TagExpr {
+    parse_tag_expr(name).unwrap()
+  }
+
+  #[test]
+  fn filter_by_tags_single_tag() {
+    let ledger = tagged_ledger();
+    let expr = tag("store");
+    let filtered = ledger.filter_by_tags(&expr);
+    // shop has tag "store" — it appears as "to" in tx2 and tx3
+    assert_eq!(filtered.transactions.len(), 2);
+  }
+
+  #[test]
+  fn filter_by_tags_matches_from_entity() {
+    let ledger = tagged_ledger();
+    let expr = tag("owner");
+    let filtered = ledger.filter_by_tags(&expr);
+    // john has tag "owner" — appears as "from" in tx1 and tx2
+    assert_eq!(filtered.transactions.len(), 2);
+  }
+
+  #[test]
+  fn filter_by_tags_or_expression() {
+    let ledger = tagged_ledger();
+    let expr = parse_tag_expr("owner or store").unwrap();
+    let filtered = ledger.filter_by_tags(&expr);
+    // "owner" matches tx1+tx2, "store" matches tx2+tx3 → all 3
+    assert_eq!(filtered.transactions.len(), 3);
+  }
+
+  #[test]
+  fn filter_by_tags_and_expression() {
+    let ledger = tagged_ledger();
+    // john has [person, owner]; anna has [person]; shop has [store]
+    // "person and owner" matches only john → tx1 (john→anna) and tx2 (john→shop)
+    let expr = parse_tag_expr("person and owner").unwrap();
+    let filtered = ledger.filter_by_tags(&expr);
+    assert_eq!(filtered.transactions.len(), 2);
+  }
+
+  #[test]
+  fn filter_by_tags_not_expression() {
+    let ledger = tagged_ledger();
+    // "not store" matches john and anna but not shop
+    // tx1: john→anna (both match) ✓
+    // tx2: john→shop (john matches) ✓
+    // tx3: anna→shop (anna matches) ✓
+    // All 3 have at least one non-store entity
+    let expr = parse_tag_expr("not store").unwrap();
+    let filtered = ledger.filter_by_tags(&expr);
+    assert_eq!(filtered.transactions.len(), 3);
+  }
+
+  #[test]
+  fn filter_by_tags_complex_expression() {
+    let ledger = tagged_ledger();
+    // "(person or store) and owner" → must have owner AND (person or store)
+    // john has [person, owner] → matches
+    // anna has [person] → no owner, fails
+    // shop has [store] → no owner, fails
+    // Only john matches → tx1 and tx2
+    let expr = parse_tag_expr("(person or store) and owner").unwrap();
+    let filtered = ledger.filter_by_tags(&expr);
+    assert_eq!(filtered.transactions.len(), 2);
+  }
+
+  #[test]
+  fn filter_by_tags_no_match_returns_empty() {
+    let ledger = tagged_ledger();
+    let expr = tag("nonexistent");
+    let filtered = ledger.filter_by_tags(&expr);
+    assert_eq!(filtered.transactions.len(), 0);
+  }
+
+  #[test]
+  fn filter_by_tags_preserves_entities() {
+    let ledger = tagged_ledger();
+    let expr = tag("store");
+    let filtered = ledger.filter_by_tags(&expr);
+    assert_eq!(filtered.entities.len(), ledger.entities.len());
+  }
+
+  #[test]
+  fn filter_by_tags_combined_with_date() {
+    let ledger = tagged_ledger();
+    let expr = tag("store");
+    let filtered = ledger
+      .filter_by_tags(&expr)
+      .filter_by_date(None, Some(parse_datetime("2015-08-01").unwrap()));
+    // tag "store" matches tx2 (June) and tx3 (Sep); date <Aug excludes tx3
+    assert_eq!(filtered.transactions.len(), 1);
+    assert_eq!(
+      filtered.transactions[0].transfers[0].amount,
+      make_amount(20, 1, "€")
+    );
+  }
+
+  // ─── parse_tag_expr ────────────────────────────────────────────────────────
+
+  #[test]
+  fn parse_tag_expr_single() {
+    assert_eq!(
+      parse_tag_expr("person").unwrap(),
+      TagExpr::Tag("person".to_string())
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_or() {
+    assert_eq!(
+      parse_tag_expr("a or b").unwrap(),
+      TagExpr::Or(
+        Box::new(TagExpr::Tag("a".to_string())),
+        Box::new(TagExpr::Tag("b".to_string()))
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_and() {
+    assert_eq!(
+      parse_tag_expr("a and b").unwrap(),
+      TagExpr::And(
+        Box::new(TagExpr::Tag("a".to_string())),
+        Box::new(TagExpr::Tag("b".to_string()))
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_not() {
+    assert_eq!(
+      parse_tag_expr("not a").unwrap(),
+      TagExpr::Not(Box::new(TagExpr::Tag("a".to_string())))
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_precedence_and_binds_tighter() {
+    // "a or b and c" should parse as "a or (b and c)"
+    assert_eq!(
+      parse_tag_expr("a or b and c").unwrap(),
+      TagExpr::Or(
+        Box::new(TagExpr::Tag("a".to_string())),
+        Box::new(TagExpr::And(
+          Box::new(TagExpr::Tag("b".to_string())),
+          Box::new(TagExpr::Tag("c".to_string()))
+        ))
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_parens_override_precedence() {
+    assert_eq!(
+      parse_tag_expr("(a or b) and c").unwrap(),
+      TagExpr::And(
+        Box::new(TagExpr::Or(
+          Box::new(TagExpr::Tag("a".to_string())),
+          Box::new(TagExpr::Tag("b".to_string()))
+        )),
+        Box::new(TagExpr::Tag("c".to_string()))
+      )
+    );
+  }
+
+  #[test]
+  fn parse_tag_expr_empty_fails() {
+    assert!(parse_tag_expr("").is_err());
+  }
+
+  #[test]
+  fn parse_tag_expr_unbalanced_paren_fails() {
+    assert!(parse_tag_expr("(a or b").is_err());
+  }
+
+  #[test]
+  fn parse_tag_expr_trailing_token_fails() {
+    assert!(parse_tag_expr("a b").is_err());
   }
 
   // ─── show_transfers ───────────────────────────────────────────────────────

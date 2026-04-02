@@ -1,0 +1,8 @@
+---
+source: tests/cli_snapshots.rs
+assertion_line: 62
+expression: output
+---
+
+       john  -15 €
+  john/giro  -15 €
