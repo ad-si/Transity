@@ -1,5 +1,15 @@
 ## Usage
 
+Plain text accounting means tracking finances in human-readable text files
+rather than in a database or proprietary software.
+Your financial data is stored as a simple YAML journal file
+that you edit with any text editor and process with command line tools.
+
+This makes your data version-controllable, diffable, scriptable,
+and fully under your control.
+No lock-in, no opaque formats, no required GUI.
+
+
 ### Journal File Format
 
 A minimal journal file is a YAML file with following format:
