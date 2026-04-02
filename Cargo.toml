@@ -40,10 +40,29 @@ name = "transity"
 path = "src/main.rs"
 
 [features]
-default = ["cli"]
+default = ["ssr"]
 cli = [
   "dep:clap",
   "dep:rust_xlsxwriter",
+]
+ssr = [
+  "cli",
+  "dep:any_spawner",
+  "dep:axum",
+  "dep:tokio",
+  "dep:leptos",
+  "dep:leptos_axum",
+  "dep:leptos_config",
+  "dep:leptos_router",
+  "leptos/ssr",
+  "leptos_router/ssr",
+]
+hydrate = [
+  "dep:leptos",
+  "dep:leptos_router",
+  "dep:wasm-bindgen",
+  "dep:console_error_panic_hook",
+  "leptos/csr",
 ]
 wasm = [
   "dep:wasm-bindgen",
@@ -62,8 +81,36 @@ colored = "2"
 anyhow = "1"
 clap = { version = "4", features = ["derive"], optional = true }
 rust_xlsxwriter = { version = "0.80", optional = true }
-wasm-bindgen = { version = "0.2", optional = true }
+any_spawner = { version = "0.3", optional = true }
+axum = { version = "0.8", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+leptos = { version = "0.8", optional = true }
+leptos_axum = { version = "0.8", optional = true }
+leptos_config = { version = "0.8", optional = true }
+leptos_meta = { version = "0.8", optional = true }
+leptos_router = { version = "0.8", optional = true }
+wasm-bindgen = { version = "=0.2.100", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
+
+[package.metadata.leptos]
+output-name = "transity"
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.css"
+site-addr = "127.0.0.1:3000"
+reload-port = 3001
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false
+lib-profile-release = "wasm-release"
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
 
 [profile.release]
 opt-level = "z"

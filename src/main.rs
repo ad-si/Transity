@@ -252,6 +252,19 @@ enum Commands {
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
+  #[cfg(feature = "ssr")]
+  /// Start a web server showing the balance
+  Server {
+    journal: String,
+    /// Port to listen on
+    #[arg(long, default_value = "3000")]
+    port: u16,
+    /// Override the owner set in the journal file
+    #[arg(long)]
+    owner: Option<String>,
+    #[arg(trailing_var_arg = true)]
+    extra: Vec<String>,
+  },
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
@@ -734,6 +747,23 @@ fn main() -> Result<()> {
         eprintln!("{}", e.to_string().red());
         std::process::exit(1);
       }
+    }
+
+    #[cfg(feature = "ssr")]
+    Commands::Server {
+      journal,
+      port,
+      owner,
+      extra,
+    } => {
+      let paths = collect_paths(&journal, &extra);
+      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+        eprintln!("{}", e.to_string().red());
+        std::process::exit(1);
+      });
+      apply_owner_override(&mut ledger, owner);
+      let rt = tokio::runtime::Runtime::new()?;
+      rt.block_on(transity::server::start(ledger, port))?;
     }
   }
 

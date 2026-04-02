@@ -38,6 +38,16 @@ install:
 	cargo install --path .
 
 
+.PHONY: server-build
+server-build:
+	cargo leptos build
+
+
+.PHONY: server-watch
+server-watch:
+	cargo leptos watch -- server examples/journal.yaml
+
+
 .PHONY: wasm-build
 wasm-build:
 	touch src/lib.rs

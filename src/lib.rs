@@ -12,6 +12,12 @@ use std::path::Path;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;
 
+#[cfg(any(feature = "ssr", feature = "hydrate"))]
+pub mod app;
+
+#[cfg(feature = "ssr")]
+pub mod server;
+
 // ─── DATA TYPES ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1266,19 +1272,31 @@ pub fn expand_account_hierarchy(
   normalized
 }
 
-pub fn show_balance(
+/// A single row in the balance display, suitable for serialization.
+#[derive(Debug, Clone)]
+#[cfg_attr(
+  any(feature = "ssr", feature = "hydrate"),
+  derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct BalanceEntry {
+  pub account: String,
+  /// Each entry is (commodity, formatted_value)
+  pub amounts: Vec<(String, String)>,
+  pub is_group: bool,
+}
+
+/// Returns structured balance data as an ordered list of
+/// (normalized_account_id, CommodityMap, is_group) tuples.
+pub fn get_balance_data(
   filter: BalanceFilter,
-  color: bool,
   ledger: &Ledger,
   begin: Option<DateTime<Utc>>,
   end: Option<DateTime<Utc>>,
-) -> String {
+) -> Vec<(String, CommodityMap, bool)> {
   let separator = &ledger.separator;
   let filtered_ledger = ledger.filter_by_date(begin, end);
   let mut balance_map: BalanceMap = BalanceMap::new();
 
-  // When --begin is set, seed the balance map with entity balance
-  // declarations that are effective at that point in time.
   if let Some(begin_dt) = &begin {
     seed_balance_map_from_entities(
       &mut balance_map,
@@ -1293,11 +1311,8 @@ pub fn show_balance(
     }
   }
 
-  // Expand the account hierarchy so that parent accounts
-  // (e.g. "john", "john:bank") aggregate their children.
   let balance_map = expand_account_hierarchy(balance_map, separator);
 
-  // Apply filter and remove zero amounts
   let mut filtered: Vec<(String, CommodityMap)> = balance_map
     .into_iter()
     .filter_map(|(acc_id, com_map)| {
@@ -1324,14 +1339,12 @@ pub fn show_balance(
     })
     .collect();
 
-  // Determine which accounts are groups (have children in the list)
   let account_ids: Vec<String> =
     filtered.iter().map(|(id, _)| id.clone()).collect();
   let is_group = |acc_id: &str| -> bool {
     let prefix = format!("{}{}", acc_id, separator);
     account_ids.iter().any(|id| id.starts_with(&prefix))
   };
-  // Find the most specific (deepest) parent group for an account
   let parent_group = |acc_id: &str| -> Option<String> {
     account_ids
       .iter()
@@ -1342,10 +1355,8 @@ pub fn show_balance(
       .cloned()
   };
 
-  // Sort alphabetically first
   filtered.sort_by(|a, b| a.0.cmp(&b.0));
 
-  // Partition into ungrouped leaves, groups, and their children
   let mut ungrouped: Vec<(String, CommodityMap)> = Vec::new();
   let mut groups: std::collections::BTreeMap<
     String,
@@ -1365,7 +1376,6 @@ pub fn show_balance(
     }
   }
 
-  // Reassemble: ungrouped leaves, then each group with its children
   let mut ordered: Vec<(String, CommodityMap, bool)> = Vec::new();
   for (acc_id, com_map) in ungrouped {
     ordered.push((acc_id, com_map, false));
@@ -1379,16 +1389,55 @@ pub fn show_balance(
     }
   }
 
+  // Normalize account IDs
+  ordered
+    .into_iter()
+    .map(|(acc_id, com_map, is_group)| {
+      (norm_acc_id(&acc_id, separator), com_map, is_group)
+    })
+    .collect()
+}
+
+/// Converts a CommodityMap to a list of (commodity, formatted_value) pairs.
+pub fn commodity_map_to_display(map: &CommodityMap) -> Vec<(String, String)> {
+  map
+    .iter()
+    .map(|(commodity, amount)| {
+      let f = rational_to_f64(&amount.quantity);
+      (commodity.clone(), show_number(f))
+    })
+    .collect()
+}
+
+/// Converts structured balance data to a list of BalanceEntry for serialization.
+pub fn balance_data_to_entries(
+  data: Vec<(String, CommodityMap, bool)>,
+) -> Vec<BalanceEntry> {
+  data
+    .into_iter()
+    .map(|(account, com_map, is_group)| BalanceEntry {
+      account,
+      amounts: commodity_map_to_display(&com_map),
+      is_group,
+    })
+    .collect()
+}
+
+pub fn show_balance(
+  filter: BalanceFilter,
+  color: bool,
+  ledger: &Ledger,
+  begin: Option<DateTime<Utc>>,
+  end: Option<DateTime<Utc>>,
+) -> String {
+  let ordered = get_balance_data(filter, ledger, begin, end);
+
   // Compute global width record
-  let global_wr =
-    ordered
-      .iter()
-      .fold(WidthRecord::zero(), |acc, (acc_id, map, _)| {
-        acc.merge(&account_to_width_record(
-          &norm_acc_id(acc_id, separator),
-          map,
-        ))
-      });
+  let global_wr = ordered
+    .iter()
+    .fold(WidthRecord::zero(), |acc, (acc_id, map, _)| {
+      acc.merge(&account_to_width_record(acc_id, map))
+    });
   let margin_left = 2;
   let global_wr = WidthRecord {
     account: global_wr.account + margin_left,
@@ -1397,12 +1446,11 @@ pub fn show_balance(
 
   let mut result = String::new();
   for (acc_id, map, group) in &ordered {
-    let norm_id = norm_acc_id(acc_id, separator);
     if *group {
       result.push('\n');
     }
     result.push_str(&show_account_aligned(
-      color, &global_wr, &norm_id, map, *group,
+      color, &global_wr, acc_id, map, *group,
     ));
   }
   result.push('\n');
@@ -1886,4 +1934,13 @@ pub fn load_and_verify(paths: &[std::path::PathBuf]) -> Result<Ledger> {
   verify_ledger_balances(&ledger)?;
 
   Ok(ledger)
+}
+
+// ─── HYDRATE ──────────────────────────────────────────────────────────────────
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn hydrate() {
+  console_error_panic_hook::set_once();
+  leptos::mount::mount_to_body(app::App);
 }

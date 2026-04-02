@@ -2,7 +2,7 @@
   description = "Transity";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     utils.url = "github:numtide/flake-utils";
   };
 
@@ -23,11 +23,13 @@
             bash
             cargo
             cargo-insta
+            cargo-leptos
             cargo-nextest
             clippy
             coreutils
             gnumake
             gnused
+            lld
             mdbook
             rustc
             rustfmt
