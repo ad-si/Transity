@@ -3,7 +3,7 @@
 The [plain text accounting] tool of the future.
 Keep track of your 💵, 🕘, 🐖, 🐄, 🍻 on your command line.
 
-[plain text accounting](https://plaintextaccounting.org)
+[plain text accounting]: https://plaintextaccounting.org
 
 <img
   src="images/screenshot-balance.svg"
