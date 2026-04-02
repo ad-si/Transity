@@ -15,7 +15,6 @@ exclude = [
   "purescript/",
   "recordings/",
   "scripts/",
-  "test/",
   "webapp/",
   ".github/",
   ".gitpod.yml",

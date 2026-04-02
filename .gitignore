@@ -11,6 +11,6 @@
 /node_modules
 /output
 /src/CliSpec/JsonEmbed.purs
-/test/_deletable_*
+/purescript/test/_deletable_*
 target/
 /webapp/pkg/
