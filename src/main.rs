@@ -239,6 +239,12 @@ enum Commands {
     #[arg(trailing_var_arg = true)]
     extra: Vec<String>,
   },
+  /// List all files referenced in the journal with their reference counts
+  Files {
+    journal: String,
+    #[arg(trailing_var_arg = true)]
+    extra: Vec<String>,
+  },
   /// Recursively list all files in a directory which are not referenced in the journal
   UnusedFiles {
     directory: String,
@@ -697,6 +703,23 @@ fn main() -> Result<()> {
           eprintln!("{}", UTC_ERROR.red());
           std::process::exit(1);
         }
+      }
+    }
+
+    Commands::Files { journal, extra } => {
+      let journal_paths = collect_paths(&journal, &extra);
+      let ledger = load_and_verify(&journal_paths)?;
+
+      let mut file_counts: std::collections::BTreeMap<&str, usize> =
+        std::collections::BTreeMap::new();
+      for tx in &ledger.transactions {
+        for f in &tx.files {
+          *file_counts.entry(f.as_str()).or_insert(0) += 1;
+        }
+      }
+
+      for (file, count) in &file_counts {
+        println!("{count} {file}");
       }
     }
 
