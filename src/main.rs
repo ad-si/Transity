@@ -1124,6 +1124,131 @@ transactions:
     assert!(verify_ledger_balances(&ledger).is_ok());
   }
 
+  // ─── expand_account_hierarchy ──────────────────────────────────────────────
+
+  #[test]
+  fn hierarchy_creates_parent_from_single_child() {
+    let mut map = BalanceMap::new();
+    let mut child = CommodityMap::new();
+    commodity_map_add(&mut child, make_amount(100, 1, "€"));
+    map.insert("john:giro".to_string(), child);
+
+    let result = expand_account_hierarchy(map);
+
+    assert!(result.contains_key("john"), "Expected parent 'john'");
+    assert!(
+      result.contains_key("john:giro"),
+      "Expected leaf 'john:giro'"
+    );
+    assert_eq!(
+      result["john"]["€"].quantity, result["john:giro"]["€"].quantity,
+      "Parent should equal child when there's only one child"
+    );
+  }
+
+  #[test]
+  fn hierarchy_aggregates_multiple_children() {
+    let mut map = BalanceMap::new();
+
+    let mut savings = CommodityMap::new();
+    commodity_map_add(&mut savings, make_amount(50, 1, "€"));
+    map.insert("john:bank:savings".to_string(), savings);
+
+    let mut depot = CommodityMap::new();
+    commodity_map_add(&mut depot, make_amount(30, 1, "€"));
+    map.insert("john:bank:depot".to_string(), depot);
+
+    let mut visa = CommodityMap::new();
+    commodity_map_add(&mut visa, make_amount(20, 1, "€"));
+    map.insert("john:visa".to_string(), visa);
+
+    let result = expand_account_hierarchy(map);
+
+    // john:bank = savings + depot = 80
+    assert_eq!(result["john:bank"]["€"], make_amount(80, 1, "€"));
+    // john = visa + savings + depot = 100
+    assert_eq!(result["john"]["€"], make_amount(100, 1, "€"));
+    // Leaves unchanged
+    assert_eq!(result["john:bank:savings"]["€"], make_amount(50, 1, "€"));
+    assert_eq!(result["john:bank:depot"]["€"], make_amount(30, 1, "€"));
+    assert_eq!(result["john:visa"]["€"], make_amount(20, 1, "€"));
+  }
+
+  #[test]
+  fn hierarchy_merges_default_suffix_into_parent() {
+    // A single-segment account like "shop" becomes "shop:_default_"
+    // in the balance map. The hierarchy should normalize it to "shop"
+    // and not create a separate parent.
+    let mut map = BalanceMap::new();
+    let mut entry = CommodityMap::new();
+    commodity_map_add(&mut entry, make_amount(10, 1, "€"));
+    map.insert("shop:_default_".to_string(), entry);
+
+    let result = expand_account_hierarchy(map);
+
+    assert!(result.contains_key("shop"), "Expected normalized 'shop'");
+    assert!(
+      !result.contains_key("shop:_default_"),
+      "_default_ key should be normalized away"
+    );
+    assert_eq!(result["shop"]["€"], make_amount(10, 1, "€"));
+  }
+
+  #[test]
+  fn hierarchy_merges_default_with_explicit_children() {
+    // Direct transfers to "john" (stored as john:_default_) plus
+    // transfers to john:giro should both roll up into "john".
+    let mut map = BalanceMap::new();
+
+    let mut direct = CommodityMap::new();
+    commodity_map_add(&mut direct, make_amount(40, 1, "€"));
+    map.insert("john:_default_".to_string(), direct);
+
+    let mut giro = CommodityMap::new();
+    commodity_map_add(&mut giro, make_amount(60, 1, "€"));
+    map.insert("john:giro".to_string(), giro);
+
+    let result = expand_account_hierarchy(map);
+
+    // john = direct (40) + giro (60) = 100
+    assert_eq!(result["john"]["€"], make_amount(100, 1, "€"));
+    // john:giro is unchanged
+    assert_eq!(result["john:giro"]["€"], make_amount(60, 1, "€"));
+  }
+
+  #[test]
+  fn hierarchy_handles_multiple_commodities() {
+    let mut map = BalanceMap::new();
+
+    let mut giro = CommodityMap::new();
+    commodity_map_add(&mut giro, make_amount(50, 1, "€"));
+    commodity_map_add(&mut giro, make_amount(3, 1, "BTC"));
+    map.insert("john:giro".to_string(), giro);
+
+    let mut wallet = CommodityMap::new();
+    commodity_map_add(&mut wallet, make_amount(20, 1, "€"));
+    map.insert("john:wallet".to_string(), wallet);
+
+    let result = expand_account_hierarchy(map);
+
+    assert_eq!(result["john"]["€"], make_amount(70, 1, "€"));
+    assert_eq!(result["john"]["BTC"], make_amount(3, 1, "BTC"));
+  }
+
+  #[test]
+  fn hierarchy_no_parent_for_top_level_account() {
+    // A top-level account should not create any parents.
+    let mut map = BalanceMap::new();
+    let mut entry = CommodityMap::new();
+    commodity_map_add(&mut entry, make_amount(10, 1, "€"));
+    map.insert("shop".to_string(), entry);
+
+    let result = expand_account_hierarchy(map);
+
+    assert_eq!(result.len(), 1);
+    assert!(result.contains_key("shop"));
+  }
+
   // ─── show_balance ─────────────────────────────────────────────────────────
 
   fn simple_ledger() -> Ledger {

@@ -594,6 +594,7 @@ pub fn show_account_aligned(
   width_rec: &WidthRecord,
   account_id: &str,
   map: &CommodityMap,
+  is_group: bool,
 ) -> String {
   let gap = 2;
   let account_width = width_rec.account.max(account_id.len());
@@ -601,7 +602,11 @@ pub fn show_account_aligned(
   let acc_name = pad_start(account_width, account_id);
 
   let colored_acc = if color {
-    acc_name.blue().to_string()
+    if is_group {
+      acc_name.black().on_cyan().to_string()
+    } else {
+      acc_name.blue().to_string()
+    }
   } else {
     acc_name
   };
@@ -849,6 +854,43 @@ pub enum BalanceFilter {
   All,
 }
 
+/// Normalize account IDs (strip `:_default_`) and create parent entries
+/// that aggregate the balances of all their children.
+///
+/// For example, given leaf accounts `john:visa`, `john:bank:savings`, and
+/// `john:bank:depot`, this produces additional entries for `john:bank`
+/// (sum of savings + depot) and `john` (sum of all three).
+pub fn expand_account_hierarchy(balance_map: BalanceMap) -> BalanceMap {
+  // Step 1: Normalize all keys (remove :_default_ suffix)
+  let mut normalized: BalanceMap = BalanceMap::new();
+  for (acc_id, com_map) in balance_map {
+    let norm_id = norm_acc_id(&acc_id);
+    let entry = normalized.entry(norm_id).or_default();
+    for amount in com_map.into_values() {
+      commodity_map_add(entry, amount);
+    }
+  }
+
+  // Step 2: For each account, add its amounts to all ancestor prefixes
+  let leaves: Vec<(String, CommodityMap)> = normalized
+    .iter()
+    .map(|(k, v)| (k.clone(), v.clone()))
+    .collect();
+
+  for (acc_id, com_map) in &leaves {
+    let parts: Vec<&str> = acc_id.split(':').collect();
+    for i in 1..parts.len() {
+      let ancestor = parts[..i].join(":");
+      let entry = normalized.entry(ancestor).or_default();
+      for amount in com_map.values() {
+        commodity_map_add(entry, amount.clone());
+      }
+    }
+  }
+
+  normalized
+}
+
 pub fn show_balance(
   filter: BalanceFilter,
   color: bool,
@@ -874,6 +916,10 @@ pub fn show_balance(
       balance_map_add_transfer(&mut balance_map, t);
     }
   }
+
+  // Expand the account hierarchy so that parent accounts
+  // (e.g. "john", "john:bank") aggregate their children.
+  let balance_map = expand_account_hierarchy(balance_map);
 
   // Apply filter and remove zero amounts
   let mut filtered: Vec<(String, CommodityMap)> = balance_map
@@ -901,14 +947,64 @@ pub fn show_balance(
     })
     .collect();
 
-  // Sort by account id
+  // Determine which accounts are groups (have children in the list)
+  let account_ids: Vec<String> =
+    filtered.iter().map(|(id, _)| id.clone()).collect();
+  let is_group = |acc_id: &str| -> bool {
+    let prefix = format!("{}:", acc_id);
+    account_ids.iter().any(|id| id.starts_with(&prefix))
+  };
+  // Find the most specific (deepest) parent group for an account
+  let parent_group = |acc_id: &str| -> Option<String> {
+    account_ids
+      .iter()
+      .filter(|g| is_group(g) && acc_id.starts_with(&format!("{}:", g)))
+      .max_by_key(|g| g.len())
+      .cloned()
+  };
+
+  // Sort alphabetically first
   filtered.sort_by(|a, b| a.0.cmp(&b.0));
+
+  // Partition into ungrouped leaves, groups, and their children
+  let mut ungrouped: Vec<(String, CommodityMap)> = Vec::new();
+  let mut groups: std::collections::BTreeMap<
+    String,
+    Vec<(String, CommodityMap)>,
+  > = std::collections::BTreeMap::new();
+  let mut group_entries: std::collections::BTreeMap<String, CommodityMap> =
+    std::collections::BTreeMap::new();
+
+  for (acc_id, com_map) in filtered {
+    if is_group(&acc_id) {
+      groups.entry(acc_id.clone()).or_default();
+      group_entries.insert(acc_id, com_map);
+    } else if let Some(g) = parent_group(&acc_id) {
+      groups.entry(g).or_default().push((acc_id, com_map));
+    } else {
+      ungrouped.push((acc_id, com_map));
+    }
+  }
+
+  // Reassemble: ungrouped leaves, then each group with its children
+  let mut ordered: Vec<(String, CommodityMap, bool)> = Vec::new();
+  for (acc_id, com_map) in ungrouped {
+    ordered.push((acc_id, com_map, false));
+  }
+  for (group_id, children) in &groups {
+    if let Some(com_map) = group_entries.remove(group_id) {
+      ordered.push((group_id.clone(), com_map, true));
+    }
+    for (acc_id, com_map) in children {
+      ordered.push((acc_id.clone(), com_map.clone(), false));
+    }
+  }
 
   // Compute global width record
   let global_wr =
-    filtered
+    ordered
       .iter()
-      .fold(WidthRecord::zero(), |acc, (acc_id, map)| {
+      .fold(WidthRecord::zero(), |acc, (acc_id, map, _)| {
         acc.merge(&account_to_width_record(&norm_acc_id(acc_id), map))
       });
   let margin_left = 2;
@@ -918,12 +1014,13 @@ pub fn show_balance(
   };
 
   let mut result = String::new();
-  for (acc_id, map) in &filtered {
+  for (acc_id, map, group) in &ordered {
+    let norm_id = norm_acc_id(acc_id);
+    if *group {
+      result.push('\n');
+    }
     result.push_str(&show_account_aligned(
-      color,
-      &global_wr,
-      &norm_acc_id(acc_id),
-      map,
+      color, &global_wr, &norm_id, map, *group,
     ));
   }
   result.push('\n');
