@@ -316,7 +316,7 @@ fn get_all_files(dir: &Path) -> Result<Vec<PathBuf>> {
     let path = entry.path();
     if path.is_dir() {
       result.extend(get_all_files(&path)?);
-    } else {
+    } else if path.file_name().and_then(|n| n.to_str()) != Some(".DS_Store") {
       result.push(path);
     }
   }
