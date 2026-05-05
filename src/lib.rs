@@ -762,8 +762,14 @@ pub fn normalize_account_id(id: &str, separator: &str) -> String {
 
 pub fn parse_datetime(s: &str) -> Result<DateTime<Utc>> {
   let s = s.trim();
-  // Try various formats
+  // Try RFC 3339 first (handles timezone offsets like `Z` or `+02:00`
+  // and fractional seconds, e.g. `2019-11-23T13:42:40.000Z`)
+  if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+    return Ok(dt.with_timezone(&Utc));
+  }
   let formats = [
+    "%Y-%m-%dT%H:%M:%S%.f",
+    "%Y-%m-%d %H:%M:%S%.f",
     "%Y-%m-%dT%H:%M:%S",
     "%Y-%m-%d %H:%M:%S",
     "%Y-%m-%d %H:%M",
@@ -775,7 +781,6 @@ pub fn parse_datetime(s: &str) -> Result<DateTime<Utc>> {
       return Ok(DateTime::from_naive_utc_and_offset(dt, Utc));
     }
   }
-  // Try date-only
   if let Ok(d) = chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {
     let dt = d.and_hms_opt(0, 0, 0).unwrap();
     return Ok(DateTime::from_naive_utc_and_offset(dt, Utc));
