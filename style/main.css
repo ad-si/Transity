@@ -10,6 +10,9 @@
   --color-error: hsl(0, 70%, 60%);
   --color-group: hsl(190, 50%, 65%);
   --color-leaf-account: hsl(210, 50%, 70%);
+  --color-positive: hsl(135, 50%, 60%);
+  --color-negative: hsl(0, 70%, 65%);
+  --bg-stripe: hsl(220, 15%, 11%);
 }
 
 @media (prefers-color-scheme: light) {
@@ -23,6 +26,9 @@
     --color-error: hsl(0, 70%, 42%);
     --color-group: hsl(190, 70%, 30%);
     --color-leaf-account: hsl(210, 70%, 38%);
+    --color-positive: hsl(135, 60%, 30%);
+    --color-negative: hsl(0, 70%, 42%);
+    --bg-stripe: hsl(220, 15%, 94%);
   }
 }
 
@@ -82,7 +88,6 @@ main {
 }
 
 table {
-  width: 100%;
   border-collapse: collapse;
   font-family:
     "SF Mono", "Fira Code", "Fira Mono",
@@ -101,12 +106,16 @@ thead th {
   letter-spacing: 0.05em;
 }
 
-th.col-amount {
-  text-align: right;
-}
-
 tbody td {
   padding: 0.25rem 1rem;
+}
+
+td.col-account {
+  vertical-align: top;
+}
+
+tbody tr.odd td {
+  background-color: var(--bg-stripe);
 }
 
 tr.group td {
@@ -124,9 +133,29 @@ tr.leaf td.col-account {
   padding-left: 2rem;
 }
 
-td.col-amount {
-  text-align: right;
+td.col-amount-int,
+td.col-amount-frac {
   font-variant-numeric: tabular-nums;
+}
+
+td.col-amount-int {
+  text-align: right;
+  padding-right: 0;
+}
+
+td.col-amount-frac {
+  text-align: left;
+  padding-left: 0;
+}
+
+td.col-amount-int.positive,
+td.col-amount-frac.positive {
+  color: var(--color-positive);
+}
+
+td.col-amount-int.negative,
+td.col-amount-frac.negative {
+  color: var(--color-negative);
 }
 
 td.col-commodity {
