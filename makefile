@@ -4,7 +4,7 @@ help: makefile
 
 
 .PHONY: build
-build:
+build: server-build
 	cargo build
 
 

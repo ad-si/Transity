@@ -29,7 +29,7 @@ CLI-only code behind `#[cfg(feature = "cli")]`.
 The makefile is the source of truth — prefer its targets.
 
 ```
-make build              # cargo build
+make build              # server-build + cargo build
 make test               # unit tests + CLI snapshot tests
 make test-unit          # cargo test --bin transity
 make test-cli           # cargo test --test cli_snapshots
@@ -48,8 +48,8 @@ Run a single test by name: `cargo test --test cli_snapshots test_balance` or
 `cargo install --path .` requires that the Leptos assets in `target/site/pkg/`
 already exist — `build.rs` emits a warning otherwise, and `transity server`
 will refuse to start because the assets are `include_bytes!`’d into the binary.
-Always run `make server-build` (or `make install`, which chains it) before
-shipping a server-capable binary.
+`make build` and `make install` both chain `server-build` first; only plain
+`cargo build` / `cargo install` skip it.
 
 ## Architecture notes worth knowing up front
 
