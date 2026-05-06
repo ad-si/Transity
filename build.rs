@@ -11,8 +11,9 @@ fn main() {
 
   let assets_present = js.exists() && css.exists() && wasm.exists();
   let ssr_enabled = std::env::var("CARGO_FEATURE_SSR").is_ok();
+  let driven_by_cargo_leptos = std::env::var("LEPTOS_OUTPUT_NAME").is_ok();
 
-  if ssr_enabled && !assets_present {
+  if ssr_enabled && !assets_present && !driven_by_cargo_leptos {
     println!(
       "cargo:warning=Leptos hydration assets missing in {}. \
        Run `cargo leptos build` (or `make server-build`) before \
