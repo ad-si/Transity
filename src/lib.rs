@@ -1428,6 +1428,87 @@ pub fn balance_data_to_entries(
     .collect()
 }
 
+/// Split a numeric `f64` into integer and fractional string parts.
+/// The fractional part includes the leading dot (e.g. ".95"), or is
+/// empty when the value has no fractional component. Mirrors how
+/// `align_number` decides whether to render the decimal portion.
+pub fn split_amount_parts(f: f64) -> (String, String) {
+  let s = format!("{}", f);
+  match s.find('.') {
+    None => (s, String::new()),
+    Some(i) => {
+      let frac = &s[i + 1..];
+      if frac == "0" {
+        (s[..i].to_string(), String::new())
+      } else {
+        (s[..i].to_string(), s[i..].to_string())
+      }
+    }
+  }
+}
+
+/// A single transfer rendered as display strings, suitable for
+/// serialization to the web UI.
+#[derive(Debug, Clone)]
+#[cfg_attr(
+  any(feature = "ssr", feature = "hydrate"),
+  derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct TransferEntry {
+  pub utc: Option<String>,
+  pub from: String,
+  pub to: String,
+  pub amount_int: String,
+  pub amount_frac: String,
+  pub commodity: String,
+  pub note: Option<String>,
+}
+
+/// A single transaction with its transfers, rendered as display
+/// strings, suitable for serialization to the web UI.
+#[derive(Debug, Clone)]
+#[cfg_attr(
+  any(feature = "ssr", feature = "hydrate"),
+  derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct TransactionEntry {
+  pub utc: Option<String>,
+  pub note: Option<String>,
+  pub id: Option<String>,
+  pub transfers: Vec<TransferEntry>,
+}
+
+pub fn transfer_to_entry(transfer: &Transfer) -> TransferEntry {
+  let f = rational_to_f64(&transfer.amount.quantity);
+  let (amount_int, amount_frac) = split_amount_parts(f);
+  TransferEntry {
+    utc: transfer.utc.as_ref().map(date_show_pretty),
+    from: transfer.from.clone(),
+    to: transfer.to.clone(),
+    amount_int,
+    amount_frac,
+    commodity: transfer.amount.commodity.clone(),
+    note: transfer.note.clone(),
+  }
+}
+
+pub fn transaction_to_entry(tx: &Transaction) -> TransactionEntry {
+  TransactionEntry {
+    utc: tx.utc.as_ref().map(date_show_pretty),
+    note: tx.note.clone(),
+    id: tx.id.clone(),
+    transfers: tx.transfers.iter().map(transfer_to_entry).collect(),
+  }
+}
+
+pub fn ledger_to_transaction_entries(ledger: &Ledger) -> Vec<TransactionEntry> {
+  ledger
+    .transactions
+    .iter()
+    .map(transaction_to_entry)
+    .collect()
+}
+
 pub fn show_balance(
   filter: BalanceFilter,
   color: bool,

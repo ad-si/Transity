@@ -54,27 +54,50 @@ body {
 }
 
 nav {
-  padding: 1rem 2rem;
+  padding: 1rem 2rem 0;
   background-color: var(--bg-nav);
   border-bottom: 1px solid var(--color-border);
   display: flex;
-  align-items: baseline;
-  gap: 1rem;
+  align-items: flex-end;
+  gap: 2rem;
 }
 
 nav h1 {
   font-size: 1.4rem;
   font-weight: 600;
+  padding-bottom: 1rem;
 }
 
-nav .subtitle {
-  font-size: 1rem;
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tab {
+  background: transparent;
   color: var(--color-muted);
+  font-size: 0.95rem;
+  font-family: inherit;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  transition: color 0.1s ease, border-color 0.1s ease;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab.active {
+  color: var(--color-text);
+  border-bottom-color: var(--color-leaf-account);
 }
 
 main {
   padding: 2rem;
-  max-width: 960px;
+  max-width: 1200px;
 }
 
 .loading {
@@ -112,6 +135,7 @@ tbody td {
 
 td.col-account {
   vertical-align: top;
+  white-space: nowrap;
 }
 
 tbody tr.odd td {
@@ -156,4 +180,107 @@ td.col-amount-frac.negative {
 td.col-commodity {
   color: var(--color-muted);
   padding-left: 0.5rem;
+}
+
+ul.transactions {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+li.transaction {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px solid var(--color-border-table);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+}
+
+li.transaction.odd {
+  background-color: var(--bg-stripe);
+}
+
+.tx-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  font-family:
+    "SF Mono", "Fira Code", "Fira Mono",
+    "Roboto Mono", "Cascadia Code", monospace;
+}
+
+.tx-header .tx-note {
+  font-weight: 600;
+  flex: 1;
+}
+
+.tx-id {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+ul.tx-transfers {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+li.transfer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family:
+    "SF Mono", "Fira Code", "Fira Mono",
+    "Roboto Mono", "Cascadia Code", monospace;
+  font-size: 0.9rem;
+}
+
+li.transfer .tx-date {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+li.transfer .tx-from,
+li.transfer .tx-to {
+  color: var(--color-leaf-account);
+  white-space: nowrap;
+}
+
+li.transfer .tx-from {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+li.transfer .tx-to {
+  flex: 0 0 auto;
+}
+
+li.transfer .tx-arrow {
+  color: var(--color-muted);
+}
+
+li.transfer .tx-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+li.transfer .tx-amount.positive {
+  color: var(--color-positive);
+}
+
+li.transfer .tx-amount.negative {
+  color: var(--color-negative);
+}
+
+li.transfer .tx-note-inline {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  flex: 1;
 }
