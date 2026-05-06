@@ -34,7 +34,7 @@ format:
 
 
 .PHONY: install
-install:
+install: server-build
 	cargo install --path .
 
 

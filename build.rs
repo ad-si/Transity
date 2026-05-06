@@ -9,7 +9,19 @@ fn main() {
   let css = pkg_dir.join("transity.css");
   let wasm = pkg_dir.join("transity.wasm");
 
-  let code = if js.exists() && css.exists() && wasm.exists() {
+  let assets_present = js.exists() && css.exists() && wasm.exists();
+  let ssr_enabled = std::env::var("CARGO_FEATURE_SSR").is_ok();
+
+  if ssr_enabled && !assets_present {
+    println!(
+      "cargo:warning=Leptos hydration assets missing in {}. \
+       Run `cargo leptos build` (or `make server-build`) before \
+       installing — `transity server` will exit at startup otherwise.",
+      pkg_dir.display()
+    );
+  }
+
+  let code = if assets_present {
     format!(
       r#"
 pub const JS: &[u8] = include_bytes!("{}");

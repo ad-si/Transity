@@ -1,15 +1,35 @@
-use axum::response::IntoResponse;
+use axum::response::{Html, IntoResponse};
 use axum::Router;
 use leptos::prelude::*;
-use leptos_axum::{generate_route_list, LeptosRoutes};
+use leptos_axum::handle_server_fns_with_context;
 use std::net::SocketAddr;
 
-use crate::app::{shell, App};
 use crate::Ledger;
 
 #[allow(dead_code)]
 mod embedded_assets {
   include!(concat!(env!("OUT_DIR"), "/embedded_assets.rs"));
+}
+
+const SHELL_HTML: &str = r#"<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/pkg/transity.css">
+    <title>Transity</title>
+    <link rel="modulepreload" href="/pkg/transity.js">
+    <link rel="preload" href="/pkg/transity_bg.wasm" as="fetch" type="application/wasm">
+    <script type="module">
+      import init, { hydrate } from '/pkg/transity.js';
+      init().then(() => hydrate());
+    </script>
+  </head>
+  <body></body>
+</html>"#;
+
+async fn serve_shell() -> impl IntoResponse {
+  Html(SHELL_HTML)
 }
 
 async fn serve_js() -> impl IntoResponse {
@@ -35,38 +55,38 @@ async fn serve_favicon() -> impl IntoResponse {
 }
 
 pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
+  if !embedded_assets::ASSETS_AVAILABLE {
+    return Err(anyhow::anyhow!(
+      "Frontend assets are not embedded in this binary.\n\
+       The frontend was not built before this binary was compiled.\n\
+       Rebuild with:\n\
+       \n  cargo leptos build && cargo install --path .\n\n\
+       (or `make server-build && make install`)"
+    ));
+  }
+
   let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
-  // Set env vars so get_configuration works even without cargo-leptos
-  std::env::set_var("LEPTOS_OUTPUT_NAME", "transity");
-  std::env::set_var("LEPTOS_SITE_ROOT", "target/site");
-  std::env::set_var("LEPTOS_SITE_PKG_DIR", "pkg");
-  std::env::set_var("LEPTOS_SITE_ADDR", addr.to_string());
-
-  let conf = get_configuration(None).unwrap();
-  let leptos_options = conf.leptos_options;
-  let routes = generate_route_list(App);
-
   let app = Router::new()
+    .route("/", axum::routing::get(serve_shell))
     .route("/pkg/transity.js", axum::routing::get(serve_js))
     .route("/pkg/transity.css", axum::routing::get(serve_css))
     .route("/pkg/transity.wasm", axum::routing::get(serve_wasm))
     .route("/pkg/transity_bg.wasm", axum::routing::get(serve_wasm))
     .route("/favicon.ico", axum::routing::get(serve_favicon))
-    .leptos_routes_with_context(
-      &leptos_options,
-      routes,
-      {
+    .route(
+      "/api/{*fn_name}",
+      axum::routing::any({
         let ledger = ledger.clone();
-        move || provide_context(ledger.clone())
-      },
-      {
-        let leptos_options = leptos_options.clone();
-        move || shell(leptos_options.clone())
-      },
-    )
-    .fallback(leptos_axum::file_and_error_handler(shell))
-    .with_state(leptos_options);
+        move |req| {
+          let ledger = ledger.clone();
+          handle_server_fns_with_context(
+            move || provide_context(ledger.clone()),
+            req,
+          )
+        }
+      }),
+    );
 
   eprintln!("Serving on http://{}", addr);
   let listener = tokio::net::TcpListener::bind(&addr).await?;

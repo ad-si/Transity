@@ -1183,7 +1183,7 @@ pub fn verify_ledger_balances(ledger: &Ledger) -> Result<()> {
   combined.append(&mut tx_transfers);
 
   // Sort by UTC
-  combined.sort_by(|a, b| a.utc.cmp(&b.utc));
+  combined.sort_by_key(|a| a.utc);
 
   let mut balance_map: BalanceMap = BalanceMap::new();
 
@@ -1739,7 +1739,7 @@ pub fn show_entities(alphabetically: bool, ledger: &Ledger) -> String {
 
   let mut entities: Vec<&Entity> = ledger.entities.iter().collect();
   if alphabetically {
-    entities.sort_by(|a, b| a.id.to_lowercase().cmp(&b.id.to_lowercase()));
+    entities.sort_by_key(|a| a.id.to_lowercase());
   }
 
   let mut result = "entities:\n".to_string();
