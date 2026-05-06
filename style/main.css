@@ -1,3 +1,31 @@
+:root {
+  color-scheme: light dark;
+
+  --bg-body: hsl(220, 15%, 8%);
+  --bg-nav: hsl(220, 15%, 5%);
+  --color-text: hsl(0, 0%, 88%);
+  --color-muted: hsl(220, 10%, 45%);
+  --color-border: hsl(220, 10%, 15%);
+  --color-border-table: hsl(220, 10%, 18%);
+  --color-error: hsl(0, 70%, 60%);
+  --color-group: hsl(190, 50%, 65%);
+  --color-leaf-account: hsl(210, 50%, 70%);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-body: hsl(220, 15%, 98%);
+    --bg-nav: hsl(220, 15%, 94%);
+    --color-text: hsl(220, 15%, 15%);
+    --color-muted: hsl(220, 10%, 45%);
+    --color-border: hsl(220, 10%, 85%);
+    --color-border-table: hsl(220, 10%, 82%);
+    --color-error: hsl(0, 70%, 42%);
+    --color-group: hsl(190, 70%, 30%);
+    --color-leaf-account: hsl(210, 70%, 38%);
+  }
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -14,15 +42,15 @@ body {
     -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
-  background-color: hsl(220, 15%, 8%);
-  color: hsl(0, 0%, 88%);
+  background-color: var(--bg-body);
+  color: var(--color-text);
   height: 100%;
 }
 
 nav {
   padding: 1rem 2rem;
-  background-color: hsl(220, 15%, 5%);
-  border-bottom: 1px solid hsl(220, 10%, 15%);
+  background-color: var(--bg-nav);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: baseline;
   gap: 1rem;
@@ -35,7 +63,7 @@ nav h1 {
 
 nav .subtitle {
   font-size: 1rem;
-  color: hsl(220, 10%, 45%);
+  color: var(--color-muted);
 }
 
 main {
@@ -44,12 +72,12 @@ main {
 }
 
 .loading {
-  color: hsl(220, 10%, 45%);
+  color: var(--color-muted);
   padding: 2rem;
 }
 
 .error {
-  color: hsl(0, 70%, 60%);
+  color: var(--color-error);
   padding: 2rem;
 }
 
@@ -65,8 +93,8 @@ table {
 thead th {
   text-align: left;
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid hsl(220, 10%, 18%);
-  color: hsl(220, 10%, 45%);
+  border-bottom: 1px solid var(--color-border-table);
+  color: var(--color-muted);
   font-weight: 500;
   font-size: 0.8rem;
   text-transform: uppercase;
@@ -84,7 +112,7 @@ tbody td {
 tr.group td {
   padding-top: 1.25rem;
   font-weight: 600;
-  color: hsl(190, 50%, 65%);
+  color: var(--color-group);
 }
 
 tr.group:first-child td {
@@ -92,7 +120,7 @@ tr.group:first-child td {
 }
 
 tr.leaf td.col-account {
-  color: hsl(210, 50%, 70%);
+  color: var(--color-leaf-account);
   padding-left: 2rem;
 }
 
@@ -102,6 +130,6 @@ td.col-amount {
 }
 
 td.col-commodity {
-  color: hsl(220, 10%, 45%);
+  color: var(--color-muted);
   padding-left: 0.5rem;
 }
