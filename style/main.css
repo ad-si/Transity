@@ -119,13 +119,8 @@ tbody tr.odd td {
 }
 
 tr.group td {
-  padding-top: 1.25rem;
   font-weight: 600;
   color: var(--color-group);
-}
-
-tr.group:first-child td {
-  padding-top: 0.25rem;
 }
 
 tr.leaf td.col-account {
