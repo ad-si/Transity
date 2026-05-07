@@ -94,7 +94,14 @@ pub async fn get_balance() -> Result<Vec<BalanceEntry>, ServerFnError> {
 pub async fn get_transactions() -> Result<Vec<TransactionEntry>, ServerFnError>
 {
   let ledger = expect_context::<crate::Ledger>();
-  Ok(crate::ledger_to_transaction_entries(&ledger))
+  let mut entries = crate::ledger_to_transaction_entries(&ledger);
+  entries.sort_by(|a, b| match (&a.utc, &b.utc) {
+    (Some(a), Some(b)) => b.cmp(a),
+    (Some(_), None) => std::cmp::Ordering::Less,
+    (None, Some(_)) => std::cmp::Ordering::Greater,
+    (None, None) => std::cmp::Ordering::Equal,
+  });
+  Ok(entries)
 }
 
 #[component]
