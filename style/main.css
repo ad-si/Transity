@@ -182,105 +182,75 @@ td.col-commodity {
   padding-left: 0.5rem;
 }
 
-ul.transactions {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-li.transaction {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  border: 1px solid var(--color-border-table);
-  border-radius: 4px;
-  padding: 0.75rem 1rem;
-}
-
-li.transaction.odd {
-  background-color: var(--bg-stripe);
-}
-
-.tx-header {
-  display: flex;
-  align-items: baseline;
-  gap: 1rem;
-  font-family:
-    "SF Mono", "Fira Code", "Fira Mono",
-    "Roboto Mono", "Cascadia Code", monospace;
-}
-
-.tx-header .tx-note {
-  font-weight: 600;
-  flex: 1;
-}
-
-.tx-id {
-  color: var(--color-muted);
-  font-size: 0.8rem;
-}
-
-ul.tx-transfers {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-li.transfer {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-family:
-    "SF Mono", "Fira Code", "Fira Mono",
-    "Roboto Mono", "Cascadia Code", monospace;
-  font-size: 0.9rem;
-}
-
-li.transfer .tx-date {
-  color: var(--color-muted);
-  font-size: 0.8rem;
+td.col-tx-date {
+  vertical-align: top;
   white-space: nowrap;
-  flex: 0 0 auto;
+  color: var(--color-muted);
 }
 
-li.transfer .tx-from,
-li.transfer .tx-to {
+td.col-tx-note {
+  vertical-align: top;
+  font-weight: 600;
+}
+
+td.col-tx-transfers {
+  vertical-align: top;
+}
+
+.tx-transfers-grid {
+  display: grid;
+  grid-template-columns:
+    auto auto auto auto auto auto 1fr;
+  column-gap: 0.5rem;
+  row-gap: 0.15rem;
+  align-items: baseline;
+}
+
+.tx-transfers-grid .tx-from,
+.tx-transfers-grid .tx-to {
   color: var(--color-leaf-account);
   white-space: nowrap;
 }
 
-li.transfer .tx-from {
-  flex: 0 0 auto;
+.tx-transfers-grid .tx-from {
   text-align: right;
 }
 
-li.transfer .tx-to {
-  flex: 0 0 auto;
-}
-
-li.transfer .tx-arrow {
+.tx-transfers-grid .tx-arrow {
   color: var(--color-muted);
 }
 
-li.transfer .tx-amount {
+.tx-transfers-grid .tx-amount-int,
+.tx-transfers-grid .tx-amount-frac {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  flex: 0 0 auto;
-  text-align: right;
 }
 
-li.transfer .tx-amount.positive {
+.tx-transfers-grid .tx-amount-int {
+  text-align: right;
+  padding-left: 0.5rem;
+}
+
+.tx-transfers-grid .tx-amount-frac {
+  text-align: left;
+  margin-left: -0.5rem;
+}
+
+.tx-transfers-grid .tx-amount-int.positive,
+.tx-transfers-grid .tx-amount-frac.positive {
   color: var(--color-positive);
 }
 
-li.transfer .tx-amount.negative {
+.tx-transfers-grid .tx-amount-int.negative,
+.tx-transfers-grid .tx-amount-frac.negative {
   color: var(--color-negative);
 }
 
-li.transfer .tx-note-inline {
+.tx-transfers-grid .tx-commodity {
+  color: var(--color-muted);
+}
+
+.tx-transfers-grid .tx-note-inline {
   color: var(--color-muted);
   font-size: 0.85rem;
-  flex: 1;
 }

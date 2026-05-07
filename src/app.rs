@@ -1,7 +1,7 @@
 use leptos::ev;
 use leptos::prelude::*;
 
-use crate::{BalanceEntry, TransactionEntry, TransferEntry};
+use crate::{BalanceEntry, TransactionEntry};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Tab {
@@ -222,66 +222,63 @@ fn TransactionsPage() -> impl IntoView {
 #[component]
 fn TransactionsList(entries: Vec<TransactionEntry>) -> impl IntoView {
   view! {
-    <ul class="transactions">
-      {entries
-        .into_iter()
-        .enumerate()
-        .map(|(i, entry)| {
-          let stripe = if i % 2 == 0 { "even" } else { "odd" };
-          view! { <TransactionItem entry stripe /> }
-        })
-        .collect_view()}
-    </ul>
+    <table class="transactions">
+      <thead>
+        <tr>
+          <th class="col-tx-date">"Timestamp"</th>
+          <th class="col-tx-note">"Note"</th>
+          <th class="col-tx-transfers">"Transfers"</th>
+        </tr>
+      </thead>
+      <tbody>
+        {entries
+          .into_iter()
+          .enumerate()
+          .map(|(i, entry)| {
+            let stripe = if i % 2 == 0 { "even" } else { "odd" };
+            view! { <TransactionRow entry stripe /> }
+          })
+          .collect_view()}
+      </tbody>
+    </table>
   }
 }
 
 #[component]
-fn TransactionItem(
+fn TransactionRow(
   entry: TransactionEntry,
   stripe: &'static str,
 ) -> impl IntoView {
-  let item_class = format!("transaction {stripe}");
+  let row_class = format!("transaction {stripe}");
   let date = entry.utc.unwrap_or_default();
   let note = entry.note.unwrap_or_default();
-  let id_view = entry
-    .id
-    .map(|id| view! { <span class="tx-id">"id "{id}</span> }.into_any())
-    .unwrap_or_else(|| view! { <span></span> }.into_any());
 
   view! {
-    <li class=item_class>
-      <div class="tx-header">
-        <span class="tx-date">{date}</span>
-        <span class="tx-note">{note}</span>
-        {id_view}
-      </div>
-      <ul class="tx-transfers">
-        {entry.transfers
-          .into_iter()
-          .map(|transfer| view! { <TransferItem transfer /> })
-          .collect_view()}
-      </ul>
-    </li>
-  }
-}
-
-#[component]
-fn TransferItem(transfer: TransferEntry) -> impl IntoView {
-  let sign = sign_class(&transfer.amount_int);
-  let amount_class = format!("tx-amount {sign}");
-  let amount = format!(
-    "{}{} {}",
-    transfer.amount_int, transfer.amount_frac, transfer.commodity,
-  );
-  let note = transfer.note.unwrap_or_default();
-  view! {
-    <li class="transfer">
-      <span class="tx-date">{transfer.utc.unwrap_or_default()}</span>
-      <span class="tx-from">{transfer.from}</span>
-      <span class="tx-arrow">"→"</span>
-      <span class="tx-to">{transfer.to}</span>
-      <span class=amount_class>{amount}</span>
-      <span class="tx-note-inline">{note}</span>
-    </li>
+    <tr class=row_class>
+      <td class="col-tx-date">{date}</td>
+      <td class="col-tx-note">{note}</td>
+      <td class="col-tx-transfers">
+        <div class="tx-transfers-grid">
+          {entry.transfers
+            .into_iter()
+            .map(|transfer| {
+              let sign = sign_class(&transfer.amount_int);
+              let int_class = format!("tx-amount-int {sign}");
+              let frac_class = format!("tx-amount-frac {sign}");
+              let t_note = transfer.note.unwrap_or_default();
+              view! {
+                <span class="tx-from">{transfer.from}</span>
+                <span class="tx-arrow">"→"</span>
+                <span class="tx-to">{transfer.to}</span>
+                <span class=int_class>{transfer.amount_int}</span>
+                <span class=frac_class>{transfer.amount_frac}</span>
+                <span class="tx-commodity">{transfer.commodity}</span>
+                <span class="tx-note-inline">{t_note}</span>
+              }
+            })
+            .collect_view()}
+        </div>
+      </td>
+    </tr>
   }
 }
