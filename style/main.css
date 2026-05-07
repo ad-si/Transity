@@ -98,7 +98,6 @@ nav h1 {
 
 main {
   padding: 2rem;
-  max-width: 1200px;
 }
 
 .loading {
@@ -191,7 +190,10 @@ td.col-tx-date {
 
 td.col-tx-note {
   vertical-align: top;
-  font-weight: 600;
+}
+
+table.transactions {
+  width: 100%;
 }
 
 td.col-tx-transfers {
