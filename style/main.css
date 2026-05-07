@@ -83,6 +83,7 @@ nav h1 {
   border-bottom: 2px solid transparent;
   border-radius: 0;
   margin-bottom: -1px;
+  text-decoration: none;
   transition: color 0.1s ease, border-color 0.1s ease;
 }
 
@@ -90,7 +91,7 @@ nav h1 {
   color: var(--color-text);
 }
 
-.tab.active {
+.tab[aria-current="page"] {
   color: var(--color-text);
   border-bottom-color: var(--color-leaf-account);
 }

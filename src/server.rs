@@ -68,7 +68,6 @@ pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
   let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
   let app = Router::new()
-    .route("/", axum::routing::get(serve_shell))
     .route("/pkg/transity.js", axum::routing::get(serve_js))
     .route("/pkg/transity.css", axum::routing::get(serve_css))
     .route("/pkg/transity.wasm", axum::routing::get(serve_wasm))
@@ -86,7 +85,8 @@ pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
           )
         }
       }),
-    );
+    )
+    .fallback(serve_shell);
 
   eprintln!("Serving on http://{}", addr);
   let listener = tokio::net::TcpListener::bind(&addr).await?;

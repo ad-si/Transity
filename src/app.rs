@@ -1,80 +1,33 @@
-use leptos::ev;
 use leptos::prelude::*;
+use leptos_router::components::{FlatRoutes, Redirect, Route, Router, A};
+use leptos_router::path;
 
 use crate::{BalanceEntry, TransactionEntry};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Tab {
-  Balance,
-  Transactions,
-}
-
-fn tab_from_hash() -> Tab {
-  match location_hash().as_deref() {
-    Some("transactions") => Tab::Transactions,
-    _ => Tab::Balance,
-  }
-}
-
-fn tab_hash(tab: Tab) -> &'static str {
-  match tab {
-    Tab::Balance => "balance",
-    Tab::Transactions => "transactions",
-  }
-}
-
-fn write_hash(tab: Tab) {
-  if !is_server() {
-    let _ = window().location().set_hash(tab_hash(tab));
-  }
-}
-
 #[component]
 pub fn App() -> impl IntoView {
-  let tab = RwSignal::new(tab_from_hash());
-
-  // Sync browser back/forward and manual hash edits into the signal.
-  if !is_server() {
-    let handle = window_event_listener(ev::hashchange, move |_| {
-      let new_tab = tab_from_hash();
-      if tab.get_untracked() != new_tab {
-        tab.set(new_tab);
-      }
-    });
-    on_cleanup(move || handle.remove());
-  }
-
-  let is_balance = move || tab.get() == Tab::Balance;
-  let is_transactions = move || tab.get() == Tab::Transactions;
-
   view! {
-    <nav>
-      <h1>"Transity"</h1>
-      <div class="tabs">
-        <button
-          class="tab"
-          class:active=is_balance
-          on:click=move |_| {
-            tab.set(Tab::Balance);
-            write_hash(Tab::Balance);
-          }
-        >"Balance"</button>
-        <button
-          class="tab"
-          class:active=is_transactions
-          on:click=move |_| {
-            tab.set(Tab::Transactions);
-            write_hash(Tab::Transactions);
-          }
-        >"Transactions"</button>
-      </div>
-    </nav>
-    <main>
-      {move || match tab.get() {
-        Tab::Balance => view! { <BalancePage /> }.into_any(),
-        Tab::Transactions => view! { <TransactionsPage /> }.into_any(),
-      }}
-    </main>
+    <Router>
+      <nav>
+        <h1>"Transity"</h1>
+        <div class="tabs">
+          <A href="/balance" attr:class="tab">"Balance"</A>
+          <A href="/transactions" attr:class="tab">"Transactions"</A>
+        </div>
+      </nav>
+      <main>
+        <FlatRoutes fallback=|| view! {
+          <p class="error">"Page not found."</p>
+        }>
+          <Route
+            path=path!("")
+            view=|| view! { <Redirect path="/balance" /> }
+          />
+          <Route path=path!("/balance") view=BalancePage />
+          <Route path=path!("/transactions") view=TransactionsPage />
+        </FlatRoutes>
+      </main>
+    </Router>
   }
 }
 
