@@ -251,7 +251,67 @@ td.col-tx-transfers {
   color: var(--color-muted);
 }
 
-.tx-transfers-grid .tx-note-inline {
+.tx-transfers-grid .tx-note-icon {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1em;
+}
+
+.tx-transfers-grid .tx-note-icon.has-note {
+  position: relative;
   color: var(--color-muted);
+  cursor: help;
+  outline: none;
+  transition: color 0.1s ease-in;
+}
+
+.tx-transfers-grid .tx-note-icon.has-note:hover,
+.tx-transfers-grid .tx-note-icon.has-note:focus-visible {
+  color: var(--color-text);
+}
+
+.tx-transfers-grid .tx-note-glyph {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tx-transfers-grid .tx-note-tooltip {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 0.45rem);
+  left: -0.4rem;
+  width: max-content;
+  max-width: 28rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-stripe);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
   font-size: 0.85rem;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  text-align: left;
+  box-shadow: 0 4px 12px hsla(220, 15%, 0%, 0.25);
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s ease-in, visibility 0.1s;
+}
+
+.tx-transfers-grid .tx-note-icon.has-note:hover .tx-note-tooltip,
+.tx-transfers-grid .tx-note-icon.has-note:focus-visible .tx-note-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tx-transfers-grid .tx-note-tooltip::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 0.45rem;
+  border: 5px solid transparent;
+  border-top: 0;
+  border-bottom-color: var(--color-border);
+  pointer-events: none;
 }

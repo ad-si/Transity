@@ -188,6 +188,9 @@ transactions:
       - from: anna
         to: john
         amount: 219.99 €
+        note:
+          It was supposed to be 249.99 €,
+          but they reduced the price due to scratches in the frame.
 
   - utc: '2020-01-06 12:17'
     note: Pizza

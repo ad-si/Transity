@@ -204,6 +204,28 @@ fn TransactionsList(entries: Vec<TransactionEntry>) -> impl IntoView {
   }
 }
 
+const NOTE_ICON_SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3h11v7H6.5l-3 3v-3H2.5V3z"/></svg>"#;
+
+fn note_icon_view(note: Option<String>) -> leptos::prelude::AnyView {
+  match note {
+    Some(n) if !n.trim().is_empty() => {
+      let label = n.clone();
+      view! {
+        <span
+          class="tx-note-icon has-note"
+          tabindex="0"
+          attr:aria-label=label
+        >
+          <span class="tx-note-glyph" inner_html=NOTE_ICON_SVG />
+          <span class="tx-note-tooltip" role="tooltip">{n}</span>
+        </span>
+      }
+      .into_any()
+    }
+    _ => view! { <span class="tx-note-icon"></span> }.into_any(),
+  }
+}
+
 #[component]
 fn TransactionRow(
   entry: TransactionEntry,
@@ -225,7 +247,7 @@ fn TransactionRow(
               let sign = sign_class(&transfer.amount_int);
               let int_class = format!("tx-amount-int {sign}");
               let frac_class = format!("tx-amount-frac {sign}");
-              let t_note = transfer.note.unwrap_or_default();
+              let note_view = note_icon_view(transfer.note);
               view! {
                 <span class="tx-from">{transfer.from}</span>
                 <span class="tx-arrow">"→"</span>
@@ -233,7 +255,7 @@ fn TransactionRow(
                 <span class=int_class>{transfer.amount_int}</span>
                 <span class=frac_class>{transfer.amount_frac}</span>
                 <span class="tx-commodity">{transfer.commodity}</span>
-                <span class="tx-note-inline">{t_note}</span>
+                {note_view}
               }
             })
             .collect_view()}
