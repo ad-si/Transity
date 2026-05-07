@@ -43,8 +43,8 @@ server-build:
 	cargo leptos build
 
 
-.PHONY: server-watch
-server-watch:
+.PHONY: dev
+dev:
 	cargo leptos watch -- server examples/journal.yaml
 
 

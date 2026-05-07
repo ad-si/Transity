@@ -3,6 +3,7 @@ use axum::Router;
 use leptos::prelude::*;
 use leptos_axum::handle_server_fns_with_context;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use crate::Ledger;
 
@@ -28,6 +29,27 @@ const SHELL_HTML: &str = r#"<!DOCTYPE html>
   <body></body>
 </html>"#;
 
+fn dev_mode() -> bool {
+  std::env::var("LEPTOS_OUTPUT_NAME").is_ok()
+}
+
+fn disk_asset_path(name: &str) -> PathBuf {
+  let root = std::env::var("LEPTOS_SITE_ROOT")
+    .unwrap_or_else(|_| "target/site".to_string());
+  let pkg_dir =
+    std::env::var("LEPTOS_SITE_PKG_DIR").unwrap_or_else(|_| "pkg".to_string());
+  PathBuf::from(root).join(pkg_dir).join(name)
+}
+
+fn load_asset(name: &str, embedded: &'static [u8]) -> Vec<u8> {
+  if dev_mode() {
+    if let Ok(bytes) = std::fs::read(disk_asset_path(name)) {
+      return bytes;
+    }
+  }
+  embedded.to_vec()
+}
+
 async fn serve_shell() -> impl IntoResponse {
   Html(SHELL_HTML)
 }
@@ -35,18 +57,21 @@ async fn serve_shell() -> impl IntoResponse {
 async fn serve_js() -> impl IntoResponse {
   (
     [("content-type", "application/javascript")],
-    embedded_assets::JS,
+    load_asset("transity.js", embedded_assets::JS),
   )
 }
 
 async fn serve_css() -> impl IntoResponse {
-  ([("content-type", "text/css")], embedded_assets::CSS)
+  (
+    [("content-type", "text/css")],
+    load_asset("transity.css", embedded_assets::CSS),
+  )
 }
 
 async fn serve_wasm() -> impl IntoResponse {
   (
     [("content-type", "application/wasm")],
-    embedded_assets::WASM,
+    load_asset("transity.wasm", embedded_assets::WASM),
   )
 }
 
@@ -55,13 +80,16 @@ async fn serve_favicon() -> impl IntoResponse {
 }
 
 pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
-  if !embedded_assets::ASSETS_AVAILABLE {
+  let disk_assets_available = dev_mode()
+    && ["transity.js", "transity.css", "transity.wasm"]
+      .iter()
+      .all(|n| disk_asset_path(n).exists());
+
+  if !embedded_assets::ASSETS_AVAILABLE && !disk_assets_available {
     return Err(anyhow::anyhow!(
-      "Frontend assets are not embedded in this binary.\n\
-       The frontend was not built before this binary was compiled.\n\
-       Rebuild with:\n\
-       \n  cargo leptos build && cargo install --path .\n\n\
-       (or `make server-build && make install`)"
+      "Frontend assets are not available.\n\
+       For development, run `make dev`.\n\
+       For installation, run `make server-build && make install`."
     ));
   }
 

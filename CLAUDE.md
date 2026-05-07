@@ -36,7 +36,7 @@ make test-cli           # cargo test --test cli_snapshots
 make update-snapshots   # cargo insta review (after intentional output changes)
 make format             # cargo clippy --fix && cargo fmt
 make server-build       # cargo leptos build (produces target/site/pkg/*)
-make server-watch       # live-reload server against examples/journal.yaml
+make dev                # live-reload server against examples/journal.yaml
 make wasm-build         # builds webapp/pkg/ for the browser demo
 make docs               # builds docs/ via mdbook + the browser demo
 make install            # server-build + cargo install --path .
