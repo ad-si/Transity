@@ -186,8 +186,8 @@ fn TransactionsList(entries: Vec<TransactionEntry>) -> impl IntoView {
       <thead>
         <tr>
           <th class="col-tx-date">"Timestamp"</th>
-          <th class="col-tx-note">"Note"</th>
           <th class="col-tx-transfers">"Transfers"</th>
+          <th class="col-tx-note">"Note"</th>
           <th class="col-tx-files">"Files"</th>
         </tr>
       </thead>
@@ -240,7 +240,6 @@ fn TransactionRow(
   view! {
     <tr class=row_class>
       <td class="col-tx-date">{date}</td>
-      <td class="col-tx-note">{note}</td>
       <td class="col-tx-transfers">
         <div class="tx-transfers-grid">
           {entry.transfers
@@ -263,6 +262,7 @@ fn TransactionRow(
             .collect_view()}
         </div>
       </td>
+      <td class="col-tx-note">{note}</td>
       <td class="col-tx-files">
         <ul class="tx-files-list">
           {files
