@@ -196,6 +196,43 @@ table.transactions {
   width: 100%;
 }
 
+.tx-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tx-toolbar-button {
+  background: transparent;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.tx-toolbar-button:hover {
+  background: var(--bg-stripe);
+  border-color: var(--color-border-table);
+}
+
+.tx-toolbar-button.active {
+  background: var(--color-leaf-account);
+  color: var(--bg-body);
+  border-color: var(--color-leaf-account);
+}
+
+table.transactions.highlight-no-files tbody tr.transaction.no-files.even td {
+  background-color: hsla(45, 90%, 55%, 0.15);
+}
+
+table.transactions.highlight-no-files tbody tr.transaction.no-files.odd td {
+  background-color: hsla(45, 90%, 50%, 0.28);
+}
+
 td.col-tx-transfers {
   vertical-align: top;
 }

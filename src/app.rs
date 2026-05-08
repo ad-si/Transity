@@ -289,8 +289,35 @@ fn TransactionsPage() -> impl IntoView {
 
 #[component]
 fn TransactionsList(entries: Vec<TransactionEntry>) -> impl IntoView {
+  let highlight_no_files = RwSignal::new(false);
+  let toggle = move |_| highlight_no_files.update(|v| *v = !*v);
+  let table_class = move || {
+    if highlight_no_files.get() {
+      "transactions highlight-no-files"
+    } else {
+      "transactions"
+    }
+  };
+  let button_class = move || {
+    if highlight_no_files.get() {
+      "tx-toolbar-button active"
+    } else {
+      "tx-toolbar-button"
+    }
+  };
+
   view! {
-    <table class="transactions">
+    <div class="tx-toolbar">
+      <button
+        class=button_class
+        on:click=toggle
+        type="button"
+        aria-pressed=move || highlight_no_files.get().to_string()
+      >
+        "Highlight rows without files"
+      </button>
+    </div>
+    <table class=table_class>
       <thead>
         <tr>
           <th class="col-tx-date">"Timestamp"</th>
@@ -340,10 +367,11 @@ fn TransactionRow(
   entry: TransactionEntry,
   stripe: &'static str,
 ) -> impl IntoView {
-  let row_class = format!("transaction {stripe}");
+  let files = entry.files;
+  let files_class = if files.is_empty() { " no-files" } else { "" };
+  let row_class = format!("transaction {stripe}{files_class}");
   let date = entry.utc.unwrap_or_default();
   let note = entry.note.unwrap_or_default();
-  let files = entry.files;
 
   view! {
     <tr class=row_class>
