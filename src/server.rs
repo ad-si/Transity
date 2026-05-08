@@ -1,11 +1,31 @@
-use axum::response::{Html, IntoResponse};
+use axum::extract::{Query, State};
+use axum::http::StatusCode;
+use axum::response::{Html, IntoResponse, Response};
 use axum::Router;
 use leptos::prelude::*;
 use leptos_axum::handle_server_fns_with_context;
+use serde::Deserialize;
+use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use crate::Ledger;
+
+#[derive(Clone)]
+pub struct LedgerLoader {
+  pub paths: Vec<PathBuf>,
+  pub owner: Option<String>,
+}
+
+impl LedgerLoader {
+  pub fn load(&self) -> anyhow::Result<Ledger> {
+    let mut ledger = crate::load_and_verify(&self.paths)?;
+    if let Some(o) = &self.owner {
+      ledger.owner = Some(o.clone());
+    }
+    Ok(ledger)
+  }
+}
 
 #[allow(dead_code)]
 mod embedded_assets {
@@ -79,7 +99,87 @@ async fn serve_favicon() -> impl IntoResponse {
   axum::http::StatusCode::NO_CONTENT
 }
 
-pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
+fn mime_for(path: &std::path::Path) -> &'static str {
+  match path
+    .extension()
+    .and_then(|e| e.to_str())
+    .map(|s| s.to_ascii_lowercase())
+    .as_deref()
+  {
+    Some("png") => "image/png",
+    Some("jpg" | "jpeg") => "image/jpeg",
+    Some("gif") => "image/gif",
+    Some("webp") => "image/webp",
+    Some("svg") => "image/svg+xml",
+    Some("avif") => "image/avif",
+    Some("heic") => "image/heic",
+    Some("pdf") => "application/pdf",
+    Some("txt" | "log" | "md" | "yaml" | "yml" | "json" | "csv") => {
+      "text/plain; charset=utf-8"
+    }
+    Some("html" | "htm") => "text/html; charset=utf-8",
+    _ => "application/octet-stream",
+  }
+}
+
+#[derive(Deserialize)]
+struct FileQuery {
+  path: String,
+}
+
+#[derive(Clone)]
+struct FileServerState {
+  loader: LedgerLoader,
+  journal_dir: PathBuf,
+}
+
+async fn serve_file(
+  State(state): State<FileServerState>,
+  Query(query): Query<FileQuery>,
+) -> Response {
+  // Build a whitelist of files actually referenced in the journal so that
+  // the server can only serve documents the journal author has explicitly
+  // attached to a transaction. Paths are resolved relative to the journal
+  // directory (mirroring how the journal author wrote them) and compared
+  // after canonicalization so different spellings of the same file collapse.
+  let ledger = match state.loader.load() {
+    Ok(l) => l,
+    Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+  };
+
+  let mut allowed: HashSet<PathBuf> = HashSet::new();
+  for tx in &ledger.transactions {
+    for f in &tx.files {
+      let candidate = state.journal_dir.join(f);
+      if let Ok(c) = candidate.canonicalize() {
+        allowed.insert(c);
+      }
+    }
+  }
+
+  let candidate = state.journal_dir.join(&query.path);
+  let resolved = match candidate.canonicalize() {
+    Ok(p) => p,
+    Err(_) => return StatusCode::NOT_FOUND.into_response(),
+  };
+
+  if !allowed.contains(&resolved) {
+    return StatusCode::FORBIDDEN.into_response();
+  }
+
+  match tokio::fs::read(&resolved).await {
+    Ok(bytes) => {
+      ([("content-type", mime_for(&resolved))], bytes).into_response()
+    }
+    Err(_) => StatusCode::NOT_FOUND.into_response(),
+  }
+}
+
+pub async fn start(
+  loader: LedgerLoader,
+  journal_dir: PathBuf,
+  port: u16,
+) -> anyhow::Result<()> {
   let disk_assets_available = dev_mode()
     && ["transity.js", "transity.css", "transity.wasm"]
       .iter()
@@ -102,13 +202,20 @@ pub async fn start(ledger: Ledger, port: u16) -> anyhow::Result<()> {
     .route("/pkg/transity_bg.wasm", axum::routing::get(serve_wasm))
     .route("/favicon.ico", axum::routing::get(serve_favicon))
     .route(
+      "/files",
+      axum::routing::get(serve_file).with_state(FileServerState {
+        loader: loader.clone(),
+        journal_dir: journal_dir.clone(),
+      }),
+    )
+    .route(
       "/api/{*fn_name}",
       axum::routing::any({
-        let ledger = ledger.clone();
+        let loader = loader.clone();
         move |req| {
-          let ledger = ledger.clone();
+          let loader = loader.clone();
           handle_server_fns_with_context(
-            move || provide_context(ledger.clone()),
+            move || provide_context(loader.clone()),
             req,
           )
         }

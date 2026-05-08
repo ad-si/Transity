@@ -215,6 +215,135 @@ td.col-tx-files {
   color: var(--color-muted);
 }
 
+.tx-file-link {
+  color: var(--color-leaf-account);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tx-file-link:hover,
+.tx-file-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.file-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: hsla(220, 15%, 0%, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 2rem;
+}
+
+.file-preview-dialog {
+  background: var(--bg-body);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 10px 40px hsla(220, 15%, 0%, 0.4);
+  display: flex;
+  flex-direction: column;
+  max-width: min(90vw, 1200px);
+  max-height: 90vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.file-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--bg-nav);
+}
+
+.file-preview-path {
+  flex: 1;
+  font-family:
+    "SF Mono", "Fira Code", "Fira Mono",
+    "Roboto Mono", "Cascadia Code", monospace;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview-open {
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  transition: color 0.1s ease, background-color 0.1s ease;
+}
+
+.file-preview-open:hover,
+.file-preview-open:focus-visible {
+  color: var(--color-text);
+  background: var(--bg-stripe);
+  outline: none;
+}
+
+.file-preview-close {
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  border-radius: 3px;
+  transition: color 0.1s ease, background-color 0.1s ease;
+}
+
+.file-preview-close:hover,
+.file-preview-close:focus-visible {
+  color: var(--color-text);
+  background: var(--bg-stripe);
+  outline: none;
+}
+
+.file-preview-body {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-stripe);
+  min-height: 0;
+}
+
+.file-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.file-preview-frame {
+  width: 100%;
+  height: 80vh;
+  background: var(--bg-body);
+}
+
+.file-preview-fallback {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+.file-preview-fallback a {
+  color: var(--color-leaf-account);
+  text-decoration: none;
+}
+
+.file-preview-fallback a:hover {
+  text-decoration: underline;
+}
+
 .tx-transfers-grid {
   display: grid;
   grid-template-columns:

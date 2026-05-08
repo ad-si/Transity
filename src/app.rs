@@ -4,8 +4,14 @@ use leptos_router::path;
 
 use crate::{BalanceEntry, TransactionEntry};
 
+#[derive(Clone, Copy)]
+struct FilePreview(RwSignal<Option<String>>);
+
 #[component]
 pub fn App() -> impl IntoView {
+  let preview = FilePreview(RwSignal::new(None));
+  provide_context(preview);
+
   view! {
     <Router>
       <nav>
@@ -27,13 +33,112 @@ pub fn App() -> impl IntoView {
           <Route path=path!("/transactions") view=TransactionsPage />
         </FlatRoutes>
       </main>
+      <FilePreviewModal />
     </Router>
+  }
+}
+
+fn file_kind(path: &str) -> &'static str {
+  let ext = path
+    .rsplit_once('.')
+    .map(|(_, e)| e.to_ascii_lowercase())
+    .unwrap_or_default();
+  match ext.as_str() {
+    "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "avif" | "heic" => {
+      "image"
+    }
+    "pdf" => "pdf",
+    "txt" | "log" | "md" | "yaml" | "yml" | "json" | "csv" | "html" | "htm" => {
+      "text"
+    }
+    _ => "other",
+  }
+}
+
+fn file_url(path: &str) -> String {
+  // The path is sent as a query parameter rather than as part of the URL
+  // path. Browsers normalize `..` segments inside a URL path before the
+  // request leaves the client (per the WHATWG URL standard), which would
+  // collapse paths like `../receipts/foo.pdf` and never reach our handler.
+  // Query strings are not subject to that normalization.
+  let encoded = path
+    .bytes()
+    .map(|b| match b {
+      b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+        (b as char).to_string()
+      }
+      _ => format!("%{:02X}", b),
+    })
+    .collect::<String>();
+  format!("/files?path={}", encoded)
+}
+
+#[component]
+fn FilePreviewModal() -> impl IntoView {
+  let FilePreview(preview) = expect_context::<FilePreview>();
+  let close = move |_| preview.set(None);
+  let stop = |ev: leptos::ev::MouseEvent| ev.stop_propagation();
+
+  view! {
+    {move || preview.get().map(|path| {
+      let kind = file_kind(&path);
+      let url = file_url(&path);
+      let body = match kind {
+        "image" => view! {
+          <img class="file-preview-image" src=url.clone() alt=path.clone() />
+        }.into_any(),
+        "pdf" => view! {
+          <iframe class="file-preview-frame" src=url.clone() title=path.clone()></iframe>
+        }.into_any(),
+        "text" | "html" => view! {
+          <iframe class="file-preview-frame" src=url.clone() title=path.clone()></iframe>
+        }.into_any(),
+        _ => view! {
+          <div class="file-preview-fallback">
+            <p>"No preview available for this file type."</p>
+            <a href=url.clone() target="_blank" rel="noopener">
+              "Open " {path.clone()}
+            </a>
+          </div>
+        }.into_any(),
+      };
+      view! {
+        <div class="file-preview-overlay" on:click=close>
+          <div class="file-preview-dialog" on:click=stop>
+            <header class="file-preview-header">
+              <span class="file-preview-path">{path.clone()}</span>
+              <a
+                class="file-preview-open"
+                href=url.clone()
+                target="_blank"
+                rel="noopener"
+                title="Open in new tab"
+              >
+                "↗"
+              </a>
+              <button
+                class="file-preview-close"
+                on:click=close
+                aria-label="Close preview"
+                type="button"
+              >
+                "×"
+              </button>
+            </header>
+            <div class="file-preview-body">{body}</div>
+          </div>
+        </div>
+      }
+    })}
   }
 }
 
 #[server]
 pub async fn get_balance() -> Result<Vec<BalanceEntry>, ServerFnError> {
-  let ledger = expect_context::<crate::Ledger>();
+  let loader = expect_context::<crate::server::LedgerLoader>();
+  let ledger = loader
+    .load()
+    .map_err(|e| ServerFnError::new(format!("{:#}", e)))?;
   let data = crate::get_balance_data(
     crate::BalanceFilter::OnlyOwner,
     &ledger,
@@ -46,7 +151,10 @@ pub async fn get_balance() -> Result<Vec<BalanceEntry>, ServerFnError> {
 #[server]
 pub async fn get_transactions() -> Result<Vec<TransactionEntry>, ServerFnError>
 {
-  let ledger = expect_context::<crate::Ledger>();
+  let loader = expect_context::<crate::server::LedgerLoader>();
+  let ledger = loader
+    .load()
+    .map_err(|e| ServerFnError::new(format!("{:#}", e)))?;
   let mut entries = crate::ledger_to_transaction_entries(&ledger);
   entries.sort_by(|a, b| match (&a.utc, &b.utc) {
     (Some(a), Some(b)) => b.cmp(a),
@@ -267,7 +375,26 @@ fn TransactionRow(
         <ul class="tx-files-list">
           {files
             .into_iter()
-            .map(|f| view! { <li class="tx-file">{f}</li> })
+            .map(|f| {
+              let FilePreview(preview) = expect_context::<FilePreview>();
+              let path = f.clone();
+              let url = file_url(&f);
+              let on_click = move |ev: leptos::ev::MouseEvent| {
+                ev.prevent_default();
+                preview.set(Some(path.clone()));
+              };
+              view! {
+                <li class="tx-file">
+                  <a
+                    class="tx-file-link"
+                    href=url
+                    on:click=on_click
+                  >
+                    {f}
+                  </a>
+                </li>
+              }
+            })
             .collect_view()}
         </ul>
       </td>

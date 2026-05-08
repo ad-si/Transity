@@ -757,13 +757,29 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
+      let loader = transity::server::LedgerLoader {
+        paths: paths.clone(),
+        owner,
+      };
+      // Validate the journal once on startup so configuration errors
+      // surface immediately rather than on the first browser request.
+      if let Err(e) = loader.load() {
         eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
-      });
-      apply_owner_override(&mut ledger, owner);
+      }
+      let journal_path = &paths[0];
+      let journal_dir =
+        if journal_path.to_string_lossy().starts_with("/dev/fd/") {
+          std::env::current_dir()?
+        } else {
+          journal_path
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| PathBuf::from("."))
+        };
       let rt = tokio::runtime::Runtime::new()?;
-      rt.block_on(transity::server::start(ledger, port))?;
+      rt.block_on(transity::server::start(loader, journal_dir, port))?;
     }
   }
 
