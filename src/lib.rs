@@ -1475,6 +1475,7 @@ pub struct TransactionEntry {
   pub utc: Option<String>,
   pub note: Option<String>,
   pub id: Option<String>,
+  pub files: Vec<String>,
   pub transfers: Vec<TransferEntry>,
 }
 
@@ -1497,6 +1498,7 @@ pub fn transaction_to_entry(tx: &Transaction) -> TransactionEntry {
     utc: tx.utc.as_ref().map(date_show_pretty),
     note: tx.note.clone(),
     id: tx.id.clone(),
+    files: tx.files.clone(),
     transfers: tx.transfers.iter().map(transfer_to_entry).collect(),
   }
 }

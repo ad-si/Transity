@@ -188,6 +188,7 @@ fn TransactionsList(entries: Vec<TransactionEntry>) -> impl IntoView {
           <th class="col-tx-date">"Timestamp"</th>
           <th class="col-tx-note">"Note"</th>
           <th class="col-tx-transfers">"Transfers"</th>
+          <th class="col-tx-files">"Files"</th>
         </tr>
       </thead>
       <tbody>
@@ -234,6 +235,7 @@ fn TransactionRow(
   let row_class = format!("transaction {stripe}");
   let date = entry.utc.unwrap_or_default();
   let note = entry.note.unwrap_or_default();
+  let files = entry.files;
 
   view! {
     <tr class=row_class>
@@ -260,6 +262,14 @@ fn TransactionRow(
             })
             .collect_view()}
         </div>
+      </td>
+      <td class="col-tx-files">
+        <ul class="tx-files-list">
+          {files
+            .into_iter()
+            .map(|f| view! { <li class="tx-file">{f}</li> })
+            .collect_view()}
+        </ul>
       </td>
     </tr>
   }

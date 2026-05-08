@@ -200,6 +200,21 @@ td.col-tx-transfers {
   vertical-align: top;
 }
 
+td.col-tx-files {
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.tx-files-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tx-files-list .tx-file {
+  color: var(--color-muted);
+}
+
 .tx-transfers-grid {
   display: grid;
   grid-template-columns:
