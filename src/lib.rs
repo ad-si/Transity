@@ -1972,11 +1972,32 @@ pub fn entries_as_xlsx(ledger: &Ledger) -> Result<Vec<u8>> {
 // ─── FILE LOADING ────────────────────────────────────────────────────────────
 
 #[cfg(feature = "cli")]
+fn format_yaml_error(e: serde_yaml::Error, path: &Path) -> anyhow::Error {
+  let msg = e.to_string();
+  if let Some(loc) = e.location() {
+    // Strip the first " at line X column Y" since the path:line:column
+    // prefix already conveys it. Any remaining occurrence (the
+    // "context_mark") points at a different location worth keeping.
+    let suffix = format!(" at line {} column {}", loc.line(), loc.column());
+    let cleaned = msg.replacen(&suffix, "", 1);
+    anyhow!(
+      "{}:{}:{}: {}",
+      path.display(),
+      loc.line(),
+      loc.column(),
+      cleaned
+    )
+  } else {
+    anyhow!("{}: {}", path.display(), msg)
+  }
+}
+
+#[cfg(feature = "cli")]
 pub fn load_ledger(path: &Path) -> Result<Ledger> {
   let content = std::fs::read_to_string(path)
     .with_context(|| format!("Cannot read file: {}", path.display()))?;
-  let raw: LedgerRaw = serde_yaml::from_str(&content)
-    .with_context(|| format!("Cannot parse YAML in: {}", path.display()))?;
+  let raw: LedgerRaw =
+    serde_yaml::from_str(&content).map_err(|e| format_yaml_error(e, path))?;
   Ledger::from_raw(raw)
 }
 
@@ -1989,8 +2010,8 @@ fn load_ledger_with_separator(
 ) -> Result<Ledger> {
   let content = std::fs::read_to_string(path)
     .with_context(|| format!("Cannot read file: {}", path.display()))?;
-  let mut raw: LedgerRaw = serde_yaml::from_str(&content)
-    .with_context(|| format!("Cannot parse YAML in: {}", path.display()))?;
+  let mut raw: LedgerRaw =
+    serde_yaml::from_str(&content).map_err(|e| format_yaml_error(e, path))?;
   // Apply the shared separator config so all files are parsed consistently
   raw.config = Some(separator.clone());
   Ledger::from_raw(raw)

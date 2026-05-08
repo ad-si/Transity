@@ -281,7 +281,7 @@ fn collect_paths(journal: &str, extra: &[String]) -> Vec<PathBuf> {
 fn parse_tag_flag(tag: &Option<String>) -> Option<TagExpr> {
   tag.as_ref().map(|s| {
     parse_tag_expr(s).unwrap_or_else(|e| {
-      eprintln!("{}", e.to_string().red());
+      eprintln!("{}", format!("{:#}", e).red());
       std::process::exit(1);
     })
   })
@@ -302,7 +302,7 @@ fn apply_owner_override(ledger: &mut Ledger, owner: Option<String>) {
 
 fn parse_date_flag(s: &str) -> DateTime<Utc> {
   parse_datetime(s).unwrap_or_else(|e| {
-    eprintln!("{}", e.to_string().red());
+    eprintln!("{}", format!("{:#}", e).red());
     std::process::exit(1);
   })
 }
@@ -395,7 +395,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -419,7 +419,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -443,7 +443,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -465,7 +465,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -487,7 +487,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -508,7 +508,7 @@ fn main() -> Result<()> {
     Commands::Entities { journal, extra } => {
       let paths = collect_paths(&journal, &extra);
       let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       println!("{}", show_entities(false, &ledger));
@@ -517,7 +517,7 @@ fn main() -> Result<()> {
     Commands::EntitiesSorted { journal, extra } => {
       let paths = collect_paths(&journal, &extra);
       let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       println!("{}", show_entities(true, &ledger));
@@ -533,7 +533,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -555,7 +555,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -583,7 +583,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -611,7 +611,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -626,7 +626,7 @@ fn main() -> Result<()> {
           std::io::stdout().write_all(&bytes)?;
         }
         Err(e) => {
-          eprintln!("{}", e.to_string().red());
+          eprintln!("{}", format!("{:#}", e).red());
           std::process::exit(1);
         }
       }
@@ -642,7 +642,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -670,7 +670,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -698,7 +698,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
@@ -744,7 +744,7 @@ fn main() -> Result<()> {
       let journal_paths = collect_paths(&journal, &extra);
       if let Err(e) = check_unused_files(Path::new(&directory), &journal_paths)
       {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       }
     }
@@ -758,7 +758,7 @@ fn main() -> Result<()> {
     } => {
       let paths = collect_paths(&journal, &extra);
       let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", e.to_string().red());
+        eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
       });
       apply_owner_override(&mut ledger, owner);
