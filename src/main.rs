@@ -300,6 +300,15 @@ fn apply_owner_override(ledger: &mut Ledger, owner: Option<String>) {
   }
 }
 
+fn load_or_exit(paths: &[PathBuf]) -> Ledger {
+  let ledger = load_and_verify(paths).unwrap_or_else(|e| {
+    eprintln!("{}", format!("{:#}", e).red());
+    std::process::exit(1);
+  });
+  warn_missing_files(&ledger, &journal_dir_from(paths));
+  ledger
+}
+
 fn parse_date_flag(s: &str) -> DateTime<Utc> {
   parse_datetime(s).unwrap_or_else(|e| {
     eprintln!("{}", format!("{:#}", e).red());
@@ -328,17 +337,8 @@ fn check_unused_files(
   journal_paths: &[PathBuf],
 ) -> Result<()> {
   let ledger = load_and_verify(journal_paths)?;
-
-  // Determine journal directory from first path
-  let journal_path = &journal_paths[0];
-  let journal_dir = if journal_path.to_string_lossy().starts_with("/dev/fd/") {
-    std::env::current_dir()?
-  } else {
-    journal_path
-      .parent()
-      .unwrap_or(Path::new("."))
-      .to_path_buf()
-  };
+  let journal_dir = journal_dir_from(journal_paths);
+  warn_missing_files(&ledger, &journal_dir);
 
   // Collect referenced files (resolved relative to journal directory)
   let referenced: std::collections::HashSet<PathBuf> = ledger
@@ -394,10 +394,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr);
@@ -418,10 +415,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr);
@@ -442,10 +436,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -464,10 +455,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -486,10 +474,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -507,19 +492,13 @@ fn main() -> Result<()> {
 
     Commands::Entities { journal, extra } => {
       let paths = collect_paths(&journal, &extra);
-      let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let ledger = load_or_exit(&paths);
       println!("{}", show_entities(false, &ledger));
     }
 
     Commands::EntitiesSorted { journal, extra } => {
       let paths = collect_paths(&journal, &extra);
-      let ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let ledger = load_or_exit(&paths);
       println!("{}", show_entities(true, &ledger));
     }
 
@@ -532,10 +511,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -554,10 +530,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -582,10 +555,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -610,10 +580,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -641,10 +608,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -669,10 +633,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -697,10 +658,7 @@ fn main() -> Result<()> {
       extra,
     } => {
       let paths = collect_paths(&journal, &extra);
-      let mut ledger = load_and_verify(&paths).unwrap_or_else(|e| {
-        eprintln!("{}", format!("{:#}", e).red());
-        std::process::exit(1);
-      });
+      let mut ledger = load_or_exit(&paths);
       apply_owner_override(&mut ledger, owner);
       let tag_expr = parse_tag_flag(&tag);
       let ledger = apply_tag_filter(ledger, &tag_expr).filter_by_date(
@@ -721,7 +679,7 @@ fn main() -> Result<()> {
 
     Commands::Files { journal, extra } => {
       let journal_paths = collect_paths(&journal, &extra);
-      let ledger = load_and_verify(&journal_paths)?;
+      let ledger = load_or_exit(&journal_paths);
 
       let mut file_counts: std::collections::BTreeMap<&str, usize> =
         std::collections::BTreeMap::new();
@@ -763,21 +721,12 @@ fn main() -> Result<()> {
       };
       // Validate the journal once on startup so configuration errors
       // surface immediately rather than on the first browser request.
-      if let Err(e) = loader.load() {
+      let ledger = loader.load().unwrap_or_else(|e| {
         eprintln!("{}", format!("{:#}", e).red());
         std::process::exit(1);
-      }
-      let journal_path = &paths[0];
-      let journal_dir =
-        if journal_path.to_string_lossy().starts_with("/dev/fd/") {
-          std::env::current_dir()?
-        } else {
-          journal_path
-            .parent()
-            .filter(|p| !p.as_os_str().is_empty())
-            .map(|p| p.to_path_buf())
-            .unwrap_or_else(|| PathBuf::from("."))
-        };
+      });
+      let journal_dir = journal_dir_from(&paths);
+      warn_missing_files(&ledger, &journal_dir);
       let rt = tokio::runtime::Runtime::new()?;
       rt.block_on(transity::server::start(loader, journal_dir, port))?;
     }

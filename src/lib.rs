@@ -2045,6 +2045,46 @@ pub fn load_and_verify(paths: &[std::path::PathBuf]) -> Result<Ledger> {
   Ok(ledger)
 }
 
+/// Resolve the journal directory used for relative file references.
+/// When the first journal is read from a process substitution (`/dev/fd/...`),
+/// fall back to the current working directory.
+#[cfg(feature = "cli")]
+pub fn journal_dir_from(paths: &[std::path::PathBuf]) -> std::path::PathBuf {
+  use std::path::PathBuf;
+  let p = &paths[0];
+  if p.to_string_lossy().starts_with("/dev/fd/") {
+    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+  } else {
+    p.parent()
+      .filter(|q| !q.as_os_str().is_empty())
+      .map(|q| q.to_path_buf())
+      .unwrap_or_else(|| PathBuf::from("."))
+  }
+}
+
+/// Print a yellow warning to stderr for every file referenced in the
+/// ledger that doesn't exist on disk. Paths are resolved relative to
+/// `journal_dir`; duplicate paths are reported once.
+#[cfg(feature = "cli")]
+pub fn warn_missing_files(ledger: &Ledger, journal_dir: &Path) {
+  let mut seen = std::collections::HashSet::new();
+  for tx in &ledger.transactions {
+    for f in &tx.files {
+      if !seen.insert(f.as_str()) {
+        continue;
+      }
+      let resolved = journal_dir.join(f);
+      if !resolved.exists() {
+        eprintln!(
+          "{}",
+          format!("Warning: \"{}\" does not exist", resolved.display())
+            .yellow()
+        );
+      }
+    }
+  }
+}
+
 // ─── HYDRATE ──────────────────────────────────────────────────────────────────
 
 #[cfg(feature = "hydrate")]
