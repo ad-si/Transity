@@ -13,6 +13,7 @@ Here are some of the links that are especially relevant for Transity:
 - [Hledger] - Ledger clone with a focus on UX, reliability,
     and real-world practicality (Haskell).
 - [Ledger] - The original command line accounting tool (C++).
+- [Ledgera] - Desktop app for managing hledger journals (Tauri, React, Rust).
 - [Rust Ledger] - Ledger clone that uses YAML as well (Rust).
 - [Tackler] - Fast & reliable PTA engine with native GIT SCM support (Rust).
 
@@ -20,6 +21,7 @@ Here are some of the links that are especially relevant for Transity:
 [Centjes]: https://github.com/NorfairKing/centjes
 [Hledger]: https://hledger.org
 [Ledger]: https://ledger-cli.org
+[Ledgera]: https://github.com/thesmokinator/ledgera
 [Rust Ledger]: https://github.com/ebcrowder/rust_ledger
 [Tackler]: https://github.com/tackler-ng/tackler
 
@@ -35,6 +37,7 @@ Here are some of the links that are especially relevant for Transity:
 - [Fidelity] - Financial planning, wealth management, trading, and brokerage.
 - [FinBodh] - Personal finance app to track, understand, and plan your finances.
 - [FiTui] - Terminal based expense tracker written in Rust
+- [Kakeibo] - Privacy-focused budgeting app using the Japanese Kakeibo method (iOS, Android).
 - [Monarch] - Track your account balances, transactions, and investments.
 - [Roi] - All-in-one investing platform to track & trade existing accounts.
 - [Track Your Dividends] - Track your dividend portfolio and its performance.
@@ -51,6 +54,7 @@ Here are some of the links that are especially relevant for Transity:
 [Fidelity]: https://www.fidelity.com/
 [FinBodh]: https://finbodhi.com/landing
 [FiTui]: https://github.com/ayanchavand/FiTui
+[Kakeibo]: https://getkakeibo.com/en/
 [Monarch]: https://www.monarchmoney.com/
 [Roi]: https://getroi.app/
 [Track Your Dividends]: https://trackyourdividends.com/
