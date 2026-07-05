@@ -64,6 +64,7 @@ export function keysToEnglish (object) {
         .replace(/^Ursprünglicher Betrag$/i, "original-amount")
         .replace(/^Versicherungsbetrag$/i, "insurance_amount")
         .replace(/^Zahlungsempfänger\*in$/i, "to")
+        .replace(/^Zahlungspflichtige\*r$/i, "from")
         .replace(/^Zahlungsbetrag in ZW$/i, "amount")
         .replace(/^Artikelbezeichnung$/i, "item_title")
         .replace(/^Zahlungswährung \(ZW\)$/i, "currency")

@@ -63,8 +63,7 @@ async function normalizeAndPrint (filePathTemp) {
           }
           : {
             transfers: [{
-              from: noteToAccount(transaction.to) ||
-                noteToAccount(transaction.from) || noteToAccount(note),
+              from: noteToAccount(transaction.from) || noteToAccount(note),
               to: "dkb:giro",
               amount,
               "original-amount": transaction["original-amount"],
