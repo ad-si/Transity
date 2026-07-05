@@ -28,7 +28,13 @@ async function normalizeAndPrint (filePathTemp) {
       .map(transaction => {
         const note = transaction.note
           .replace(/<br\s+\/>/g, "\n")
-        const amount = transaction.amount + " €"
+        // Amounts use German number formatting and csvnorm only converts
+        // decimal commas, so amounts without decimal places keep their
+        // thousands separators (e.g. "-10.000" for -10,000.00 €)
+        const normalizedAmount = (/^-?\d{1,3}(\.\d{3})+$/).test(transaction.amount)
+          ? transaction.amount.replace(/\./g, "")
+          : transaction.amount
+        const amount = normalizedAmount + " €"
         const sortedTransaction = {
           utc: transaction["value-utc"] < transaction["entry-utc"]
             ? transaction["value-utc"]
