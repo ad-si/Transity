@@ -3,6 +3,7 @@ import assert from "assert"
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -16,7 +17,7 @@ async function getBalance (options = {}) {
     username,
     password,
     isDevMode = false,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   assert(username)
@@ -56,19 +57,19 @@ async function getBalance (options = {}) {
     ".awsui-table-container " +
     "> table > tbody > tr > td:nth-child(4) > span > span"
 
-  log("Open login URL")
-  await nightmare
-    .goto(loginUrl)
-    .wait("#ap_password")
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log("Log in")
-  await nightmare
-    .insert("#ap_password", password)
-    .click("#signInSubmit-input")
-    .wait(valueContainer)
+  try {
+    log("Open login URL")
+    await page.goto(loginUrl)
+    await page.waitForSelector("#ap_password")
 
-  return await nightmare
-    .evaluate(
+    log("Log in")
+    await page.fill("#ap_password", password)
+    await page.click("#signInSubmit-input")
+    await page.waitForSelector(valueContainer)
+
+    return await page.evaluate(
       container => document
         .querySelector(container)
         .textContent
@@ -76,7 +77,10 @@ async function getBalance (options = {}) {
         .replace(/,/g, ""),
       valueContainer,
     )
-    .end()
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const prompValues = [
@@ -104,4 +108,3 @@ prompt(prompValues)
       process.exit(1)
     }
   })
-

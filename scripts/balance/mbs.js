@@ -3,6 +3,7 @@ import assert from "assert"
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -16,7 +17,7 @@ async function getBalance (options = {}) {
     username,
     password,
     isDevMode = false,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   assert(username)
@@ -27,24 +28,23 @@ async function getBalance (options = {}) {
   const baseUrl = "https://www.mbs.de"
   const loginUrl = `${baseUrl}/de/home.html`
 
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log(`Open ${loginUrl}`)
-  await nightmare
-    .goto(loginUrl)
-    .wait(".loginlogout")
-
-
-  log("Log in")
-  await nightmare
-    .insert(".loginlogout input[type=text]", username)
-    .insert(".loginlogout input[type=password]", password)
-    .click("input[value=Anmelden]")
-    .wait(".mbf-finanzstatus")
+  try {
+    log(`Open ${loginUrl}`)
+    await page.goto(loginUrl)
+    await page.waitForSelector(".loginlogout")
 
 
-  log("Retrieve current balance")
-  return await nightmare
-    .evaluate(
+    log("Log in")
+    await page.fill(".loginlogout input[type=text]", username)
+    await page.fill(".loginlogout input[type=password]", password)
+    await page.click("input[value=Anmelden]")
+    await page.waitForSelector(".mbf-finanzstatus")
+
+
+    log("Retrieve current balance")
+    return await page.evaluate(
       selector => document
         .querySelector(selector)
         .textContent
@@ -53,7 +53,10 @@ async function getBalance (options = {}) {
         .replace(/EUR/, "€"),
       ".mbf-finanzstatus .tablefooter .balance .offscreen",
     )
-    .end()
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const promptValues = [

@@ -11,6 +11,7 @@ import {
   noteToAccount,
   sanitizeYaml,
 } from "../helpers.js"
+import { launchBrowser } from "../browser.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 
@@ -102,7 +103,7 @@ async function normalizeAndPrint (filePathTemp) {
 
 async function downloadRange (options = {}) {
   const {
-    nightmare,
+    page,
     filePathTemp,
     startDate,
     endDate,
@@ -126,22 +127,17 @@ async function downloadRange (options = {}) {
     }`,
   )
 
-  await nightmare
-    .insert(startInputSelector, "")
-    .insert(startInputSelector, toDDdotMMdotYYYY(startDate))
-
-    .insert(endInputSelector, "")
-    .insert(endInputSelector, toDDdotMMdotYYYY(endDate))
-
-    .click("#searchbutton")
-    .refresh() // Necessary to avoid race condition
+  await page.fill(startInputSelector, toDDdotMMdotYYYY(startDate))
+  await page.fill(endInputSelector, toDDdotMMdotYYYY(endDate))
+  await page.click("#searchbutton")
+  await page.reload() // Necessary to avoid race condition
 
 
   log(`Download CSV file to ${filePathTemp}`)
-  return await nightmare
-    .click("[tid=csvExport]")
-    .download(filePathTemp)
-    .end()
+  const downloadPromise = page.waitForEvent("download")
+  await page.click("[tid=csvExport]")
+  const download = await downloadPromise
+  await download.saveAs(filePathTemp)
 }
 
 
@@ -153,7 +149,7 @@ async function getTransactions (options = {}) {
     endDate = new Date(),
     username,
     password,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   const baseUrl = "https://www.dkb.de"
@@ -162,33 +158,37 @@ async function getTransactions (options = {}) {
     ? console.warn
     : () => {}
 
-  const loginUrl = `${baseUrl}/banking`
-  log(`Open ${loginUrl}`)
-  await nightmare
-    .goto(loginUrl)
-    .wait("#login")
+  const {browser, page} = await launchBrowser({shallShowBrowser})
+
+  try {
+    const loginUrl = `${baseUrl}/banking`
+    log(`Open ${loginUrl}`)
+    await page.goto(loginUrl)
+    await page.waitForSelector("#login")
 
 
-  log("Log in")
-  await nightmare
-    .insert("#loginInputSelector", username)
-    .insert("#pinInputSelector", password)
-    .click("#buttonlogin")
-    .wait("#summe-gruppe-0")
+    log("Log in")
+    await page.fill("#loginInputSelector", username)
+    await page.fill("#pinInputSelector", password)
+    await page.click("#buttonlogin")
+    await page.waitForSelector("#summe-gruppe-0")
 
 
-  log("Go to transactions page")
-  await nightmare
+    log("Go to transactions page")
     // Doesn't work => click link instead
-    .goto(`${baseUrl}/banking/finanzstatus/kontoumsaetze?$event=init`)
+    await page.goto(`${baseUrl}/banking/finanzstatus/kontoumsaetze?$event=init`)
     // .click('#gruppe-0_1 .evt-paymentTransaction')
-    .wait(".form.validate")
+    await page.waitForSelector(".form.validate")
 
-  // Select date picker
-  await nightmare.click("[name=searchPeriodRadio]")
+    // Select date picker
+    await page.click("[name=searchPeriodRadio]")
 
-  await downloadRange({nightmare, filePathTemp, startDate, endDate})
-  normalizeAndPrint(filePathTemp)
+    await downloadRange({page, filePathTemp, startDate, endDate})
+    await normalizeAndPrint(filePathTemp)
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 

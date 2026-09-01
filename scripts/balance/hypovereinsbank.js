@@ -3,6 +3,7 @@ import assert from "assert"
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -16,7 +17,7 @@ async function getBalance (options = {}) {
     username,
     password,
     isDevMode = false,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   assert(username)
@@ -27,24 +28,23 @@ async function getBalance (options = {}) {
   const baseUrl = "https://my.hypovereinsbank.de"
   const loginUrl = `${baseUrl}/login?view=/de/login.jsp`
 
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log(`Open ${loginUrl}`)
-  await nightmare
-    .goto(loginUrl)
-    .wait("#loginPanel")
-
-
-  log("Log in")
-  await nightmare
-    .insert("#username", username)
-    .insert("#px2", password)
-    .click("#loginCommandButton")
-    .wait(".startpagemoney")
+  try {
+    log(`Open ${loginUrl}`)
+    await page.goto(loginUrl)
+    await page.waitForSelector("#loginPanel")
 
 
-  log("Retrieve current balance")
-  return await nightmare
-    .evaluate(
+    log("Log in")
+    await page.fill("#username", username)
+    await page.fill("#px2", password)
+    await page.click("#loginCommandButton")
+    await page.waitForSelector(".startpagemoney")
+
+
+    log("Retrieve current balance")
+    return await page.evaluate(
       selector => document
         .querySelector(selector)
         .textContent
@@ -53,7 +53,10 @@ async function getBalance (options = {}) {
         .replace(/EUR/, " €"),
       ".startpagemoney",
     )
-    .end()
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const promptValues = [

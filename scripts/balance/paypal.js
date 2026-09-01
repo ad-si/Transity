@@ -3,6 +3,7 @@ import assert from "assert"
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -11,30 +12,12 @@ const log = process.env.NODE_DEBUG
   : () => {}
 
 
-
-// let paypalBalancesPromise = null
-// function getPaypalBalanceFunc (commodity) {
-//   return async config => {
-//     if (paypalBalancesPromise == null) {
-//       paypalBalancesPromise = getPaypalBalances(config)
-//     }
-
-//     const balances = await paypalBalancesPromise
-//     const balanceMap = {
-//       eur: balances[0],
-//       usd: balances[1],
-//     }
-//     return balanceMap[commodity]
-//   }
-// }
-
-
 async function getBalance (options = {}) {
   const {
     username,
     password,
     isDevMode = false,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   assert(username)
@@ -49,30 +32,28 @@ async function getBalance (options = {}) {
   const loginUrl = `${baseUrl}/signin?returnUri=${
     encodeURIComponent(balanceURl)}`
 
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log(`Open ${loginUrl}`)
-  await nightmare
-    .goto(loginUrl)
-    .wait("#email")
+  try {
+    log(`Open ${loginUrl}`)
+    await page.goto(loginUrl)
+    await page.waitForSelector("#email")
 
-  log("Enter email")
-  await nightmare
-    .insert("#email", username)
-    .click("#btnNext")
-    .wait(() => !document
+    log("Enter email")
+    await page.fill("#email", username)
+    await page.click("#btnNext")
+    await page.waitForFunction(() => !document
       .getElementById("splitPassword").classList
       .contains("hide"),
     )
 
-  log("Enter password")
-  await nightmare
-    .insert("#password", password)
-    .click("#btnLogin")
-    .wait(".multi-currency")
+    log("Enter password")
+    await page.fill("#password", password)
+    await page.click("#btnLogin")
+    await page.waitForSelector(".multi-currency")
 
-  log("Retrieve current balances")
-  return await nightmare
-    .evaluate(
+    log("Retrieve current balances")
+    return await page.evaluate(
       selector => Array
         .from(document.querySelectorAll(selector))
         .map(element => element
@@ -84,7 +65,10 @@ async function getBalance (options = {}) {
         ),
       ".multi-currency .currency-amt-newexp",
     )
-    .end()
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const promptValues = [

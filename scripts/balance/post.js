@@ -1,6 +1,7 @@
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
@@ -13,36 +14,38 @@ async function getBalance (options = {}) {
     username,
     password,
     isDevMode,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   if (isDevMode) return "1234.56 €"
 
   const baseUrl = "https://portokasse.deutschepost.de"
 
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log(`Open ${baseUrl}`)
-  await nightmare
-    .goto(baseUrl)
-    .wait("#email")
-
-
-  log("Log in")
-  await nightmare
-    .insert("#email", username)
-    .insert("#password", password)
-    .click("button.actionbutton[type=submit]")
-    .wait("#txtWalletBalance")
+  try {
+    log(`Open ${baseUrl}`)
+    await page.goto(baseUrl)
+    await page.waitForSelector("#email")
 
 
-  log("Retrieve current balance")
-  return await nightmare
-    .evaluate(() => document
+    log("Log in")
+    await page.fill("#email", username)
+    await page.fill("#password", password)
+    await page.click("button.actionbutton[type=submit]")
+    await page.waitForSelector("#txtWalletBalance")
+
+
+    log("Retrieve current balance")
+    return await page.evaluate(() => document
       .querySelector("#txtWalletBalance")
       .textContent
       .replace(/,(\d\d)\xa0€$/, ".$1 €"),
     )
-    .end()
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const promptValues = [

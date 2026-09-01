@@ -3,6 +3,7 @@ import assert from "assert"
 import inquirer from "inquirer"
 
 import {prettyPrint} from "../helpers.js"
+import {launchBrowser} from "../browser.js"
 
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
@@ -16,7 +17,7 @@ async function getBalance (options = {}) {
     username,
     password,
     isDevMode = false,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   assert(username)
@@ -27,24 +28,23 @@ async function getBalance (options = {}) {
   const baseUrl = "https://portal.ebase.com"
   const loginUrl = `${baseUrl}/(e1)/finvesto`
 
+  const {browser, page} = await launchBrowser({shallShowBrowser})
 
-  log(`Open ${loginUrl}`)
-  await nightmare
-    .goto(loginUrl)
-    .wait("#loginfelder")
-
-
-  log("Log in")
-  await nightmare
-    .insert("#eox_ContentPane_3_depotNrTextBox", username)
-    .insert("#eox_ContentPane_3_pinTextBox", password)
-    .click("#eox_ContentPane_3_LOGIN")
-    .wait(".tabNavBody")
+  try {
+    log(`Open ${loginUrl}`)
+    await page.goto(loginUrl)
+    await page.waitForSelector("#loginfelder")
 
 
-  log("Retrieve current balance")
-  const balance = await nightmare
-    .evaluate(
+    log("Log in")
+    await page.fill("#eox_ContentPane_3_depotNrTextBox", username)
+    await page.fill("#eox_ContentPane_3_pinTextBox", password)
+    await page.click("#eox_ContentPane_3_LOGIN")
+    await page.waitForSelector(".tabNavBody")
+
+
+    log("Retrieve current balance")
+    const balance = await page.evaluate(
       selector => document
         .querySelector(selector)
         .textContent
@@ -53,9 +53,12 @@ async function getBalance (options = {}) {
       "#eox_ContentPane_4_VermoegensuebersichtBody1_" +
         "repeaterDepotsKonten_ctl02_lblBestandGesamt",
     )
-    .end()
 
-  return balance + " €"
+    return balance + " €"
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 const promptValues = [

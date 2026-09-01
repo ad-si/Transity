@@ -48,6 +48,7 @@
   "optionalDependencies": {
     "converter": "0.0.5",
     "inquirer": "^12.10.0",
+    "playwright": "^1.56.0",
     "tempy": "^3.1.0"
   },
   "devDependencies": {

@@ -12,6 +12,7 @@ import {
   noteToAccount,
   sanitizeYaml,
 } from "../helpers.js"
+import { launchBrowser } from "../browser.js"
 
 const prompt = inquirer.createPromptModule({ output: process.stderr })
 
@@ -91,9 +92,8 @@ async function normalizeAndPrint (filePathTemp) {
 
 async function downloadRange (options = {}) {
   const {
-    nightmare,
+    page,
     filePathTemp,
-    // type = 'CSV-CAMT-Format',
     startDate,
     endDate,
   } = options
@@ -115,20 +115,16 @@ async function downloadRange (options = {}) {
         .slice(0, 10)
     }`,
   )
-  await nightmare
-    .insert(startInputSelector, "")
-    .insert(startInputSelector, toDdotMdotYYYY(startDate))
-
-    .insert(endInputSelector, "")
-    .insert(endInputSelector, toDdotMdotYYYY(endDate))
-    .click("#showtransactions")
-    .wait(25000) // Time to enter TAN
+  await page.fill(startInputSelector, toDdotMdotYYYY(startDate))
+  await page.fill(endInputSelector, toDdotMdotYYYY(endDate))
+  await page.click("#showtransactions")
+  await page.waitForTimeout(25000) // Time to enter TAN
 
   log(`Download CSV file to ${filePathTemp}`)
-  return await nightmare
-    .click("a[title=CSV]")
-    .download(filePathTemp)
-    .end()
+  const downloadPromise = page.waitForEvent("download")
+  await page.click("a[title=CSV]")
+  const download = await downloadPromise
+  await download.saveAs(filePathTemp)
 }
 
 
@@ -140,7 +136,7 @@ async function getTransactions (options = {}) {
     endDate = new Date(),
     username,
     password,
-    nightmare,
+    shallShowBrowser = true,
   } = options
 
   const baseUrl = "https://my.hypovereinsbank.de"
@@ -149,29 +145,35 @@ async function getTransactions (options = {}) {
     ? console.warn
     : () => {}
 
-  const url = `${baseUrl}/login?view=/de/login.jsp`
-  log(`Open ${url}`)
-  await nightmare
-    .goto(url)
-    .wait("#loginPanel")
+  const {browser, page} = await launchBrowser({shallShowBrowser})
+
+  try {
+    const url = `${baseUrl}/login?view=/de/login.jsp`
+    log(`Open ${url}`)
+    await page.goto(url)
+    await page.waitForSelector("#loginPanel")
 
 
-  log("Log in")
-  await nightmare
-    .insert("#loginPanel #username", username)
-    .insert("#loginPanel #px2", password)
-    .click("#loginCommandButton")
-    .wait(".startpagemoney")
+    log("Log in")
+    await page.fill("#loginPanel #username", username)
+    await page.fill("#loginPanel #px2", password)
+    await page.click("#loginCommandButton")
+    await page.waitForSelector(".startpagemoney")
 
 
-  log("Go to transactions page")
-  await nightmare
-    .goto(`${baseUrl}/portal?view=/de/banking/konto/kontofuehrung/umsaetze.jsp`)
-    .wait("#dateFrom")
+    log("Go to transactions page")
+    await page.goto(
+      `${baseUrl}/portal?view=/de/banking/konto/kontofuehrung/umsaetze.jsp`,
+    )
+    await page.waitForSelector("#dateFrom")
 
 
-  await downloadRange({nightmare, filePathTemp, startDate, endDate})
-  normalizeAndPrint(filePathTemp)
+    await downloadRange({page, filePathTemp, startDate, endDate})
+    await normalizeAndPrint(filePathTemp)
+  }
+  finally {
+    await browser.close()
+  }
 }
 
 
