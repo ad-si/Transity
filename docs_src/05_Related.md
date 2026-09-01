@@ -38,6 +38,7 @@ Here are some of the links that are especially relevant for Transity:
 - [FinBodh] - Personal finance app to track, understand, and plan your finances.
 - [FiTui] - Terminal based expense tracker written in Rust
 - [HandsOnMoney] - Simple, private double-entry home finance for iPhone with GnuCash sync.
+- [Helius] - Local-first CLI/TUI finance tracker with SQLite storage (Rust).
 - [Kakeibo] - Privacy-focused budgeting app using the Japanese Kakeibo method (iOS, Android).
 - [Monarch] - Track your account balances, transactions, and investments.
 - [Roi] - All-in-one investing platform to track & trade existing accounts.
@@ -56,6 +57,7 @@ Here are some of the links that are especially relevant for Transity:
 [FinBodh]: https://finbodhi.com/landing
 [FiTui]: https://github.com/ayanchavand/FiTui
 [HandsOnMoney]: https://handson.money/
+[Helius]: https://github.com/Helius-Finance/helius-finance-tracker
 [Kakeibo]: https://getkakeibo.com/en/
 [Monarch]: https://www.monarchmoney.com/
 [Roi]: https://getroi.app/
