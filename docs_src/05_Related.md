@@ -41,6 +41,7 @@ Here are some of the links that are especially relevant for Transity:
 - [Helius] - Local-first CLI/TUI finance tracker with SQLite storage (Rust).
 - [Kakeibo] - Privacy-focused budgeting app using the Japanese Kakeibo method (iOS, Android).
 - [Monarch] - Track your account balances, transactions, and investments.
+- [Ray] - AI financial advisor CLI with encrypted local storage and Plaid bank sync (TypeScript).
 - [Roi] - All-in-one investing platform to track & trade existing accounts.
 - [Track Your Dividends] - Track your dividend portfolio and its performance.
 - [Wealthfolio] - Open source investment tracker.
@@ -60,6 +61,7 @@ Here are some of the links that are especially relevant for Transity:
 [Helius]: https://github.com/Helius-Finance/helius-finance-tracker
 [Kakeibo]: https://getkakeibo.com/en/
 [Monarch]: https://www.monarchmoney.com/
+[Ray]: https://github.com/cdinnison/ray-finance
 [Roi]: https://getroi.app/
 [Track Your Dividends]: https://trackyourdividends.com/
 [Wealthfolio]: https://wealthfolio.app
