@@ -5,44 +5,100 @@
 // Usage:
 //   node paypal.js                Create and download a new report
 //   node paypal.js existing [n]   Download the nth existing report (default 1)
+//   node paypal.js from <date>    Create a report from <date> (YYYY-MM-DD)
+//                                 until today instead of "since last download"
+//   node paypal.js statements [dir]  Download missing monthly statements
+//
+// Environment: PAYPAL_USERNAME, PAYPAL_PASSWORD (else manual login),
+// PAYPAL_PROFILE (browser profile name, default "paypal")
 
 import fse from "fs-extra"
-import inquirer from "inquirer"
 import { temporaryFile } from "tempy"
 
 import {
   dumpDebugFiles,
+  getCredentials,
   getNewestFiledMonth,
   launchBrowser,
 } from "../browser.js"
 
-const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = console.warn
 
 
+// "D/M/YYYY" or "M/D/YYYY" as used by the report form's date fields
+function formatFormDate (date, isDayFirst) {
+  const day = date.getDate()
+  const month = date.getMonth() + 1
+  return isDayFirst
+    ? `${day}/${month}/${date.getFullYear()}`
+    : `${month}/${day}/${date.getFullYear()}`
+}
+
+
+// "Oct 2, 2026" as shown in the report list
+function toListDate (date) {
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+
 async function createAndDownloadReport (options = {}) {
-  const { page, filePathTemp, existingRowNumber = null } = options
+  const {
+    page,
+    filePathTemp,
+    existingRowNumber = null,
+    startDate = null,
+  } = options
 
   try {
     if (!existingRowNumber) {
       // The form defaults are already correct:
       // type "Balance affecting", range "Since last download", format "CSV"
+      if (startDate) {
+        await page.click("#text-input-undefined", {timeout: 30000})
+        // The "From"/"To" fields use the account's locale ("M/D/YYYY" or
+        // "D/M/YYYY"). "To" is prefilled with today, which reveals the order.
+        const today = new Date()
+        const endValue = await page.inputValue("#end")
+        const isDayFirst = endValue ===
+          `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
+        log(`Set date range ${formatFormDate(startDate, isDayFirst)} - ${
+          formatFormDate(today, isDayFirst)}`)
+        for (const [selector, date] of [
+          ["#start", startDate],
+          ["#end", today],
+        ]) {
+          await page.click(selector)
+          await page.keyboard.press("Meta+A")
+          await page.keyboard.type(
+            formatFormDate(date, isDayFirst), {delay: 40})
+          await page.keyboard.press("Tab")
+          await page.waitForTimeout(800)
+        }
+      }
       log("Create activity report")
       await page.click("[data-testid=ActivityCreateReport]", {timeout: 30000})
     }
 
-    const downloadPromise = page.waitForEvent("download", {timeout: 600000})
+    // Read the report from the API response instead of the download it
+    // triggers, as Chromium crashes (SIGSEGV) when Playwright handles it
+    const responsePromise = page.waitForResponse(
+      response => response.url()
+        .includes("/reports/apis/common/ql") &&
+        /attachment/.test(response.headers()["content-disposition"] || ""),
+      {timeout: 600000},
+    )
     // Prevent an unhandled rejection from masking errors of the steps below
-    downloadPromise.catch(() => {})
+    responsePromise.catch(() => {})
 
     // The list also contains download buttons of previously created reports,
     // so the new report must be picked by its request date (today)
-    const expectedRequestDate = new Date()
-      .toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
+    const expectedRequestDate = toListDate(new Date())
+    // Reports created earlier today with another range must not be picked
+    const expectedRangeStart = startDate ? toListDate(startDate) : null
 
     log("Wait for report generation …")
     let downloadWasClicked = false
@@ -55,7 +111,9 @@ async function createAndDownloadReport (options = {}) {
         const row = opts.existingRowNumber
           ? rows[opts.existingRowNumber - 1]
           : rows.find(aRow =>  // Newest report comes first
-            aRow.cells[1].textContent.trim() === opts.expectedRequestDate)
+            aRow.cells[1].textContent.trim() === opts.expectedRequestDate &&
+            (!opts.expectedRangeStart || aRow.cells[2].textContent.trim()
+              .startsWith(opts.expectedRangeStart)))
 
         if (!row) {
           return "Report does not show up in the list yet"
@@ -68,7 +126,7 @@ async function createAndDownloadReport (options = {}) {
         }
 
         return `Report status is "${row.cells[4].textContent.trim()}"`
-      }, {expectedRequestDate, existingRowNumber})
+      }, {expectedRequestDate, expectedRangeStart, existingRowNumber})
 
       if (status === "downloading") {
         downloadWasClicked = true
@@ -89,8 +147,8 @@ async function createAndDownloadReport (options = {}) {
     }
 
     log("Download report file")
-    const download = await downloadPromise
-    await download.saveAs(filePathTemp)
+    const response = await responsePromise
+    await fse.writeFile(filePathTemp, await response.body())
   }
   catch (error) {
     await dumpDebugFiles(page, "paypal-debug")
@@ -99,45 +157,86 @@ async function createAndDownloadReport (options = {}) {
 }
 
 
+// Lists the whole-month statements of the statements page.
+// Rows show ranges as "5/1/26 - 5/31/26" or "5/1/26 - 6/1/26".
+// Cell texts run together without whitespace, so no anchors can be used.
+function listStatements (page) {
+  return page.evaluate(() => Array
+    .from(document.querySelectorAll("tr"))
+    .map((row, rowIndex) => {
+      const text = row.textContent.replace(/\s+/g, " ")
+      const match = text
+        .match(/(\d{1,2})\/1\/(\d{2}) - \d{1,2}\/\d{1,2}\/\d{2}/)
+      const isReady = Array
+        .from(row.querySelectorAll("a, button"))
+        .some(element => element.textContent.trim() === "Download")
+      return match
+        ? {
+          month: `20${match[2]}-${match[1].padStart(2, "0")}`,
+          rowIndex,
+          isReady,
+        }
+        : null
+    })
+    .filter(Boolean),
+  )
+}
+
+
+// Business accounts get monthly statements automatically,
+// personal accounts only on demand ("Create Report" with a custom range)
+async function createStatement (page, month) {
+  const [year, monthNumber] = month.split("-")
+    .map(Number)
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0))
+    .getUTCDate()
+  const mm = String(monthNumber)
+    .padStart(2, "0")
+
+  log(`Create statement ${month}`)
+  await page.click("[data-testid=btn__generateReport]")
+  await page.click("[data-testid=dropdown_fileFormat]")
+  await page.getByRole("option", {name: "PDF"})
+    .click()
+  await page.click("[data-testid=tableColumnDateRange]")
+  await page.getByRole("option", {name: "Custom"})
+    .click()
+  for (const [selector, value] of [
+    ["#text-input-rangeStart", `${mm}/01/${year}`],
+    ["#text-input-rangeEnd", `${mm}/${lastDay}/${year}`],
+  ]) {
+    await page.click(selector)
+    await page.keyboard.press("Meta+A")
+    await page.keyboard.type(value, {delay: 30})
+    await page.keyboard.press("Tab")
+    await page.waitForTimeout(400)
+  }
+  await page.click("[data-testid=btn__createReport]")
+  await page.waitForTimeout(3000)
+}
+
+
+function addMonths (month, count) {
+  const date = new Date(`${month}-01T00:00:00Z`)
+  date.setUTCMonth(date.getUTCMonth() + count)
+  return date.toISOString()
+    .slice(0, 7)
+}
+
+
 async function downloadStatements (options = {}) {
   const { page, outputDir } = options
+  const statementsUrl = "https://www.paypal.com/reports/accountStatements"
 
   try {
     log("Go to monthly statements")
     // The report overview renders differently per account type and its
     // "Download Report" links have no href, so go to the list directly
-    await page.goto(
-      "https://www.paypal.com/reports/accountStatements",
-      {timeout: 60000},
-    )
+    await page.goto(statementsUrl, {timeout: 60000})
     await page.waitForTimeout(10000)  // Let the page settle
 
-    // Rows list whole-month ranges as "5/1/26 - 5/31/26" or "5/1/26 - 6/1/26".
-    // Cell texts run together without whitespace, so no anchors can be used.
-    const statements = await page.evaluate(() => Array
-      .from(document.querySelectorAll("tr"))
-      .map((row, rowIndex) => {
-        const text = row.textContent.replace(/\s+/g, " ")
-        const match = text.match(/(\d{1,2})\/1\/(\d{2}) - \d{1,2}\/\d{1,2}\/\d{2}/)
-        const hasDownload = Array
-          .from(row.querySelectorAll("a, button"))
-          .some(element => element.textContent.trim() === "Download")
-        return match && hasDownload
-          ? {
-            month: `20${match[2]}-${match[1].padStart(2, "0")}`,
-            rowIndex,
-          }
-          : null
-      })
-      .filter(Boolean),
-    )
-
-    log(`Found ${statements.length} statements, newest: ${
-      statements.slice(0, 3).map(stmt => stmt.month).join(", ") || "none"}`)
-
-    if (statements.length === 0) {
-      await dumpDebugFiles(page, "paypal-statements-debug")
-    }
+    let statements = await listStatements(page)
+    log(`Found ${statements.length} statements`)
 
     // Only fetch statements newer than the newest already filed one,
     // as the online archive reaches back much further than this repo
@@ -145,23 +244,67 @@ async function downloadStatements (options = {}) {
     if (newestFiledMonth) {
       log(`Skipping everything up to and including ${newestFiledMonth}`)
     }
-    const missingStatements = statements
-      .filter(stmt => !newestFiledMonth || stmt.month > newestFiledMonth)
+    const lastCompleteMonth = addMonths(new Date()
+      .toISOString()
+      .slice(0, 7), -1)
+    const wantedMonths = []
+    for (
+      let month = newestFiledMonth
+        ? addMonths(newestFiledMonth, 1)
+        : statements.map(stmt => stmt.month)
+          .sort()[0] ?? lastCompleteMonth;
+      month <= lastCompleteMonth;
+      month = addMonths(month, 1)
+    ) {
+      wantedMonths.push(month)
+    }
+
+    for (const month of wantedMonths) {
+      if (!statements.some(stmt => stmt.month === month)) {
+        await createStatement(page, month)
+      }
+    }
+
+    // Wait until all wanted statements are generated
+    for (let tryNumber = 1; tryNumber <= 60; tryNumber++) {
+      await page.goto(statementsUrl, {timeout: 60000})
+      await page.waitForTimeout(10000)
+      const currentStatements = await listStatements(page)
+      statements = currentStatements
+      const pending = wantedMonths.filter(month => !currentStatements
+        .some(stmt => stmt.month === month && stmt.isReady))
+      if (pending.length === 0) {
+        break
+      }
+      log(`Waiting for ${pending.length} statements to be generated …`)
+      await page.waitForTimeout(20000)
+    }
 
     let downloadCounter = 0
-    for (const statement of missingStatements) {
+    for (const month of wantedMonths) {
+      const statement = statements
+        .find(stmt => stmt.month === month && stmt.isReady)
+      if (!statement) {
+        log(`Statement ${month} is not available`)
+        continue
+      }
       // Statements are filed per year, e.g. bank-statements/2026/…
-      const filePath = `${outputDir}/${statement.month.slice(0, 4)}` +
-        `/${statement.month}_paypal.pdf`
+      const filePath = `${outputDir}/${month.slice(0, 4)}/${month}_paypal.pdf`
       if (await fse.pathExists(filePath)) {
         continue
       }
-      await fse.ensureDir(`${outputDir}/${statement.month.slice(0, 4)}`)
+      await fse.ensureDir(`${outputDir}/${month.slice(0, 4)}`)
 
       log(`Download ${filePath}`)
-      const downloadPromise = page.waitForEvent("download", {timeout: 120000})
+      // Read the PDF from the API response instead of the download it
+      // triggers, as Chromium crashes (SIGSEGV) when Playwright handles it
+      const responsePromise = page.waitForResponse(
+        response => response.url()
+          .includes("/reports/apis/rux/report/download"),
+        {timeout: 120000},
+      )
       // Prevent an unhandled rejection from masking errors of the click
-      downloadPromise.catch(() => {})
+      responsePromise.catch(() => {})
       await page.evaluate(rowIndex => {
         Array
           .from(document.querySelectorAll("tr")[rowIndex]
@@ -169,8 +312,8 @@ async function downloadStatements (options = {}) {
           .find(element => element.textContent.trim() === "Download")
           .click()
       }, statement.rowIndex)
-      const download = await downloadPromise
-      await download.saveAs(filePath)
+      const response = await responsePromise
+      await fse.writeFile(filePath, await response.body())
       downloadCounter += 1
       await page.waitForTimeout(2000)
     }
@@ -189,6 +332,7 @@ async function getActivity (options = {}) {
     username,
     password,
     existingRowNumber,
+    startDate,
     statementsDir = null,
     shallShowBrowser = true,
   } = options
@@ -201,7 +345,11 @@ async function getActivity (options = {}) {
 
   const {browser, page} = await launchBrowser({
     shallShowBrowser,
-    persistentProfileName: "paypal",
+    // Separate profiles keep the sessions of several PayPal accounts
+    // (e.g. personal and business) apart
+    persistentProfileName: process.env.PAYPAL_PROFILE || "paypal",
+    // Reports are read from the network responses instead
+    acceptDownloads: false,
   })
 
   try {
@@ -213,7 +361,7 @@ async function getActivity (options = {}) {
     try {
       await page.waitForTimeout(3000)
 
-      if (await page.isVisible("#email")) {
+      if (username && await page.isVisible("#email")) {
         log("Enter email")
         await page.fill("#email", username, {timeout: 30000})
         await page.click("#btnNext", {timeout: 15000})
@@ -230,6 +378,9 @@ async function getActivity (options = {}) {
         log("Confirm the passkey prompt (Touch ID) in the browser …")
         await page.click("#logIn_start", {timeout: 15000})
       }
+      else if (!password) {
+        throw new Error("No password configured")
+      }
       else {
         // The password field is hidden behind
         // "Anders bestätigen" > "Mit Passwort einloggen".
@@ -237,11 +388,13 @@ async function getActivity (options = {}) {
         if (!await page.isVisible("#password")) {
           log("Switch from passkey to password login")
           await page.evaluate(() => {
-            document.getElementById("logIn_tryAnotherWay")?.click()
+            document.getElementById("logIn_tryAnotherWay")
+              ?.click()
           })
           await page.waitForTimeout(3000)
           await page.evaluate(() => {
-            document.getElementById("loginWithPassword")?.click()
+            document.getElementById("loginWithPassword")
+              ?.click()
           })
           await page.waitForSelector("#password", {timeout: 30000})
         }
@@ -274,7 +427,12 @@ async function getActivity (options = {}) {
       return
     }
 
-    await createAndDownloadReport({page, filePathTemp, existingRowNumber})
+    await createAndDownloadReport({
+      page,
+      filePathTemp,
+      existingRowNumber,
+      startDate,
+    })
 
     // Trailing blank lines break the CSV parser of the YAML converter
     console.info((await fse.readFile(filePathTemp, "utf-8")).trimEnd())
@@ -286,35 +444,13 @@ async function getActivity (options = {}) {
 
 
 async function main () {
-  try {
-    // Load credentials from a .env file in the working directory if present
-    process.loadEnvFile()
-  }
-  catch { /* No .env file available */ }
-
-  let answers = {
-    username: process.env.PAYPAL_USERNAME,
-    password: process.env.PAYPAL_PASSWORD,
-  }
-
-  if (!answers.username || !answers.password) {
-    const promptValues = [
-      {
-        type: "input",
-        name: "username",
-        message: "PayPal Username:",
-      },
-      {
-        type: "password",
-        name: "password",
-        message: "PayPal Password:",
-      },
-    ]
-    answers = await prompt(promptValues)
-  }
+  const answers = await getCredentials("PAYPAL", "PayPal")
 
   const existingRowNumber = process.argv[2] === "existing"
     ? Number(process.argv[3] || 1)
+    : null
+  const startDate = process.argv[2] === "from"
+    ? new Date(`${process.argv[3]}T00:00:00`)
     : null
   const statementsDir = process.argv[2] === "statements"
     ? process.argv[3] || "."
@@ -325,6 +461,7 @@ async function main () {
       username: answers.username,
       password: answers.password,
       existingRowNumber,
+      startDate,
       statementsDir,
       shallShowBrowser: true,
     })

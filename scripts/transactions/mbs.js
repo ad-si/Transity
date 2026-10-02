@@ -4,7 +4,6 @@ import { promisify } from "node:util"
 import fse from "fs-extra"
 
 import converter from "converter"
-import inquirer from "inquirer"
 import { temporaryDirectory, temporaryFile } from "tempy"
 import yaml from "js-yaml"
 
@@ -16,12 +15,19 @@ import {
   sanitizeYaml,
 } from "../helpers.js"
 import {
+  captureAttachment,
   dumpDebugFiles,
+  getCredentials,
   getNewestFiledMonth,
   launchBrowser,
 } from "../browser.js"
 
-const prompt = inquirer.createPromptModule({ output: process.stderr })
+// Any Sparkasse with the same online banking (e.g.
+// SPARKASSE_URL=https://www.sparkasse-oberhessen.de) can be used,
+// with the credentials SPARKASSE_USERNAME and SPARKASSE_PASSWORD.
+// Defaults to the Mittelbrandenburgische Sparkasse (MBS_USERNAME, …).
+const baseUrl = process.env.SPARKASSE_URL || "https://www.mbs.de"
+
 
 
 async function normalizeAndPrint (filePathTemp) {
@@ -119,7 +125,9 @@ async function downloadRange (options = {}) {
         zeitraum: IF.get("zeitraumId"),
         von: IF.get("datumVonId"),
         bis: IF.get("datumBisId"),
-        apply: IF.get("filterAnwendenButton"),
+        // Some Sparkassen have no separate filter button
+        // and apply the range with "Aktualisieren" instead
+        apply: IF.get("filterAnwendenButton") || IF.get("refreshButtonName"),
       }))
 
       await page.evaluate(opts => {
@@ -138,6 +146,8 @@ async function downloadRange (options = {}) {
           input.value = value
           input.dispatchEvent(new Event("input", {bubbles: true}))
           input.dispatchEvent(new Event("change", {bubbles: true}))
+          // Marks the current form to detect when it was re-rendered
+          input.dataset.transityOld = "true"
         }
 
         document.getElementById(opts.apply).click()
@@ -145,38 +155,49 @@ async function downloadRange (options = {}) {
 
       // Ranges reaching back more than 90 days may require a TAN approval
       log("Wait for filtered list (confirm the pushTAN prompt if necessary) …")
-      await page.waitForSelector(
-        `.umsatzanzahl:has-text("${bisDate}")`,
+      await page.waitForFunction(
+        opts => {
+          // Not every Sparkasse shows the summary line with the range
+          const summary = document.querySelector(".umsatzanzahl")
+          if (summary) {
+            return summary.textContent.includes(opts.bisDate)
+          }
+          try {
+            const vonInput = document.getElementById(IF.get("datumVonId"))
+            return vonInput && !vonInput.dataset.transityOld &&
+              vonInput.value === opts.vonDate
+          }
+          catch {
+            return false  // The page is being re-rendered
+          }
+        },
+        {vonDate, bisDate},
         {timeout: 180000},
       )
     }
 
     log(`Download "${exportLabel}" file`)
-    const downloadPromise = page.waitForEvent("download", {timeout: 60000})
-    // Prevent an unhandled rejection from masking errors of the steps below
-    downloadPromise.catch(() => {})
-
     await page.waitForTimeout(2000)  // Let the page settle after re-renders
 
     // The export links exist in the DOM even while their menu is closed
     // (and clicking through the menu fails when a re-render closes it again),
     // so find the link by its label and trigger the download directly
-    const linkWasFound = await page.evaluate(label => {
-      const link = Array
-        .from(document.querySelectorAll("a"))
-        .find(anchor => anchor.textContent.trim() === label)
-      if (link) {
-        link.click()
+    const file = await captureAttachment(page, async () => {
+      const linkWasFound = await page.evaluate(label => {
+        const link = Array
+          .from(document.querySelectorAll("a"))
+          .find(anchor => anchor.textContent.trim() === label)
+        if (link) {
+          link.click()
+        }
+        return Boolean(link)
+      }, exportLabel)
+
+      if (!linkWasFound) {
+        throw new Error(`No export link labeled "${exportLabel}" was found`)
       }
-      return Boolean(link)
-    }, exportLabel)
-
-    if (!linkWasFound) {
-      throw new Error(`No export link labeled "${exportLabel}" was found`)
-    }
-
-    const download = await downloadPromise
-    await download.saveAs(filePathTemp)
+    })
+    await fse.writeFile(filePathTemp, file)
   }
   catch (error) {
     await dumpDebugFiles(page, "umsaetze-debug")
@@ -416,7 +437,6 @@ async function getTransactions (options = {}) {
     shallShowBrowser = true,
   } = options
 
-  const baseUrl = "https://www.mbs.de"
   const filePathTemp = temporaryFile({name: "transactions.csv"})
   const log = console.warn
 
@@ -438,24 +458,30 @@ async function getTransactions (options = {}) {
       log("No cookie consent banner appeared")
     }
 
-    log("Enter username")
-    await page.fill("input[autocomplete=username]", username, {timeout: 15000})
+    if (username && password) {
+      log("Enter username")
+      await page.fill(
+        "input[autocomplete=username]", username, {timeout: 15000})
 
-    // The password field is either revealed on the same page
-    // or on a follow-up page after submitting the username
-    const passwordSelector = "input[type=password]"
-    if (!await page.isVisible(passwordSelector)) {
+      // The password field is either revealed on the same page
+      // or on a follow-up page after submitting the username
+      const passwordSelector = "input[type=password]"
+      if (!await page.isVisible(passwordSelector)) {
+        await page.click("input[type=submit]", {timeout: 15000})
+        await page.waitForSelector(passwordSelector, {timeout: 30000})
+      }
+
+      log("Enter password")
+      await page.fill(passwordSelector, password, {timeout: 15000})
       await page.click("input[type=submit]", {timeout: 15000})
-      await page.waitForSelector(passwordSelector, {timeout: 30000})
     }
-
-    log("Enter password")
-    await page.fill(passwordSelector, password, {timeout: 15000})
-    await page.click("input[type=submit]", {timeout: 15000})
+    else {
+      log("Please log in manually in the browser …")
+    }
 
     log("Wait for login (confirm the pushTAN prompt if necessary) …")
     try {
-      await page.waitForSelector("text=Abmelden", {timeout: 180000})
+      await page.waitForSelector("text=Abmelden", {timeout: 600000})
     }
     catch (error) {
       await dumpDebugFiles(page, "umsaetze-debug")
@@ -488,7 +514,17 @@ async function getTransactions (options = {}) {
     }
 
 
-    if (process.argv[2] === "MT940") {
+    if (process.argv[2] === "from") {
+      // Raw CSV export from the given date until today
+      await downloadRange({
+        page,
+        filePathTemp,
+        startDate: new Date(`${process.argv[3]}T00:00:00Z`),
+        endDate: new Date(),
+      })
+      process.stdout.write(await fse.readFile(filePathTemp))
+    }
+    else if (process.argv[2] === "MT940") {
       // Optional month argument (YYYY-MM), defaults to the previous month
       const monthArg = process.argv[3]
       let firstDay = null
@@ -539,32 +575,9 @@ async function getTransactions (options = {}) {
 
 
 async function main () {
-  try {
-    // Load credentials from a .env file in the working directory if present
-    process.loadEnvFile()
-  }
-  catch { /* No .env file available */ }
-
-  let answers = {
-    username: process.env.MBS_USERNAME,
-    password: process.env.MBS_PASSWORD,
-  }
-
-  if (!answers.username || !answers.password) {
-    const promptValues = [
-      {
-        type: "input",
-        name: "username",
-        message: "MBS Username:",
-      },
-      {
-        type: "password",
-        name: "password",
-        message: "MBS Password:",
-      },
-    ]
-    answers = await prompt(promptValues)
-  }
+  const answers = process.env.SPARKASSE_URL
+    ? await getCredentials("SPARKASSE", "Sparkasse")
+    : await getCredentials("MBS", "MBS")
 
   try {
     await getTransactions({

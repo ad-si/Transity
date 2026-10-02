@@ -28,8 +28,77 @@ export async function getNewestFiledMonth (baseDir, suffix) {
   }
 
   return months.length > 0
-    ? months.sort().at(-1)
+    ? months.sort()
+      .at(-1)
     : null
+}
+
+
+// Returns `{username, password}` from the environment
+// (`<PREFIX>_USERNAME`, `<PREFIX>_PASSWORD`, also via a `.env` file
+// in the working directory), else prompts for them in a terminal.
+// Without a terminal both stay undefined
+// and the login has to be completed manually in the browser.
+export async function getCredentials (prefix, displayName) {
+  try {
+    process.loadEnvFile()
+  }
+  catch { /* No .env file available */ }
+
+  const credentials = {
+    username: process.env[`${prefix}_USERNAME`],
+    password: process.env[`${prefix}_PASSWORD`],
+  }
+
+  if ((credentials.username && credentials.password) || !process.stdin.isTTY) {
+    return credentials
+  }
+
+  const inquirer = (await import("inquirer")).default
+  const prompt = inquirer.createPromptModule({ output: process.stderr })
+  return prompt([
+    { type: "input", name: "username", message: `${displayName} Username:` },
+    { type: "password", name: "password", message: `${displayName} Password:` },
+  ])
+}
+
+
+// Runs `trigger` (e.g. a click on an export link) and returns the body
+// of the first response served as an attachment. The request is answered
+// with an empty response, so no browser download happens:
+// Chromium crashes (SIGSEGV) when Playwright handles downloads.
+export async function captureAttachment (
+  page,
+  trigger,
+  {timeout = 60000} = {},
+) {
+  let body = null
+  await page.route("**/*", async route => {
+    const response = await route.fetch()
+    const disposition = response.headers()["content-disposition"] || ""
+    if (!body && /attachment/i.test(disposition)) {
+      body = await response.body()
+      await route.fulfill({status: 204, body: ""})
+    }
+    else {
+      await route.fulfill({response})
+    }
+  })
+
+  try {
+    await trigger()
+    for (let waited = 0; !body && waited < timeout; waited += 500) {
+      await page.waitForTimeout(500)
+    }
+  }
+  finally {
+    await page.unrouteAll({behavior: "ignoreErrors"})
+  }
+
+  if (!body) {
+    throw new Error("No file was served")
+  }
+  return body
 }
 
 
@@ -51,6 +120,17 @@ export async function dumpDebugFiles (page, namePrefix = "page-debug") {
 }
 
 
+// The system Chrome is used by default.
+// `TRANSITY_BROWSER=chromium` uses Playwright's bundled Chromium instead
+// (system Chrome 154 sometimes crashes with SIGSEGV during downloads).
+function systemChannel () {
+  if (process.env.TRANSITY_BROWSER === "chromium") {
+    throw new Error("Bundled Chromium requested")
+  }
+  return "chrome"
+}
+
+
 export async function launchBrowser (options = {}) {
   const {
     shallShowBrowser = false,
@@ -58,18 +138,27 @@ export async function launchBrowser (options = {}) {
     // This avoids repeated security challenges and 2FA prompts
     // on sites which support remembering the device.
     persistentProfileName = null,
+    // Set to false to block downloads (e.g. when reading
+    // the file from the network response instead)
+    acceptDownloads = true,
   } = options
 
   // Without this flag `navigator.webdriver` is `true` and several sites
   // (e.g. PayPal) refuse to even serve their login security challenge
   const args = ["--disable-blink-features=AutomationControlled"]
 
+  // Allows inspecting the running browser (e.g. with `connectOverCDP`)
+  // to update selectors after site redesigns
+  if (process.env.TRANSITY_DEBUG_PORT) {
+    args.push(`--remote-debugging-port=${process.env.TRANSITY_DEBUG_PORT}`)
+  }
+
   if (persistentProfileName) {
     const userDataDir = path.join(
       os.homedir(), ".cache", "transity", persistentProfileName)
     const contextOptions = {
       headless: !shallShowBrowser,
-      acceptDownloads: true,
+      acceptDownloads,
       args,
     }
     let context = null
@@ -77,7 +166,7 @@ export async function launchBrowser (options = {}) {
       // Use the system Chrome if available
       // (avoids a separate browser download)
       context = await chromium.launchPersistentContext(
-        userDataDir, { ...contextOptions, channel: "chrome" })
+        userDataDir, { ...contextOptions, channel: systemChannel() })
     }
     catch {
       context = await chromium.launchPersistentContext(
@@ -96,13 +185,16 @@ export async function launchBrowser (options = {}) {
 
   try {
     // Use the system Chrome if available (avoids a separate browser download)
-    browser = await chromium.launch({ ...launchOptions, channel: "chrome" })
+    browser = await chromium.launch({
+      ...launchOptions,
+      channel: systemChannel(),
+    })
   }
   catch {
     browser = await chromium.launch(launchOptions)
   }
 
-  const context = await browser.newContext({ acceptDownloads: true })
+  const context = await browser.newContext({ acceptDownloads })
   const page = await context.newPage()
   // Leave time for manual 2FA/TAN confirmation during logins
   page.setDefaultTimeout(120000)
