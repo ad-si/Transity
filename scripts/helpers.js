@@ -4,7 +4,14 @@ export function sanitizeYaml (yaml) {
   }
   return yaml
     .replace(/^ {2}- /gm, "\n  -\n    ")
-    .replace(/^ {2}([^:]+): '(.+)'$/gm, "  $1: $2")
+    // Only unquote values which stay plain scalars without the quotes
+    .replace(
+      /^ {2}([^:]+): '(.+)'$/gm,
+      (match, key, value) =>
+        /: | #|^[\s!&*?|>%@`"'#[\]{},-]|\s$|''/.test(value)
+          ? match
+          : `  ${key}: ${value}`,
+    )
     .replace(/utc: ([0-9TZ:.-]+)$/gm, "utc: '$1'")
 }
 
