@@ -61,6 +61,9 @@ Currently supported accounts for transactions:
 - [DKB Giro Account](https://dkb.de)
 - [HypoVereinsbank](https://www.hypovereinsbank.de)
 - [MBS](https://mbs.de)
+- [PayPal](https://paypal.com)
+- [Trade Republic](https://traderepublic.com)
+    (cash and securities account, incl. trades, dividends, and interest)
 
 Currently supported accounts for balances:
 
