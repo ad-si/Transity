@@ -3,20 +3,127 @@
 This changelog only contains user facing changes of the app.
 
 
-### Current Main
+### Unreleased
 
-- Don't list commodities with an amount of 0 in `balance` command
-- Show only owner's balance with `balance`
-- Add new subcommand `balance-all`
-- Add subcommand `entities` to list all entities
-- Add subcommand `entities-sorted` to list all entities sorted by name
-- Add initial support for exporting transfers to an XLSX (Excel) file
-- Use GitHub Action for CI (testing and deploying website)
-- Use new JS backed version of BigInt
-- Upgrade to PureScript 0.15
-- Upgrade to new PureScript based version of Spago
-- Upgrade all Spago and npm dependencies
-- FIX: Correctly filter accounts with an empty commodity map
+#### Rust Rewrite
+
+- Rewrite Transity in Rust ([be49141])
+    - Install it with `cargo install transity`
+    - The legacy PureScript implementation is kept in `purescript/`,
+        but is no longer built
+- Compile the in-browser playground to WebAssembly ([9487b6c])
+
+#### CLI
+
+- Add subcommand `balance-all` and only show the owner's balance
+    with `balance` ([1a8fcb3])
+- Add subcommand `entities` to list all entities ([852281f])
+- Add subcommand `entities-sorted` to list all entities
+    sorted by name ([ded785d])
+- Add subcommand `files` to list referenced files
+    with their reference counts ([b9c1759])
+- Add subcommand `xlsx` to export transfers to an Excel file,
+    including file links and transaction notes ([ceb0bed], [f828e3c])
+- Add support for passing several journal files ([c0ba028])
+- Add `--begin` and `--end` flags to all transaction-based
+    subcommands to filter by a time window ([6c6c5d3])
+- Add `--owner` flag to all transaction-based subcommands ([329e1b3])
+- Add `--tag` flag to filter transfers by entity tags,
+    with support for `and`, `or`, `not`, and parentheses ([37898b8])
+- Display account hierarchies in balance commands,
+    with parent accounts aggregating their children ([0fa680d])
+- Support `/` as account separator and make the separator
+    configurable via `config.separator` ([1a3d29c])
+- Only include past transactions in balance commands
+    by default ([75c0a97])
+- Don't list commodities with an amount of 0 in `balance` ([9878f32])
+- Show full error context and a clickable location
+    for YAML parse errors ([73243ed])
+- Support several journal paths for `unused-files` ([42e3ed2])
+    and ignore `.DS_Store` files ([671d1e3])
+- Show the full help text when invoked without arguments ([d615ef6])
+- Fix: Accept RFC 3339 timestamps with fractional seconds ([a752a26])
+- Fix: Correctly filter accounts with an empty commodity map ([fe12987])
+
+#### Web App
+
+- Add subcommand `server` to serve a web app
+    with a balance view ([c066349])
+- Add a transactions view ([b18814c]) with:
+    - Newest transactions first ([270ff1d])
+    - Transfer notes shown as hover tooltips ([39cf8d8])
+    - A column with clickable previews
+        of referenced files ([ba4aba6], [7cf0ed6])
+    - A toggle to highlight transactions without files ([da7e178])
+- Use path-based URLs for the tabs ([f289b0d])
+- Switch between light and dark mode
+    based on the system setting ([8b5659e])
+
+#### Import Scripts
+
+- Replace Nightmare with Playwright for all scraping scripts ([27836bd])
+- Add a script to download PayPal transactions ([2481060])
+- Rewrite MBS script for the redesigned website
+    and add download of postbox documents ([623a054])
+- DKB: Normalize amounts with thousands separators ([f63aedc])
+    and resolve the payer account from the "from" field ([330dce1])
+- Make CSV conversion scripts more robust ([eb9e555])
+- Extend translations for CSV conversion scripts ([abc0f58], [443e12a])
+- Fix CSV converter for Finvesto ([443e12a])
+- Fix import of chrono-node in PayPal CSV converter ([cbe6720])
+- Use Bun instead of Node.js ([2a2e3d5])
+
+#### Documentation
+
+- Build documentation website with mdBook ([77ab998])
+- Add a page about performance ([939e445])
+- Add an explanation of plain text accounting ([c9d2370])
+- Add many more tools to the "Related" section
+
+[be49141]: https://github.com/ad-si/Transity/commit/be49141
+[9487b6c]: https://github.com/ad-si/Transity/commit/9487b6c
+[1a8fcb3]: https://github.com/ad-si/Transity/commit/1a8fcb3
+[852281f]: https://github.com/ad-si/Transity/commit/852281f
+[ded785d]: https://github.com/ad-si/Transity/commit/ded785d
+[b9c1759]: https://github.com/ad-si/Transity/commit/b9c1759
+[ceb0bed]: https://github.com/ad-si/Transity/commit/ceb0bed
+[f828e3c]: https://github.com/ad-si/Transity/commit/f828e3c
+[c0ba028]: https://github.com/ad-si/Transity/commit/c0ba028
+[6c6c5d3]: https://github.com/ad-si/Transity/commit/6c6c5d3
+[329e1b3]: https://github.com/ad-si/Transity/commit/329e1b3
+[37898b8]: https://github.com/ad-si/Transity/commit/37898b8
+[0fa680d]: https://github.com/ad-si/Transity/commit/0fa680d
+[1a3d29c]: https://github.com/ad-si/Transity/commit/1a3d29c
+[75c0a97]: https://github.com/ad-si/Transity/commit/75c0a97
+[9878f32]: https://github.com/ad-si/Transity/commit/9878f32
+[73243ed]: https://github.com/ad-si/Transity/commit/73243ed
+[42e3ed2]: https://github.com/ad-si/Transity/commit/42e3ed2
+[671d1e3]: https://github.com/ad-si/Transity/commit/671d1e3
+[d615ef6]: https://github.com/ad-si/Transity/commit/d615ef6
+[a752a26]: https://github.com/ad-si/Transity/commit/a752a26
+[fe12987]: https://github.com/ad-si/Transity/commit/fe12987
+[c066349]: https://github.com/ad-si/Transity/commit/c066349
+[b18814c]: https://github.com/ad-si/Transity/commit/b18814c
+[270ff1d]: https://github.com/ad-si/Transity/commit/270ff1d
+[39cf8d8]: https://github.com/ad-si/Transity/commit/39cf8d8
+[ba4aba6]: https://github.com/ad-si/Transity/commit/ba4aba6
+[7cf0ed6]: https://github.com/ad-si/Transity/commit/7cf0ed6
+[da7e178]: https://github.com/ad-si/Transity/commit/da7e178
+[f289b0d]: https://github.com/ad-si/Transity/commit/f289b0d
+[8b5659e]: https://github.com/ad-si/Transity/commit/8b5659e
+[27836bd]: https://github.com/ad-si/Transity/commit/27836bd
+[2481060]: https://github.com/ad-si/Transity/commit/2481060
+[623a054]: https://github.com/ad-si/Transity/commit/623a054
+[f63aedc]: https://github.com/ad-si/Transity/commit/f63aedc
+[330dce1]: https://github.com/ad-si/Transity/commit/330dce1
+[eb9e555]: https://github.com/ad-si/Transity/commit/eb9e555
+[abc0f58]: https://github.com/ad-si/Transity/commit/abc0f58
+[443e12a]: https://github.com/ad-si/Transity/commit/443e12a
+[cbe6720]: https://github.com/ad-si/Transity/commit/cbe6720
+[2a2e3d5]: https://github.com/ad-si/Transity/commit/2a2e3d5
+[77ab998]: https://github.com/ad-si/Transity/commit/77ab998
+[939e445]: https://github.com/ad-si/Transity/commit/939e445
+[c9d2370]: https://github.com/ad-si/Transity/commit/c9d2370
 
 
 ### 0.8.0 (2020-09-09)
