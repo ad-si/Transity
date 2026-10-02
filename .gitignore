@@ -1,6 +1,7 @@
 .claude
 .direnv
 .spec-results
+.vscode
 /.parcel-cache
 /.psc*
 /.spago
@@ -8,9 +9,8 @@
 /docs-dev
 /generated-docs
 /index.js
-/node_modules
+node_modules/
 /output
-/src/CliSpec/JsonEmbed.purs
 /purescript/test/_deletable_*
 target/
 /webapp/pkg/
