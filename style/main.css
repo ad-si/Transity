@@ -13,6 +13,14 @@
   --color-positive: hsl(135, 50%, 60%);
   --color-negative: hsl(0, 70%, 65%);
   --bg-stripe: hsl(220, 15%, 11%);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-other: hsl(220, 8%, 55%);
 }
 
 @media (prefers-color-scheme: light) {
@@ -29,6 +37,14 @@
     --color-positive: hsl(135, 60%, 30%);
     --color-negative: hsl(0, 70%, 42%);
     --bg-stripe: hsl(220, 15%, 94%);
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-other: hsl(220, 8%, 60%);
   }
 }
 
@@ -497,4 +513,63 @@ td.col-tx-files {
   border-top: 0;
   border-bottom-color: var(--color-border);
   pointer-events: none;
+}
+
+
+.trend-charts {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.trend-note {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.trend-chart h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.trend-echart {
+  width: 100%;
+  height: 380px;
+}
+
+/* Tooltip content rendered by the ECharts tooltip formatter */
+.trend-tooltip-date {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.3rem;
+}
+
+.trend-echart ul {
+  list-style: none;
+}
+
+.trend-tooltip-row {
+  display: grid;
+  grid-template-columns: 14px auto auto;
+  align-items: center;
+  column-gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.trend-key {
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.trend-tooltip-value {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.trend-tooltip-label {
+  color: var(--color-muted);
 }

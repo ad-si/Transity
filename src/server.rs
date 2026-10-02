@@ -41,6 +41,7 @@ const SHELL_HTML: &str = r#"<!DOCTYPE html>
     <title>Transity</title>
     <link rel="modulepreload" href="/pkg/transity.js">
     <link rel="preload" href="/pkg/transity_bg.wasm" as="fetch" type="application/wasm">
+    <script defer src="/pkg/echarts.min.js"></script>
     <script type="module">
       import init, { hydrate } from '/pkg/transity.js';
       init().then(() => hydrate());
@@ -92,6 +93,17 @@ async fn serve_wasm() -> impl IntoResponse {
   (
     [("content-type", "application/wasm")],
     load_asset("transity.wasm", embedded_assets::WASM),
+  )
+}
+
+async fn serve_echarts() -> impl IntoResponse {
+  (
+    [
+      ("content-type", "application/javascript"),
+      ("cache-control", "public, max-age=86400"),
+    ],
+    // Apache ECharts for the trend charts (installed via `bun install`)
+    embedded_assets::ECHARTS,
   )
 }
 
@@ -193,6 +205,13 @@ pub async fn start(
     ));
   }
 
+  if !embedded_assets::ECHARTS_AVAILABLE {
+    return Err(anyhow::anyhow!(
+      "ECharts is not available.\n\
+       Run `make server-build` (or `bun install`) and rebuild."
+    ));
+  }
+
   let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
   let app = Router::new()
@@ -200,6 +219,7 @@ pub async fn start(
     .route("/pkg/transity.css", axum::routing::get(serve_css))
     .route("/pkg/transity.wasm", axum::routing::get(serve_wasm))
     .route("/pkg/transity_bg.wasm", axum::routing::get(serve_wasm))
+    .route("/pkg/echarts.min.js", axum::routing::get(serve_echarts))
     .route("/favicon.ico", axum::routing::get(serve_favicon))
     .route(
       "/files",

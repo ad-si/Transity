@@ -4,6 +4,9 @@ use leptos_router::path;
 
 use crate::{BalanceEntry, TransactionEntry};
 
+mod trends;
+use trends::TrendsPage;
+
 #[derive(Clone, Copy)]
 struct FilePreview(RwSignal<Option<String>>);
 
@@ -18,6 +21,7 @@ pub fn App() -> impl IntoView {
         <h1>"Transity"</h1>
         <div class="tabs">
           <A href="/balance" attr:class="tab">"Balance"</A>
+          <A href="/trends" attr:class="tab">"Trends"</A>
           <A href="/transactions" attr:class="tab">"Transactions"</A>
         </div>
       </nav>
@@ -30,6 +34,7 @@ pub fn App() -> impl IntoView {
             view=|| view! { <Redirect path="/balance" /> }
           />
           <Route path=path!("/balance") view=BalancePage />
+          <Route path=path!("/trends") view=TrendsPage />
           <Route path=path!("/transactions") view=TransactionsPage />
         </FlatRoutes>
       </main>

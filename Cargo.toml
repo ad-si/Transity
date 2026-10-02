@@ -61,7 +61,11 @@ hydrate = [
   "dep:leptos",
   "dep:leptos_router",
   "dep:wasm-bindgen",
+  "dep:web-sys",
   "dep:console_error_panic_hook",
+  "dep:charming",
+  "dep:send_wrapper",
+  "charming/wasm",
   "leptos/csr",
 ]
 wasm = [
@@ -90,6 +94,17 @@ leptos_config = { version = "0.8", optional = true }
 leptos_meta = { version = "0.8", optional = true }
 leptos_router = { version = "0.8", optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
+web-sys = { version = "0.3", features = [
+  "CssStyleDeclaration",
+  "Document",
+  "Element",
+  "EventTarget",
+  "MediaQueryList",
+  "ResizeObserver",
+  "Window",
+], optional = true }
+charming = { version = "0.6", default-features = false, optional = true }
+send_wrapper = { version = "0.6", optional = true }
 console_error_panic_hook = { version = "0.1", optional = true }
 
 [package.metadata.leptos]

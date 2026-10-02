@@ -85,6 +85,14 @@ will refuse to start because the assets are `include_bytes!`’d into the binary
   function (`get_balance` in `app.rs`). The standalone WASM build instead
   parses YAML in the browser via `wasm::get_balance`. The two share
   `src/lib.rs` — keep platform-specific code under the appropriate `cfg`.
+- **Trend charts** (`/trends`) are rendered client-side with Apache ECharts
+  via the `charming` crate (`src/app/trends/echart.rs`, hydrate-only).
+  ECharts itself is an exact-pinned dev dependency in `package.json` (the
+  version charming targets), installed with `bun install` (chained by
+  `make server-build`/`make dev`), embedded into the binary by `build.rs` and
+  served at `/pkg/echarts.min.js` — no CDN, so the server works offline.
+  `transity server` refuses to start if it was built without it.
+  Upgrade it together with `charming`.
 
 ## Style
 

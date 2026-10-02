@@ -18,6 +18,8 @@ pub mod app;
 #[cfg(feature = "ssr")]
 pub mod server;
 
+pub mod trends;
+
 // ─── DATA TYPES ──────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, PartialEq)]

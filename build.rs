@@ -8,10 +8,22 @@ fn main() {
   let js = pkg_dir.join("transity.js");
   let css = pkg_dir.join("transity.css");
   let wasm = pkg_dir.join("transity.wasm");
+  // Apache ECharts for the trend charts, installed via `bun install`
+  let echarts = std::path::Path::new(&manifest_dir)
+    .join("node_modules/echarts/dist/echarts.min.js");
 
   let assets_present = js.exists() && css.exists() && wasm.exists();
   let ssr_enabled = std::env::var("CARGO_FEATURE_SSR").is_ok();
   let driven_by_cargo_leptos = std::env::var("LEPTOS_OUTPUT_NAME").is_ok();
+
+  if ssr_enabled && !echarts.exists() {
+    println!(
+      "cargo:warning=ECharts missing at {}. \
+       Run `bun install` (or `make server-build`) before building — \
+       `transity server` will exit at startup otherwise.",
+      echarts.display()
+    );
+  }
 
   if ssr_enabled && !assets_present && !driven_by_cargo_leptos {
     println!(
@@ -44,9 +56,31 @@ pub const ASSETS_AVAILABLE: bool = false;
     .to_string()
   };
 
+  let code = code
+    + &if echarts.exists() {
+      format!(
+        r#"
+pub const ECHARTS: &[u8] = include_bytes!("{}");
+pub const ECHARTS_AVAILABLE: bool = true;
+"#,
+        echarts.display(),
+      )
+    } else {
+      r#"
+pub const ECHARTS: &[u8] = b"";
+pub const ECHARTS_AVAILABLE: bool = false;
+"#
+      .to_string()
+    };
+
   std::fs::write(&dest, code).unwrap();
 
   println!("cargo:rerun-if-changed=target/site/pkg/transity.js");
   println!("cargo:rerun-if-changed=target/site/pkg/transity.css");
   println!("cargo:rerun-if-changed=target/site/pkg/transity.wasm");
+  println!("cargo:rerun-if-changed=node_modules/echarts/dist/echarts.min.js");
+  // bun copies files from its cache with their old mtimes, so a fresh
+  // install wouldn't trigger a rebuild. The package directory itself
+  // gets a current mtime when it's (re)installed.
+  println!("cargo:rerun-if-changed=node_modules/echarts");
 }

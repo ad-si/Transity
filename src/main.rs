@@ -2726,4 +2726,155 @@ transactions:
       "john/wallet should match across files with shared separator"
     );
   }
+
+  // ─── trends ──────────────────────────────────────────────────────────────
+
+  const TRENDS_YAML: &str = r#"
+owner: john
+transactions:
+  - utc: '2020-01-01'
+    transfers:
+      - from: employer
+        to: john:giro
+        amount: 1000 €
+  - utc: '2020-02-01'
+    note: Buy shares
+    transfers:
+      - from: john:giro
+        to: broker
+        amount: 500 €
+      - from: broker
+        to: john:depot
+        amount: 10 ACME
+  - utc: '2020-03-01'
+    note: Sell shares at a higher price
+    transfers:
+      - from: john:depot
+        to: broker
+        amount: 5 ACME
+      - from: broker
+        to: john:giro
+        amount: 300 €
+  - utc: '2020-03-15'
+    transfers:
+      - from: friend
+        to: john:wallet
+        amount: 1 BTC
+"#;
+
+  fn days(dates: &[&str]) -> Vec<i32> {
+    use chrono::Datelike;
+    dates
+      .iter()
+      .map(|d| {
+        chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d")
+          .unwrap()
+          .num_days_from_ce()
+      })
+      .collect()
+  }
+
+  #[test]
+  fn trends_main_currency_is_most_used_commodity() {
+    let ledger = parse_ledger(TRENDS_YAML);
+    assert_eq!(trends::main_currency(&ledger), Some("€".to_string()));
+  }
+
+  #[test]
+  fn trends_exchange_rates_are_implied_by_exchanges() {
+    let ledger = parse_ledger(TRENDS_YAML);
+    let rates = trends::ExchangeRates::from_ledger(&ledger);
+    let date = |s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    // Before the first observation the earliest rate is used
+    assert_eq!(rates.rate("ACME", "€", date("2019-01-01")), Some(50.0));
+    assert_eq!(rates.rate("ACME", "€", date("2020-02-15")), Some(50.0));
+    assert_eq!(rates.rate("ACME", "€", date("2020-03-01")), Some(60.0));
+    assert_eq!(
+      rates.rate("€", "ACME", date("2020-03-02")),
+      Some(1.0 / 60.0)
+    );
+    assert_eq!(rates.rate("BTC", "€", date("2020-03-02")), None);
+  }
+
+  #[test]
+  fn trends_native_and_converted_series() {
+    let ledger = parse_ledger(TRENDS_YAML);
+    let data = trends::get_trend_data(&ledger);
+    assert_eq!(
+      data.days,
+      days(&["2020-01-01", "2020-02-01", "2020-03-01", "2020-03-15"])
+    );
+    assert_eq!(data.currency, Some("€".to_string()));
+    assert_eq!(data.unconvertible, vec!["BTC".to_string()]);
+
+    let commodities: Vec<&str> =
+      data.native.iter().map(|c| c.commodity.as_str()).collect();
+    assert_eq!(commodities, vec!["€", "ACME", "BTC"]);
+
+    let euro = &data.native[0].series;
+    assert_eq!(euro.len(), 1);
+    assert_eq!(euro[0].label, "john/giro");
+    assert_eq!(
+      euro[0].values,
+      vec![Some(1000.0), Some(500.0), Some(800.0), Some(800.0)]
+    );
+
+    let acme = &data.native[1].series[0];
+    assert_eq!(acme.label, "john/depot");
+    assert_eq!(acme.values, vec![None, Some(10.0), Some(5.0), Some(5.0)]);
+
+    let converted: Vec<(&str, &Vec<Option<f64>>)> = data
+      .converted
+      .iter()
+      .map(|s| (s.label.as_str(), &s.values))
+      .collect();
+    assert_eq!(
+      converted,
+      vec![
+        (
+          "john/giro",
+          &vec![Some(1000.0), Some(500.0), Some(800.0), Some(800.0)]
+        ),
+        (
+          "john/depot",
+          &vec![None, Some(500.0), Some(300.0), Some(300.0)]
+        ),
+      ]
+    );
+  }
+
+  #[test]
+  fn trends_fold_small_accounts_into_other() {
+    let transfers: String = (1..=9)
+      .map(|i| {
+        format!(
+          "  - utc: '2020-01-0{i}'\n    transfers:\n      \
+           - from: employer\n        to: john:acc{i}\n        \
+           amount: {} €\n",
+          i * 100
+        )
+      })
+      .collect();
+    let yaml = format!("owner: john\ntransactions:\n{transfers}");
+    let data = trends::get_trend_data(&parse_ledger(&yaml));
+    let labels: Vec<&str> =
+      data.converted.iter().map(|s| s.label.as_str()).collect();
+    assert_eq!(
+      labels,
+      vec![
+        "john/acc9",
+        "john/acc8",
+        "john/acc7",
+        "john/acc6",
+        "john/acc5",
+        "john/acc4",
+        "john/acc3",
+        "Other"
+      ]
+    );
+    let other = data.converted.last().unwrap();
+    assert_eq!(other.color_slot, None);
+    assert_eq!(other.values.last(), Some(&Some(300.0)));
+    assert_eq!(other.values[0], Some(100.0));
+  }
 }

@@ -38,13 +38,19 @@ install: server-build
 	cargo install --path .
 
 
+# Apache ECharts gets embedded into the binary for the trend charts
+node_modules/echarts/dist/echarts.min.js: package.json bun.lock
+	bun install
+	touch $@
+
+
 .PHONY: server-build
-server-build:
+server-build: node_modules/echarts/dist/echarts.min.js
 	cargo leptos build
 
 
 .PHONY: dev
-dev:
+dev: node_modules/echarts/dist/echarts.min.js
 	cargo leptos watch -- server examples/journal.yaml
 
 

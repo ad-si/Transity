@@ -55,6 +55,7 @@
     "@highlightjs/cdn-assets": "^11.11.1",
     "assert": "^2.1.0",
     "conventional-changelog-cli": "^5.0.0",
+    "echarts": "5.5.1",
     "esbuild": "^0.25.11",
     "eslint": "^9.38.0",
     "eslint-config-javascript": "^3.0.0",
