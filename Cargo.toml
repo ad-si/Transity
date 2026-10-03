@@ -61,6 +61,7 @@ hydrate = [
   "dep:leptos",
   "dep:leptos_router",
   "dep:wasm-bindgen",
+  "dep:js-sys",
   "dep:web-sys",
   "dep:console_error_panic_hook",
   "dep:charming",
@@ -94,6 +95,7 @@ leptos_config = { version = "0.8", optional = true }
 leptos_meta = { version = "0.8", optional = true }
 leptos_router = { version = "0.8", optional = true }
 wasm-bindgen = { version = "=0.2.100", optional = true }
+js-sys = { version = "0.3", optional = true }
 web-sys = { version = "0.3", features = [
   "CssStyleDeclaration",
   "Document",

@@ -2999,6 +2999,7 @@ dependencies = [
  "colored",
  "console_error_panic_hook",
  "insta",
+ "js-sys",
  "leptos",
  "leptos_axum",
  "leptos_config",

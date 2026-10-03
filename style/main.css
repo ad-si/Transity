@@ -241,6 +241,15 @@ table.transactions {
   border-color: var(--color-leaf-account);
 }
 
+.tx-toolbar-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.trend-reload {
+  margin-left: auto;
+}
+
 table.transactions.highlight-no-files tbody tr.transaction.no-files.even td {
   background-color: hsla(45, 90%, 55%, 0.15);
 }

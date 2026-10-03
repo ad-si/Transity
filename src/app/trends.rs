@@ -17,32 +17,66 @@ pub async fn get_trends() -> Result<TrendData, ServerFnError> {
 #[component]
 pub fn TrendsPage() -> impl IntoView {
   let trends = Resource::new(|| (), |_| get_trends());
+  // Lives outside of the charts so that a reload keeps the selected view
+  let converted_mode = RwSignal::new(false);
+  let reloading = RwSignal::new(false);
+  #[cfg(feature = "hydrate")]
+  provide_context(echart::ChartViews::new());
+
+  let reload_button = move || {
+    view! {
+      <button
+        class="tx-toolbar-button trend-reload"
+        on:click=move |_| trends.refetch()
+        type="button"
+        disabled=move || reloading.get()
+        title="Reload the journal"
+      >
+        {move || if reloading.get() { "Reloading…" } else { "Reload" }}
+      </button>
+    }
+    .into_any()
+  };
 
   view! {
-    <Suspense fallback=move || view! { <p class="loading">"Loading..."</p> }>
+    <Transition
+      fallback=move || view! { <p class="loading">"Loading..."</p> }
+      set_pending=reloading.write_only()
+    >
       {move || Suspend::new(async move {
         match trends.await {
-          Ok(data) => view! { <Trends data /> }.into_any(),
+          Ok(data) => view! {
+            <Trends data converted_mode reload_button=reload_button() />
+          }.into_any(),
           Err(e) => view! {
+            <div class="tx-toolbar">{reload_button()}</div>
             <p class="error">{format!("Error: {e}")}</p>
           }.into_any(),
         }
       })}
-    </Suspense>
+    </Transition>
   }
 }
 
 #[component]
-fn Trends(data: TrendData) -> impl IntoView {
+fn Trends(
+  data: TrendData,
+  converted_mode: RwSignal<bool>,
+  reload_button: AnyView,
+) -> impl IntoView {
   if data.days.is_empty() {
     return view! {
+      <div class="tx-toolbar">{reload_button}</div>
       <p class="loading">"No dated transactions to plot."</p>
     }
     .into_any();
   }
 
-  let converted_mode = RwSignal::new(false);
   let currency = data.currency.clone().unwrap_or_default();
+  // The main currency might be gone after a reload
+  if currency.is_empty() {
+    converted_mode.set(false);
+  }
   let button_class = move |active: bool| {
     if active {
       "tx-toolbar-button active"
@@ -137,6 +171,7 @@ fn Trends(data: TrendData) -> impl IntoView {
       >
         {format!("Value in {currency}")}
       </button>
+      {reload_button}
     </div>
     <div class="trend-charts">{charts}</div>
   }
@@ -157,7 +192,8 @@ fn TrendChart(
   #[cfg(feature = "hydrate")]
   let id = {
     let id = echart::next_chart_id();
-    echart::mount_chart(id.clone(), unit, days, series, converted);
+    let key = title.clone();
+    echart::mount_chart(id.clone(), key, unit, days, series, converted);
     id
   };
   #[cfg(not(feature = "hydrate"))]

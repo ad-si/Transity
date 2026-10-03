@@ -13,6 +13,7 @@ use charming::series::Line;
 use charming::{Chart, Echarts, WasmRenderer};
 use leptos::prelude::*;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
@@ -22,6 +23,80 @@ use crate::trends::TrendSeries;
 extern "C" {
   #[wasm_bindgen(js_namespace = echarts, js_name = dispose)]
   fn dispose_chart(chart: &JsValue);
+
+  /// The parts of an ECharts instance that charming doesn't expose
+  type EchartsInstance;
+
+  #[wasm_bindgen(method, js_name = getOption)]
+  fn get_option(this: &EchartsInstance) -> JsValue;
+
+  #[wasm_bindgen(method, js_name = setOption)]
+  fn set_option(this: &EchartsInstance, option: &JsValue);
+
+  #[wasm_bindgen(method)]
+  fn on(this: &EchartsInstance, event: &str, handler: &JsValue);
+}
+
+/// Zoom window and legend selection of each chart by chart key,
+/// so that they survive re-rendering the charts with new data
+#[derive(Clone, Copy)]
+pub struct ChartViews(StoredValue<HashMap<String, String>>);
+
+impl ChartViews {
+  pub fn new() -> ChartViews {
+    ChartViews(StoredValue::new(HashMap::new()))
+  }
+
+  fn save(&self, key: &str, echarts: &EchartsInstance) {
+    if let Some(view) = current_view(echarts) {
+      self
+        .0
+        .try_update_value(|views| views.insert(key.to_string(), view));
+    }
+  }
+
+  fn restore(&self, key: &str, echarts: &EchartsInstance) {
+    let view = self.0.try_with_value(|views| views.get(key).cloned());
+    if let Some(Ok(option)) = view.flatten().map(|v| js_sys::JSON::parse(&v)) {
+      echarts.set_option(&option);
+    }
+  }
+}
+
+/// Zoom window and legend selection of a chart
+/// as a JSON encoded partial ECharts option
+fn current_view(echarts: &EchartsInstance) -> Option<String> {
+  use js_sys::{Array, Object, Reflect};
+
+  let get = |obj: &JsValue, key: &str| Reflect::get(obj, &key.into()).ok();
+  let pick = |obj: &JsValue, keys: &[&str]| {
+    let picked = Object::new();
+    for key in keys {
+      if let Some(value) = get(obj, key).filter(|v| !v.is_undefined()) {
+        let _ = Reflect::set(&picked, &(*key).into(), &value);
+      }
+    }
+    JsValue::from(picked)
+  };
+  let pick_all = |obj: &JsValue, keys: &[&str]| -> Array {
+    Array::from(obj).iter().map(|o| pick(&o, keys)).collect()
+  };
+
+  let option = echarts.get_option();
+  let view = Object::new();
+  Reflect::set(
+    &view,
+    &"dataZoom".into(),
+    &pick_all(&get(&option, "dataZoom")?, &["start", "end"]),
+  )
+  .ok()?;
+  Reflect::set(
+    &view,
+    &"legend".into(),
+    &pick_all(&get(&option, "legend")?, &["selected"]),
+  )
+  .ok()?;
+  js_sys::JSON::stringify(&view).ok()?.as_string()
 }
 
 /// Resolved value of a CSS custom property on the root element.
@@ -250,8 +325,11 @@ pub fn next_chart_id() -> String {
 /// Renders the chart into the element with the given id once it is
 /// mounted, re-renders it when the color scheme changes,
 /// keeps it sized to its container, and disposes it on unmount.
+/// The zoom window and legend selection are kept in the `ChartViews`
+/// context (if any) under `key` and restored from there.
 pub fn mount_chart(
   id: String,
+  key: String,
   unit: String,
   days: Vec<i32>,
   series: Vec<TrendSeries>,
@@ -259,6 +337,7 @@ pub fn mount_chart(
 ) {
   let state: Rc<RefCell<Option<Mounted>>> = Rc::new(RefCell::new(None));
   let scheme = color_scheme_version();
+  let views = use_context::<ChartViews>();
 
   Effect::new({
     let state = state.clone();
@@ -268,7 +347,7 @@ pub fn mount_chart(
       let mut current = state.borrow_mut();
       match current.as_ref() {
         Some(mounted) => WasmRenderer::update(&mounted.echarts, &chart),
-        None => match Mounted::new(&id, &chart) {
+        None => match Mounted::new(&id, &chart, views.map(|v| (v, &key))) {
           Ok(mounted) => *current = Some(mounted),
           Err(e) => leptos::logging::error!("Failed to render chart: {e}"),
         },
@@ -291,10 +370,16 @@ struct Mounted {
   observer: web_sys::ResizeObserver,
   // Must outlive the observer
   _on_resize: Closure<dyn Fn()>,
+  // Must outlive the chart
+  _on_view_change: Option<Closure<dyn Fn()>>,
 }
 
 impl Mounted {
-  fn new(id: &str, chart: &Chart) -> Result<Mounted, String> {
+  fn new(
+    id: &str,
+    chart: &Chart,
+    views: Option<(ChartViews, &String)>,
+  ) -> Result<Mounted, String> {
     let element = web_sys::window()
       .and_then(|w| w.document())
       .and_then(|d| d.get_element_by_id(id))
@@ -311,10 +396,25 @@ impl Mounted {
       web_sys::ResizeObserver::new(on_resize.as_ref().unchecked_ref())
         .map_err(|e| format!("{e:?}"))?;
     observer.observe(&element);
+    let on_view_change = views.map(|(views, key)| {
+      let instance: EchartsInstance = JsValue::clone(&echarts).unchecked_into();
+      views.restore(key, &instance);
+      let key = key.clone();
+      let on_view_change = Closure::<dyn Fn()>::new({
+        let instance: EchartsInstance =
+          JsValue::clone(&echarts).unchecked_into();
+        move || views.save(&key, &instance)
+      });
+      for event in ["datazoom", "legendselectchanged"] {
+        instance.on(event, on_view_change.as_ref());
+      }
+      on_view_change
+    });
     Ok(Mounted {
       echarts,
       observer,
       _on_resize: on_resize,
+      _on_view_change: on_view_change,
     })
   }
 }
