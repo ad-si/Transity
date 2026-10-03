@@ -3031,4 +3031,67 @@ transactions:
     assert_eq!(rates.rate("€", "ACME", date), Some(0.25));
     assert_eq!(rates.rate("ACME", "BTC", date), None);
   }
+
+  #[test]
+  fn commodities_are_validated() {
+    let commodity = |interpolation: &str| {
+      parse_ledger_err(&format!(
+        "commodities:\n  - id: FLAT\n    \
+         price-interpolation: {interpolation}\n"
+      ))
+    };
+    assert!(commodity("cubic").contains("Invalid price-interpolation"));
+    assert!(parse_ledger_err("commodities:\n  - id: ''\n")
+      .contains("must not be empty"));
+  }
+
+  #[test]
+  fn trends_linear_prices_are_interpolated() {
+    let ledger = parse_ledger(
+      "owner: john\n\
+       commodities:\n  \
+       - id: FLAT\n    name: Flat\n    price-interpolation: linear\n  \
+       - id: ACME\n    price-interpolation: step\n\
+       prices:\n  \
+       - utc: '2020-01-01'\n    commodity: FLAT\n    price: 100 €\n  \
+       - utc: '2020-01-11'\n    commodity: FLAT\n    price: 150 €\n  \
+       - utc: '2020-01-11'\n    commodity: FLAT\n    price: 200 €\n  \
+       - utc: '2020-03-15'\n    commodity: FLAT\n    price: 50 €\n  \
+       - utc: '2020-01-01'\n    commodity: ACME\n    price: 10 €\n  \
+       - utc: '2020-01-11'\n    commodity: ACME\n    price: 20 €\n\
+       transactions:\n  \
+       - utc: '2020-01-01'\n    transfers:\n      \
+       - from: bank\n        to: john:home\n        amount: 1 FLAT\n",
+    );
+    let rates = trends::ExchangeRates::from_ledger(&ledger);
+    let date = |s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    // Before the first and after the last price it stays constant
+    assert_eq!(rates.rate("FLAT", "€", date("2019-06-01")), Some(100.0));
+    assert_eq!(rates.rate("FLAT", "€", date("2020-06-01")), Some(50.0));
+    // Interpolated towards the last price declared on the next date
+    assert_eq!(rates.rate("FLAT", "€", date("2020-01-06")), Some(150.0));
+    assert_eq!(rates.rate("FLAT", "€", date("2020-01-11")), Some(200.0));
+    // The inverse is the inverse of the interpolated price
+    assert_eq!(
+      rates.rate("€", "FLAT", date("2020-01-06")),
+      Some(1.0 / 150.0)
+    );
+    // Other commodities still change in steps
+    assert_eq!(rates.rate("ACME", "€", date("2020-01-06")), Some(10.0));
+    // Chained conversions use the interpolated price
+    assert_eq!(rates.rate("FLAT", "ACME", date("2020-01-06")), Some(15.0));
+
+    // The first day of every month in between is sampled
+    let data = trends::get_trend_data(&ledger);
+    assert_eq!(
+      data.days,
+      days(&[
+        "2020-01-01",
+        "2020-01-11",
+        "2020-02-01",
+        "2020-03-01",
+        "2020-03-15"
+      ])
+    );
+  }
 }

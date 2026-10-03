@@ -5,12 +5,15 @@
 //! ledger's main currency with the declared `prices` and the exchange rates
 //! implied by exchange transactions (two transfers of different commodities
 //! between the same two parties in opposite directions).
+//! Commodities declared with `price-interpolation: linear` change their
+//! price linearly between two observations instead of in steps.
 
 use chrono::{Datelike, NaiveDate};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 
 use crate::{
-  add_account_default, norm_acc_id, rational_to_f64, Ledger, Transfer,
+  add_account_default, norm_acc_id, rational_to_f64, Ledger,
+  PriceInterpolation, Transfer,
 };
 
 /// Maximum number of accounts that get their own series.
@@ -70,6 +73,8 @@ pub struct TrendData {
 #[derive(Debug, Default)]
 pub struct ExchangeRates {
   rates: BTreeMap<(String, String), Vec<RateObservation>>,
+  /// Commodities whose price is interpolated linearly
+  linear: BTreeSet<String>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -81,7 +86,15 @@ struct RateObservation {
 
 impl ExchangeRates {
   pub fn from_ledger(ledger: &Ledger) -> ExchangeRates {
-    let mut rates = ExchangeRates::default();
+    let mut rates = ExchangeRates {
+      linear: ledger
+        .commodities
+        .iter()
+        .filter(|c| c.price_interpolation == PriceInterpolation::Linear)
+        .map(|c| c.id.clone())
+        .collect(),
+      ..ExchangeRates::default()
+    };
     for tx in &ledger.transactions {
       let transfers = tx.transfers_with_date();
       for (i, a) in transfers.iter().enumerate() {
@@ -128,20 +141,42 @@ impl ExchangeRates {
     }
   }
 
-  /// Dates on which at least one exchange rate was observed
+  /// Dates on which at least one exchange rate was observed,
+  /// plus the first day of every month between two observations
+  /// of a linearly interpolated price, so that charts show its development
   pub fn dates(&self) -> impl Iterator<Item = NaiveDate> + '_ {
-    self.rates.values().flatten().map(|o| o.date)
+    let observed = self.rates.values().flatten().map(|o| o.date);
+    let interpolated = self
+      .rates
+      .iter()
+      .filter(|((from, _), _)| self.linear.contains(from))
+      .flat_map(|(_, obs)| obs.windows(2))
+      .flat_map(|w| month_starts_between(w[0].date, w[1].date));
+    observed.chain(interpolated)
   }
 
-  /// Latest rate at or before `date`, or the earliest one after it
+  /// Rate at `date` derived from the observations of `from` in `to`.
+  /// Before the first and after the last observation it stays constant.
   fn direct(&self, from: &str, to: &str, date: NaiveDate) -> Option<f64> {
+    if !self.linear.contains(from) && self.linear.contains(to) {
+      // Interpolate the price of the linear commodity and invert it
+      return self.direct(to, from, date).map(|r| 1.0 / r);
+    }
     let obs = self.rates.get(&(from.to_string(), to.to_string()))?;
     let idx = obs.partition_point(|o| o.date <= date);
-    if idx > 0 {
-      Some(obs[idx - 1].rate)
-    } else {
-      obs.first().map(|o| o.rate)
+    if idx == 0 {
+      return obs.first().map(|o| o.rate);
     }
+    let prev = obs[idx - 1];
+    if idx == obs.len() || prev.date == date || !self.linear.contains(from) {
+      return Some(prev.rate);
+    }
+    // The last observation on a date takes precedence
+    let next_date = obs[idx].date;
+    let next = obs[obs.partition_point(|o| o.date <= next_date) - 1];
+    let span = (next.date - prev.date).num_days() as f64;
+    let elapsed = (date - prev.date).num_days() as f64;
+    Some(prev.rate + (next.rate - prev.rate) * elapsed / span)
   }
 
   /// Commodities with a direct rate from `from`, in alphabetical order
@@ -185,6 +220,17 @@ impl ExchangeRates {
     }
     None
   }
+}
+
+/// First days of the months strictly between `start` and `end`
+fn month_starts_between(
+  start: NaiveDate,
+  end: NaiveDate,
+) -> impl Iterator<Item = NaiveDate> {
+  let first = NaiveDate::from_ymd_opt(start.year(), start.month(), 1)
+    .and_then(|d| d.checked_add_months(chrono::Months::new(1)));
+  std::iter::successors(first, |d| d.checked_add_months(chrono::Months::new(1)))
+    .take_while(move |d| *d < end)
 }
 
 /// Two transfers form an exchange if they move different commodities

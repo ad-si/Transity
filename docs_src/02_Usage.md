@@ -122,6 +122,26 @@ and prices can be chained (here AAPL → USD → €).
 Exchange transactions (like buying shares) also imply a price.
 Declared prices take precedence over implied ones on the same day.
 
+For assets whose value changes gradually, like real estate,
+set `price-interpolation: linear` on the commodity.
+The price then changes linearly between two prices
+instead of jumping on the date of the next one:
+
+```yaml
+commodities:
+  - id: FLAT
+    name: Flat in Berlin
+    price-interpolation: linear  # Default: step
+
+prices:
+  - utc: '2024-06-30'
+    commodity: FLAT
+    price: 400000 €
+  - utc: '2025-06-30'
+    commodity: FLAT
+    price: 420000 €  # → Valued at ~410000 € on 2024-12-30
+```
+
 Prices can also live in a separate file that only contains `prices`
 and be passed as an additional journal file.
 

@@ -360,6 +360,53 @@ impl Price {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct CommodityRaw {
+  pub id: String,
+  #[serde(rename = "price-interpolation")]
+  pub price_interpolation: Option<String>,
+}
+
+/// How the price of a commodity develops between two declared prices
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum PriceInterpolation {
+  /// The price stays constant until the next price (e.g. shares)
+  #[default]
+  Step,
+  /// The price changes linearly towards the next price (e.g. real estate)
+  Linear,
+}
+
+#[derive(Debug, Clone)]
+pub struct Commodity {
+  pub id: String,
+  pub price_interpolation: PriceInterpolation,
+}
+
+impl Commodity {
+  pub fn from_raw(raw: &CommodityRaw) -> Result<Commodity> {
+    if raw.id.is_empty() {
+      return Err(anyhow!("Field 'id' of a commodity must not be empty"));
+    }
+    let price_interpolation = match raw.price_interpolation.as_deref() {
+      None | Some("step") => PriceInterpolation::Step,
+      Some("linear") => PriceInterpolation::Linear,
+      Some(other) => {
+        return Err(anyhow!(
+          "Invalid price-interpolation {:?} of commodity {} \
+           (expected \"step\" or \"linear\")",
+          other,
+          raw.id
+        ))
+      }
+    };
+    Ok(Commodity {
+      id: raw.id.clone(),
+      price_interpolation,
+    })
+  }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct ConfigRaw {
   pub separator: Option<String>,
 }
@@ -368,6 +415,7 @@ pub struct ConfigRaw {
 pub struct LedgerRaw {
   pub owner: Option<String>,
   pub config: Option<ConfigRaw>,
+  pub commodities: Option<Vec<CommodityRaw>>,
   pub entities: Option<Vec<EntityRaw>>,
   pub prices: Option<Vec<PriceRaw>>,
   /// Optional so that e.g. a file with only prices can be merged
@@ -383,6 +431,7 @@ pub struct Ledger {
   /// `:` and `/` are NOT interchangeable — they are literal characters.
   /// When false (no config), both `:` and `/` are accepted and normalized.
   pub separator_is_explicit: bool,
+  pub commodities: Vec<Commodity>,
   pub entities: Vec<Entity>,
   /// Declared market prices in the order they were written
   pub prices: Vec<Price>,
@@ -406,6 +455,12 @@ impl Ledger {
         separator
       ));
     }
+    let commodities = raw
+      .commodities
+      .unwrap_or_default()
+      .iter()
+      .map(Commodity::from_raw)
+      .collect::<Result<Vec<_>>>()?;
     let entities = raw
       .entities
       .unwrap_or_default()
@@ -481,6 +536,7 @@ impl Ledger {
       owner,
       separator,
       separator_is_explicit: is_explicit,
+      commodities,
       entities,
       prices,
       transactions,
@@ -493,6 +549,7 @@ impl Ledger {
     for (k, v) in other.original_account_ids {
       self.original_account_ids.entry(k).or_insert(v);
     }
+    self.commodities.extend(other.commodities);
     self.prices.extend(other.prices);
     if self.separator != other.separator {
       let sep = self.separator.clone();
@@ -599,6 +656,7 @@ impl Ledger {
       owner: self.owner.clone(),
       separator: self.separator.clone(),
       separator_is_explicit: self.separator_is_explicit,
+      commodities: self.commodities.clone(),
       entities: self.entities.clone(),
       prices: self.prices.clone(),
       transactions,
@@ -665,6 +723,7 @@ impl Ledger {
       owner: self.owner.clone(),
       separator: self.separator.clone(),
       separator_is_explicit: self.separator_is_explicit,
+      commodities: self.commodities.clone(),
       entities: self.entities.clone(),
       prices: self.prices.clone(),
       transactions,
