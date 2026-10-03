@@ -360,6 +360,44 @@ impl Price {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct PriceIndexRaw {
+  pub utc: String,
+  pub commodity: String,
+  pub value: f64,
+}
+
+/// Value of a price index (e.g. the consumer price index)
+/// measuring the purchasing power of `commodity` at `utc`
+#[derive(Debug, Clone)]
+pub struct PriceIndex {
+  pub utc: DateTime<Utc>,
+  pub commodity: String,
+  pub value: f64,
+}
+
+impl PriceIndex {
+  pub fn from_raw(raw: &PriceIndexRaw) -> Result<PriceIndex> {
+    let parse = || -> Result<PriceIndex> {
+      let utc = parse_datetime(&raw.utc)?;
+      if raw.commodity.is_empty() {
+        return Err(anyhow!("Field 'commodity' must not be empty"));
+      }
+      if !(raw.value > 0.0 && raw.value.is_finite()) {
+        return Err(anyhow!("Field 'value' must be positive"));
+      }
+      Ok(PriceIndex {
+        utc,
+        commodity: raw.commodity.clone(),
+        value: raw.value,
+      })
+    };
+    parse().with_context(|| {
+      format!("Invalid price index of {} at {}", raw.commodity, raw.utc)
+    })
+  }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct CommodityRaw {
   pub id: String,
   #[serde(rename = "price-interpolation")]
@@ -418,6 +456,8 @@ pub struct LedgerRaw {
   pub commodities: Option<Vec<CommodityRaw>>,
   pub entities: Option<Vec<EntityRaw>>,
   pub prices: Option<Vec<PriceRaw>>,
+  #[serde(rename = "price-indices")]
+  pub price_indices: Option<Vec<PriceIndexRaw>>,
   /// Optional so that e.g. a file with only prices can be merged
   #[serde(default)]
   pub transactions: Vec<TransactionRaw>,
@@ -435,6 +475,8 @@ pub struct Ledger {
   pub entities: Vec<Entity>,
   /// Declared market prices in the order they were written
   pub prices: Vec<Price>,
+  /// Declared price index values in the order they were written
+  pub price_indices: Vec<PriceIndex>,
   pub transactions: Vec<Transaction>,
   /// Mapping from normalized account ID to the original form as
   /// written in the source file. Only populated when normalization
@@ -472,6 +514,12 @@ impl Ledger {
       .unwrap_or_default()
       .iter()
       .map(Price::from_raw)
+      .collect::<Result<Vec<_>>>()?;
+    let price_indices = raw
+      .price_indices
+      .unwrap_or_default()
+      .iter()
+      .map(PriceIndex::from_raw)
       .collect::<Result<Vec<_>>>()?;
     let transactions: Vec<Transaction> = raw
       .transactions
@@ -539,6 +587,7 @@ impl Ledger {
       commodities,
       entities,
       prices,
+      price_indices,
       transactions,
       original_account_ids,
     })
@@ -551,6 +600,7 @@ impl Ledger {
     }
     self.commodities.extend(other.commodities);
     self.prices.extend(other.prices);
+    self.price_indices.extend(other.price_indices);
     if self.separator != other.separator {
       let sep = self.separator.clone();
       // Normalize entity and account IDs from the other ledger
@@ -659,6 +709,7 @@ impl Ledger {
       commodities: self.commodities.clone(),
       entities: self.entities.clone(),
       prices: self.prices.clone(),
+      price_indices: self.price_indices.clone(),
       transactions,
       original_account_ids: self.original_account_ids.clone(),
     }
@@ -726,6 +777,7 @@ impl Ledger {
       commodities: self.commodities.clone(),
       entities: self.entities.clone(),
       prices: self.prices.clone(),
+      price_indices: self.price_indices.clone(),
       transactions,
       original_account_ids: self.original_account_ids.clone(),
     }

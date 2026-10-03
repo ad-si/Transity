@@ -146,6 +146,31 @@ Prices can also live in a separate file that only contains `prices`
 and be passed as an additional journal file.
 
 
+### Inflation
+
+To show the "Value in …" chart of the web app adjusted for inflation,
+declare a price index (e.g. the consumer price index)
+for the main currency under `price-indices`:
+
+```yaml
+price-indices:
+  - utc: '2024-01-01'
+    commodity: €
+    value: 117.6
+  - utc: '2024-02-01'
+    commodity: €
+    value: 118.1
+```
+
+The index is interpolated linearly between two values.
+Adjusted values are expressed in the purchasing power
+of the last day of the chart (or of the last index value, if that is earlier).
+Values before the first index value are not shown.
+Only the ratio between index values matters,
+so any base year can be used.
+Like prices, price indices can live in a separate file.
+
+
 ### Analyzing Journal Files
 
 #### Balance

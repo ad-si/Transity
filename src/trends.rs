@@ -7,6 +7,8 @@
 //! between the same two parties in opposite directions).
 //! Commodities declared with `price-interpolation: linear` change their
 //! price linearly between two observations instead of in steps.
+//! With a declared `price-indices` series for the main currency,
+//! converted values can also be adjusted for inflation.
 
 use chrono::{Datelike, NaiveDate};
 use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
@@ -63,6 +65,81 @@ pub struct TrendData {
   pub converted: Vec<TrendSeries>,
   /// Commodities which could not be converted into `currency`
   pub unconvertible: Vec<String>,
+  /// Adjustment of `converted` for inflation.
+  /// `None` without a price index of `currency`.
+  pub inflation: Option<InflationAdjustment>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+  any(feature = "ssr", feature = "hydrate"),
+  derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct InflationAdjustment {
+  /// Day (like `TrendData::days`) whose purchasing power
+  /// the adjusted values are expressed in
+  pub base_day: i32,
+  /// One factor per entry in `TrendData::days` that converts a value
+  /// into the purchasing power of `base_day`.
+  /// `None` before the first value of the price index.
+  pub factors: Vec<Option<f64>>,
+}
+
+/// Values of the price index of a commodity sorted by date.
+/// On the same date, the last declared value takes precedence.
+#[derive(Debug)]
+pub struct PriceIndexSeries(Vec<(NaiveDate, f64)>);
+
+impl PriceIndexSeries {
+  pub fn from_ledger(
+    ledger: &Ledger,
+    commodity: &str,
+  ) -> Option<PriceIndexSeries> {
+    let mut values: Vec<(NaiveDate, f64)> = ledger
+      .price_indices
+      .iter()
+      .filter(|p| p.commodity == commodity)
+      .map(|p| (p.utc.date_naive(), p.value))
+      .collect();
+    // Stable sort keeps the declaration order within a date
+    values.sort_by_key(|(date, _)| *date);
+    values.reverse();
+    values.dedup_by_key(|(date, _)| *date);
+    values.reverse();
+    (!values.is_empty()).then_some(PriceIndexSeries(values))
+  }
+
+  pub fn dates(&self) -> impl Iterator<Item = NaiveDate> + '_ {
+    self.0.iter().map(|(date, _)| *date)
+  }
+
+  /// Value at `date`, interpolated linearly between two values.
+  /// After the last value it stays constant, before the first it's unknown.
+  pub fn value(&self, date: NaiveDate) -> Option<f64> {
+    let idx = self.0.partition_point(|(d, _)| *d <= date);
+    let (prev_date, prev) = *self.0.get(idx.checked_sub(1)?)?;
+    let Some((next_date, next)) = self.0.get(idx).copied() else {
+      return Some(prev);
+    };
+    let span = (next_date - prev_date).num_days() as f64;
+    let elapsed = (date - prev_date).num_days() as f64;
+    Some(prev + (next - prev) * elapsed / span)
+  }
+
+  /// Factors converting values at `days` into the purchasing power
+  /// of the last day (or of the last index value, if that is earlier)
+  pub fn adjustment(&self, days: &[NaiveDate]) -> Option<InflationAdjustment> {
+    let last_index_date = self.0.last()?.0;
+    let base_date = (*days.last()?).min(last_index_date);
+    let base = self.value(base_date)?;
+    Some(InflationAdjustment {
+      base_day: base_date.num_days_from_ce(),
+      factors: days
+        .iter()
+        .map(|d| self.value(*d).map(|v| base / v))
+        .collect(),
+    })
+  }
 }
 
 /// Exchange rates declared via `prices` or observed in the ledger.
@@ -337,6 +414,9 @@ pub fn get_trend_data(ledger: &Ledger) -> TrendData {
   let separator = &ledger.separator;
   let rates = ExchangeRates::from_ledger(ledger);
   let currency = main_currency(ledger);
+  let price_index = currency
+    .as_ref()
+    .and_then(|cur| PriceIndexSeries::from_ledger(ledger, cur));
 
   // Transfers touching the owner's accounts, grouped by day
   let mut by_day: BTreeMap<NaiveDate, Vec<(String, String, f64)>> =
@@ -363,6 +443,10 @@ pub fn get_trend_data(ledger: &Ledger) -> TrendData {
   let mut dates: BTreeSet<NaiveDate> = by_day.keys().copied().collect();
   if let Some(first) = dates.first().copied() {
     dates.extend(rates.dates().filter(|d| *d > first));
+    // So that the adjusted values decline gradually with inflation
+    if let Some(index) = &price_index {
+      dates.extend(index.dates().filter(|d| *d > first));
+    }
   }
   let days: Vec<NaiveDate> = dates.into_iter().collect();
 
@@ -477,5 +561,6 @@ pub fn get_trend_data(ledger: &Ledger) -> TrendData {
     converted: build(&|acc| converted.get(acc).cloned()),
     currency,
     unconvertible: unconvertible.into_iter().collect(),
+    inflation: price_index.and_then(|index| index.adjustment(&days)),
   }
 }

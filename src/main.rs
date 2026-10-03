@@ -3094,4 +3094,86 @@ transactions:
       ])
     );
   }
+  // ─── price indices ───────────────────────────────────────────────────────
+
+  #[test]
+  fn price_indices_are_validated() {
+    let index = |commodity: &str, value: &str| {
+      parse_ledger_err(&format!(
+        "price-indices:\n  - utc: '2024-01-15'\n    \
+         commodity: '{commodity}'\n    value: {value}\n"
+      ))
+    };
+    assert!(index("€", "0").contains("must be positive"));
+    assert!(index("€", "-1").contains("must be positive"));
+    assert!(index("", "100").contains("must not be empty"));
+    assert!(index("€", ".nan").contains("Invalid price index of €"));
+  }
+
+  #[test]
+  fn price_indices_are_merged() {
+    let l1 = parse_ledger(TRENDS_YAML);
+    let l2 = parse_ledger(
+      "price-indices:\n  \
+       - utc: '2020-01-01'\n    commodity: €\n    value: 100\n",
+    );
+    let combined = l1.merge(l2);
+    assert_eq!(combined.price_indices.len(), 1);
+    assert_eq!(combined.price_indices[0].value, 100.0);
+  }
+
+  #[test]
+  fn trends_inflation_adjustment() {
+    let ledger = parse_ledger(
+      "owner: john\n\
+       price-indices:\n  \
+       - utc: '2020-02-01'\n    commodity: €\n    value: 90\n  \
+       - utc: '2020-03-01'\n    commodity: €\n    value: 100\n  \
+       - utc: '2020-03-01'\n    commodity: €\n    value: 110\n  \
+       - utc: '2020-05-01'\n    commodity: €\n    value: 120\n  \
+       - utc: '2020-03-01'\n    commodity: USD\n    value: 1000\n\
+       transactions:\n  \
+       - utc: '2020-01-01'\n    transfers:\n      \
+       - from: employer\n        to: john:giro\n        amount: 1000 €\n  \
+       - utc: '2020-04-01'\n    transfers:\n      \
+       - from: employer\n        to: john:giro\n        amount: 1000 €\n",
+    );
+    let date = |s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    let index = trends::PriceIndexSeries::from_ledger(&ledger, "€").unwrap();
+    // Unknown before the first value, constant after the last one
+    assert_eq!(index.value(date("2020-01-31")), None);
+    assert_eq!(index.value(date("2020-02-01")), Some(90.0));
+    assert_eq!(index.value(date("2020-06-01")), Some(120.0));
+    // The last value declared on a date takes precedence
+    assert_eq!(index.value(date("2020-03-01")), Some(110.0));
+    // Interpolated linearly in between (61 days from March to May)
+    assert_eq!(
+      index.value(date("2020-04-01")),
+      Some(110.0 + 10.0 * 31.0 / 61.0)
+    );
+
+    let data = trends::get_trend_data(&ledger);
+    // The dates of the index values are sampled
+    assert_eq!(
+      data.days,
+      days(&[
+        "2020-01-01",
+        "2020-02-01",
+        "2020-03-01",
+        "2020-04-01",
+        "2020-05-01"
+      ])
+    );
+    let adj = data.inflation.unwrap();
+    // Expressed in the purchasing power of the last day
+    assert_eq!(adj.base_day, days(&["2020-05-01"])[0]);
+    assert_eq!(adj.factors[0], None);
+    assert_eq!(adj.factors[1], Some(120.0 / 90.0));
+    assert_eq!(adj.factors[2], Some(120.0 / 110.0));
+    assert_eq!(adj.factors[4], Some(1.0));
+
+    // Without a price index of the main currency there is no adjustment
+    let data = trends::get_trend_data(&parse_ledger(TRENDS_YAML));
+    assert_eq!(data.inflation, None);
+  }
 }
