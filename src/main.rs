@@ -937,8 +937,8 @@ mod tests {
 
   #[test]
   fn length_of_num_parts_decimal() {
-    // 3.14 → int part "3" (len 1), frac part ".14" (len 3 incl dot)
-    let (i, f) = length_of_num_parts(3.14);
+    // 2.75 → int part "2" (len 1), frac part ".75" (len 3 incl dot)
+    let (i, f) = length_of_num_parts(2.75);
     assert_eq!(i, 1);
     assert_eq!(f, 3);
   }

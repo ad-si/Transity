@@ -29,7 +29,7 @@ update-snapshots:
 
 .PHONY: format
 format:
-	cargo clippy --fix --allow-dirty > /dev/null 2>&1
+	cargo clippy --fix --allow-dirty --all-targets --quiet
 	cargo fmt
 
 
