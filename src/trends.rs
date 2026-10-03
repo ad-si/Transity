@@ -363,18 +363,18 @@ pub fn get_trend_data(ledger: &Ledger) -> TrendData {
     }
   }
 
-  // Rank accounts by their largest absolute balance to decide
+  // Rank accounts by their current absolute balance to decide
   // which ones get their own color and which are folded into "Other"
   let magnitude = |acc: &str| -> f64 {
-    let max_abs = |vals: &Vec<Option<f64>>| {
-      vals.iter().flatten().fold(0.0_f64, |m, v| m.max(v.abs()))
+    let current_abs = |vals: &Vec<Option<f64>>| {
+      vals.iter().rev().flatten().next().map_or(0.0, |v| v.abs())
     };
     match converted.get(acc) {
-      Some(vals) if !is_empty_series(vals) => max_abs(vals),
+      Some(vals) if !is_empty_series(vals) => current_abs(vals),
       _ => native
         .iter()
         .filter(|((a, _), _)| a == acc)
-        .map(|(_, vals)| max_abs(vals))
+        .map(|(_, vals)| current_abs(vals))
         .sum(),
     }
   };

@@ -2878,6 +2878,44 @@ transactions:
     assert_eq!(other.values[0], Some(100.0));
   }
 
+  #[test]
+  fn trends_rank_accounts_by_current_balance() {
+    let mut transfers: String = (1..=8)
+      .map(|i| {
+        format!(
+          "  - utc: '2020-01-0{i}'\n    transfers:\n      \
+           - from: employer\n        to: john:acc{i}\n        \
+           amount: {} €\n",
+          i * 100
+        )
+      })
+      .collect();
+    // Account with the largest past balance, which is now nearly empty
+    transfers.push_str(
+      "  - utc: '2020-01-09'\n    transfers:\n      \
+       - from: employer\n        to: john:old\n        amount: 5000 €\n  \
+       - utc: '2020-01-10'\n    transfers:\n      \
+       - from: john:old\n        to: shop\n        amount: 4990 €\n",
+    );
+    let yaml = format!("owner: john\ntransactions:\n{transfers}");
+    let data = trends::get_trend_data(&parse_ledger(&yaml));
+    let labels: Vec<&str> =
+      data.converted.iter().map(|s| s.label.as_str()).collect();
+    assert_eq!(
+      labels,
+      vec![
+        "john/acc8",
+        "john/acc7",
+        "john/acc6",
+        "john/acc5",
+        "john/acc4",
+        "john/acc3",
+        "john/acc2",
+        "Other"
+      ]
+    );
+  }
+
   // ─── prices ──────────────────────────────────────────────────────────────
 
   fn parse_ledger_err(yaml: &str) -> String {
