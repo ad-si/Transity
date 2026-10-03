@@ -2,12 +2,12 @@
 //!
 //! Produces one value per account (and commodity) for every day on which
 //! a balance or an exchange rate changes. Values are converted into the
-//! ledger's main currency with exchange rates implied by exchange
-//! transactions (two transfers of different commodities between the same
-//! two parties in opposite directions).
+//! ledger's main currency with the declared `prices` and the exchange rates
+//! implied by exchange transactions (two transfers of different commodities
+//! between the same two parties in opposite directions).
 
 use chrono::{Datelike, NaiveDate};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 
 use crate::{
   add_account_default, norm_acc_id, rational_to_f64, Ledger, Transfer,
@@ -62,59 +62,101 @@ pub struct TrendData {
   pub unconvertible: Vec<String>,
 }
 
-/// Exchange rates observed in the ledger.
-/// `rates[(a, b)]` lists (date, price of 1 `a` in `b`) sorted by date.
+/// Exchange rates declared via `prices` or observed in the ledger.
+/// `rates[(a, b)]` lists observations of the price of 1 `a` in `b`
+/// sorted by date. On the same date, declared prices come after
+/// implied ones (and later declarations after earlier ones),
+/// so the last observation on a date takes precedence.
 #[derive(Debug, Default)]
 pub struct ExchangeRates {
-  rates: HashMap<(String, String), Vec<(NaiveDate, f64)>>,
+  rates: BTreeMap<(String, String), Vec<RateObservation>>,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct RateObservation {
+  date: NaiveDate,
+  rate: f64,
+  declared: bool,
 }
 
 impl ExchangeRates {
   pub fn from_ledger(ledger: &Ledger) -> ExchangeRates {
-    let mut rates: HashMap<(String, String), Vec<(NaiveDate, f64)>> =
-      HashMap::new();
+    let mut rates = ExchangeRates::default();
     for tx in &ledger.transactions {
       let transfers = tx.transfers_with_date();
       for (i, a) in transfers.iter().enumerate() {
         for b in &transfers[i + 1..] {
           if let Some((date, rate)) = implied_rate(a, b, &ledger.separator) {
             let (ca, cb) = (&a.amount.commodity, &b.amount.commodity);
-            rates
-              .entry((ca.clone(), cb.clone()))
-              .or_default()
-              .push((date, rate));
-            rates
-              .entry((cb.clone(), ca.clone()))
-              .or_default()
-              .push((date, 1.0 / rate));
+            rates.insert(ca, cb, date, rate, false);
           }
         }
       }
     }
-    for obs in rates.values_mut() {
-      obs.sort_by_key(|(d, _)| *d);
+    for p in &ledger.prices {
+      let rate = rational_to_f64(&p.price.quantity);
+      if rate > 0.0 && rate.is_finite() {
+        let date = p.utc.date_naive();
+        rates.insert(&p.commodity, &p.price.commodity, date, rate, true);
+      }
     }
-    ExchangeRates { rates }
+    for obs in rates.rates.values_mut() {
+      // Stable sort keeps the declaration order within a date
+      obs.sort_by_key(|o| (o.date, o.declared));
+    }
+    rates
+  }
+
+  /// Records the rate and its inverse
+  fn insert(
+    &mut self,
+    from: &str,
+    to: &str,
+    date: NaiveDate,
+    rate: f64,
+    declared: bool,
+  ) {
+    for (key, rate) in [
+      ((from.to_string(), to.to_string()), rate),
+      ((to.to_string(), from.to_string()), 1.0 / rate),
+    ] {
+      self.rates.entry(key).or_default().push(RateObservation {
+        date,
+        rate,
+        declared,
+      });
+    }
   }
 
   /// Dates on which at least one exchange rate was observed
   pub fn dates(&self) -> impl Iterator<Item = NaiveDate> + '_ {
-    self.rates.values().flatten().map(|(d, _)| *d)
+    self.rates.values().flatten().map(|o| o.date)
   }
 
   /// Latest rate at or before `date`, or the earliest one after it
   fn direct(&self, from: &str, to: &str, date: NaiveDate) -> Option<f64> {
     let obs = self.rates.get(&(from.to_string(), to.to_string()))?;
-    let idx = obs.partition_point(|(d, _)| *d <= date);
+    let idx = obs.partition_point(|o| o.date <= date);
     if idx > 0 {
-      Some(obs[idx - 1].1)
+      Some(obs[idx - 1].rate)
     } else {
-      obs.first().map(|(_, r)| *r)
+      obs.first().map(|o| o.rate)
     }
   }
 
+  /// Commodities with a direct rate from `from`, in alphabetical order
+  fn neighbors<'a>(&'a self, from: &'a str) -> impl Iterator<Item = &'a str> {
+    self
+      .rates
+      .range((from.to_string(), String::new())..)
+      .map(|((a, b), _)| (a, b))
+      .take_while(move |(a, _)| *a == from)
+      .map(|(_, b)| b.as_str())
+  }
+
   /// Price of 1 `from` in `to` at `date`.
-  /// Falls back to a conversion via one intermediate commodity.
+  /// Without a direct rate, the shortest chain of conversions
+  /// via other commodities is used (e.g. ACME → USD → EUR).
   pub fn rate(&self, from: &str, to: &str, date: NaiveDate) -> Option<f64> {
     if from == to {
       return Some(1.0);
@@ -122,13 +164,26 @@ impl ExchangeRates {
     if let Some(r) = self.direct(from, to, date) {
       return Some(r);
     }
-    self
-      .rates
-      .keys()
-      .filter(|(a, b)| a == from && b != to)
-      .find_map(|(_, via)| {
-        Some(self.direct(from, via, date)? * self.direct(via, to, date)?)
-      })
+    // Breadth-first search, tracking the accumulated rate to each node
+    let mut visited: HashMap<&str, f64> = HashMap::from([(from, 1.0)]);
+    let mut queue: VecDeque<&str> = VecDeque::from([from]);
+    while let Some(node) = queue.pop_front() {
+      let acc = visited[node];
+      for next in self.neighbors(node) {
+        if visited.contains_key(next) {
+          continue;
+        }
+        let Some(r) = self.direct(node, next, date).map(|r| acc * r) else {
+          continue;
+        };
+        if next == to {
+          return Some(r);
+        }
+        visited.insert(next, r);
+        queue.push_back(next);
+      }
+    }
+    None
   }
 }
 

@@ -316,6 +316,50 @@ impl Transaction {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct PriceRaw {
+  pub utc: String,
+  pub commodity: String,
+  pub price: String,
+}
+
+/// Market price of one unit of `commodity` at `utc`
+#[derive(Debug, Clone)]
+pub struct Price {
+  pub utc: DateTime<Utc>,
+  pub commodity: String,
+  pub price: Amount,
+}
+
+impl Price {
+  pub fn from_raw(raw: &PriceRaw) -> Result<Price> {
+    let parse = || -> Result<Price> {
+      let utc = parse_datetime(&raw.utc)?;
+      let price = parse_amount(&raw.price)?;
+      if raw.commodity.is_empty() {
+        return Err(anyhow!("Field 'commodity' must not be empty"));
+      }
+      if price.commodity == raw.commodity {
+        return Err(anyhow!(
+          "Field 'price' must be in a different commodity than {}",
+          raw.commodity
+        ));
+      }
+      if price.quantity <= BigRational::zero() {
+        return Err(anyhow!("Field 'price' must be positive"));
+      }
+      Ok(Price {
+        utc,
+        commodity: raw.commodity.clone(),
+        price,
+      })
+    };
+    parse().with_context(|| {
+      format!("Invalid price of {} at {}", raw.commodity, raw.utc)
+    })
+  }
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct ConfigRaw {
   pub separator: Option<String>,
 }
@@ -325,6 +369,9 @@ pub struct LedgerRaw {
   pub owner: Option<String>,
   pub config: Option<ConfigRaw>,
   pub entities: Option<Vec<EntityRaw>>,
+  pub prices: Option<Vec<PriceRaw>>,
+  /// Optional so that e.g. a file with only prices can be merged
+  #[serde(default)]
   pub transactions: Vec<TransactionRaw>,
 }
 
@@ -337,6 +384,8 @@ pub struct Ledger {
   /// When false (no config), both `:` and `/` are accepted and normalized.
   pub separator_is_explicit: bool,
   pub entities: Vec<Entity>,
+  /// Declared market prices in the order they were written
+  pub prices: Vec<Price>,
   pub transactions: Vec<Transaction>,
   /// Mapping from normalized account ID to the original form as
   /// written in the source file. Only populated when normalization
@@ -362,6 +411,12 @@ impl Ledger {
       .unwrap_or_default()
       .iter()
       .map(Entity::from_raw)
+      .collect::<Result<Vec<_>>>()?;
+    let prices = raw
+      .prices
+      .unwrap_or_default()
+      .iter()
+      .map(Price::from_raw)
       .collect::<Result<Vec<_>>>()?;
     let transactions: Vec<Transaction> = raw
       .transactions
@@ -427,6 +482,7 @@ impl Ledger {
       separator,
       separator_is_explicit: is_explicit,
       entities,
+      prices,
       transactions,
       original_account_ids,
     })
@@ -437,6 +493,7 @@ impl Ledger {
     for (k, v) in other.original_account_ids {
       self.original_account_ids.entry(k).or_insert(v);
     }
+    self.prices.extend(other.prices);
     if self.separator != other.separator {
       let sep = self.separator.clone();
       // Normalize entity and account IDs from the other ledger
@@ -543,6 +600,7 @@ impl Ledger {
       separator: self.separator.clone(),
       separator_is_explicit: self.separator_is_explicit,
       entities: self.entities.clone(),
+      prices: self.prices.clone(),
       transactions,
       original_account_ids: self.original_account_ids.clone(),
     }
@@ -608,6 +666,7 @@ impl Ledger {
       separator: self.separator.clone(),
       separator_is_explicit: self.separator_is_explicit,
       entities: self.entities.clone(),
+      prices: self.prices.clone(),
       transactions,
       original_account_ids: self.original_account_ids.clone(),
     }

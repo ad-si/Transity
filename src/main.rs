@@ -2877,4 +2877,120 @@ transactions:
     assert_eq!(other.values.last(), Some(&Some(300.0)));
     assert_eq!(other.values[0], Some(100.0));
   }
+
+  // ─── prices ──────────────────────────────────────────────────────────────
+
+  fn parse_ledger_err(yaml: &str) -> String {
+    let raw: LedgerRaw = serde_yaml::from_str(yaml).expect("YAML parse failed");
+    format!("{:#}", Ledger::from_raw(raw).unwrap_err())
+  }
+
+  #[test]
+  fn prices_are_parsed() {
+    let ledger = parse_ledger(
+      "prices:\n  \
+       - utc: 2024-01-15\n    commodity: ACME\n    price: 185.50 USD\n",
+    );
+    assert_eq!(ledger.prices.len(), 1);
+    let p = &ledger.prices[0];
+    assert_eq!(p.commodity, "ACME");
+    assert_eq!(p.price, make_amount(371, 2, "USD"));
+    assert_eq!(p.utc.date_naive().to_string(), "2024-01-15");
+    assert!(ledger.transactions.is_empty());
+  }
+
+  #[test]
+  fn prices_are_validated() {
+    let price = |commodity: &str, price: &str| {
+      parse_ledger_err(&format!(
+        "prices:\n  - utc: '2024-01-15'\n    \
+         commodity: '{commodity}'\n    price: '{price}'\n"
+      ))
+    };
+    assert!(price("ACME", "0 USD").contains("must be positive"));
+    assert!(price("ACME", "-1 USD").contains("must be positive"));
+    assert!(price("ACME", "5 ACME").contains("different commodity"));
+    assert!(price("", "5 USD").contains("must not be empty"));
+    assert!(price("ACME", "USD").contains("Invalid price of ACME"));
+  }
+
+  #[test]
+  fn prices_are_merged() {
+    let l1 = parse_ledger(TRENDS_YAML);
+    let l2 = parse_ledger(
+      "prices:\n  \
+       - utc: '2020-02-15'\n    commodity: ACME\n    price: 70 €\n",
+    );
+    let combined = l1.merge(l2);
+    assert_eq!(combined.prices.len(), 1);
+    assert_eq!(combined.transactions.len(), 4);
+  }
+
+  #[test]
+  fn trends_declared_prices_take_precedence() {
+    let yaml = format!(
+      "{TRENDS_YAML}prices:\n  \
+       - utc: '2020-02-15'\n    commodity: ACME\n    price: 70 €\n  \
+       - utc: '2020-03-01'\n    commodity: ACME\n    price: 55 €\n  \
+       - utc: '2020-03-01'\n    commodity: ACME\n    price: 65 €\n  \
+       - utc: '2020-04-01'\n    commodity: €\n    price: 0.01 ACME\n"
+    );
+    let ledger = parse_ledger(&yaml);
+    let rates = trends::ExchangeRates::from_ledger(&ledger);
+    let date = |s| chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d").unwrap();
+    // Implied by the purchase on 2020-02-01
+    assert_eq!(rates.rate("ACME", "€", date("2020-02-01")), Some(50.0));
+    assert_eq!(rates.rate("ACME", "€", date("2020-02-20")), Some(70.0));
+    // Declared prices win over the implied one (60 €) on the same day,
+    // and the last declaration wins among declared ones
+    assert_eq!(rates.rate("ACME", "€", date("2020-03-01")), Some(65.0));
+    // Inverse prices are derived
+    assert_eq!(rates.rate("ACME", "€", date("2020-04-01")), Some(100.0));
+
+    let data = trends::get_trend_data(&ledger);
+    // Price dates are sampled too
+    assert_eq!(
+      data.days,
+      days(&[
+        "2020-01-01",
+        "2020-02-01",
+        "2020-02-15",
+        "2020-03-01",
+        "2020-03-15",
+        "2020-04-01",
+      ])
+    );
+    let depot = data
+      .converted
+      .iter()
+      .find(|s| s.label == "john/depot")
+      .unwrap();
+    assert_eq!(
+      depot.values,
+      vec![
+        None,
+        Some(500.0),
+        Some(700.0),
+        Some(325.0),
+        Some(325.0),
+        Some(500.0)
+      ]
+    );
+  }
+
+  #[test]
+  fn trends_rates_are_chained() {
+    let ledger = parse_ledger(
+      "prices:\n  \
+       - utc: '2020-01-01'\n    commodity: ACME\n    price: 2 USD\n  \
+       - utc: '2020-01-01'\n    commodity: USD\n    price: 4 GBP\n  \
+       - utc: '2020-01-01'\n    commodity: GBP\n    price: 0.5 €\n  \
+       - utc: '2020-01-01'\n    commodity: BTC\n    price: 3 XYZ\n",
+    );
+    let rates = trends::ExchangeRates::from_ledger(&ledger);
+    let date = chrono::NaiveDate::from_ymd_opt(2020, 6, 1).unwrap();
+    assert_eq!(rates.rate("ACME", "€", date), Some(4.0));
+    assert_eq!(rates.rate("€", "ACME", date), Some(0.25));
+    assert_eq!(rates.rate("ACME", "BTC", date), None);
+  }
 }

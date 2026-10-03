@@ -98,6 +98,34 @@ are treated as literal parts of the account name.
 The separator must be exactly one character.
 
 
+### Commodity Prices
+
+To value holdings like shares or foreign currencies over time
+(e.g. in the "Value in …" chart of the web app),
+declare their market prices under `prices`:
+
+```yaml
+prices:
+  - utc: '2024-01-15'
+    commodity: AAPL
+    price: 185.50 USD
+  - utc: '2024-01-15'
+    commodity: USD
+    price: 0.92 €
+```
+
+Each entry states the price of one unit of `commodity` at `utc`.
+A value is converted with the latest price on or before its date.
+Inverse prices are derived automatically
+and prices can be chained (here AAPL → USD → €).
+
+Exchange transactions (like buying shares) also imply a price.
+Declared prices take precedence over implied ones on the same day.
+
+Prices can also live in a separate file that only contains `prices`
+and be passed as an additional journal file.
+
+
 ### Analyzing Journal Files
 
 #### Balance
