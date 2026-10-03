@@ -257,7 +257,7 @@ enum Commands {
   Server {
     journal: String,
     /// Port to listen on
-    #[arg(long, default_value = "3000")]
+    #[arg(long, default_value = "8726")]
     port: u16,
     /// Override the owner set in the journal file
     #[arg(long)]
