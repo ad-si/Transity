@@ -12,7 +12,7 @@ export function sanitizeYaml (yaml) {
           ? match
           : `  ${key}: ${value}`,
     )
-    .replace(/utc: ([0-9TZ:.-]+)$/gm, "utc: '$1'")
+    .replace(/utc: ([0-9TZ:.-]+(?: [0-9:.]+)?)$/gm, "utc: '$1'")
 }
 
 
@@ -279,4 +279,43 @@ export function noteToAccount (note = "") {
     })
 
   return account
+}
+
+
+// Exact decimal arithmetic on strings like "-19922.91" or "83.330000"
+// by scaling them to integers with 10 decimal places
+export const scale = 10n ** 10n
+
+export function toScaled (value) {
+  if (!value) {
+    return 0n
+  }
+  const isNegative = value.startsWith("-")
+  const [whole, fraction = ""] = value
+    .replace(/^[-+]/, "")
+    .split(".")
+  const scaled = BigInt(whole || "0") * scale +
+    BigInt((fraction + "0".repeat(10)).slice(0, 10))
+  return isNegative ? -scaled : scaled
+}
+
+// Formats with all significant decimal places,
+// or rounded half away from zero to a fixed number of decimal places
+export function formatScaled (scaled, decimals = null) {
+  let abs = scaled < 0n ? -scaled : scaled
+  if (decimals !== null) {
+    const unit = 10n ** BigInt(10 - decimals)
+    abs = (abs + unit / 2n) / unit * unit
+  }
+  let fraction = String(abs % scale)
+    .padStart(10, "0")
+  fraction = decimals === null
+    ? fraction.replace(/0+$/, "")
+    : fraction.slice(0, decimals)
+  const whole = String(abs / scale)
+  return (scaled < 0n ? "-" : "") + whole + (fraction ? "." + fraction : "")
+}
+
+export function absolute (scaled) {
+  return scaled < 0n ? -scaled : scaled
 }

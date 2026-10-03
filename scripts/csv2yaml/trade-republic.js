@@ -18,7 +18,13 @@ import { pathToFileURL } from "node:url"
 import fse from "fs-extra"
 import yaml from "js-yaml"
 
-import { sanitizeYaml } from "../helpers.js"
+import {
+  absolute,
+  formatScaled,
+  sanitizeYaml,
+  scale,
+  toScaled,
+} from "../helpers.js"
 
 
 // RFC 4180 CSV parser (quoted fields may contain commas, quotes, newlines)
@@ -70,45 +76,6 @@ export function parseCsv (text) {
   const [header, ...records] = rows.filter(aRow => aRow.some(Boolean))
   return records.map(record =>
     Object.fromEntries(header.map((key, index) => [key, record[index] ?? ""])))
-}
-
-
-// Exact decimal arithmetic on strings like "-19922.91" or "83.330000"
-// by scaling them to integers with 10 decimal places
-const scale = 10n ** 10n
-
-function toScaled (value) {
-  if (!value) {
-    return 0n
-  }
-  const isNegative = value.startsWith("-")
-  const [whole, fraction = ""] = value
-    .replace(/^[-+]/, "")
-    .split(".")
-  const scaled = BigInt(whole || "0") * scale +
-    BigInt((fraction + "0".repeat(10)).slice(0, 10))
-  return isNegative ? -scaled : scaled
-}
-
-// Formats with all significant decimal places,
-// or rounded half away from zero to a fixed number of decimal places
-function formatScaled (scaled, decimals = null) {
-  let abs = scaled < 0n ? -scaled : scaled
-  if (decimals !== null) {
-    const unit = 10n ** BigInt(10 - decimals)
-    abs = (abs + unit / 2n) / unit * unit
-  }
-  let fraction = String(abs % scale)
-    .padStart(10, "0")
-  fraction = decimals === null
-    ? fraction.replace(/0+$/, "")
-    : fraction.slice(0, decimals)
-  const whole = String(abs / scale)
-  return (scaled < 0n ? "-" : "") + whole + (fraction ? "." + fraction : "")
-}
-
-function absolute (scaled) {
-  return scaled < 0n ? -scaled : scaled
 }
 
 
