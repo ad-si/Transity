@@ -6,13 +6,28 @@
 //   node hypovereinsbank.js [from <YYYY-MM-DD>] [to <YYYY-MM-DD>]
 //   (default: the last 90 days until today)
 //
+//   node hypovereinsbank.js documents <dir> \
+//     [from <YYYY-MM-DD>] [to <YYYY-MM-DD>]
+//   (default: the last 90 days until today)
+//   Download all documents of the period from the mailbox ("Postfach")
+//   which are not yet in <dir>, with the names the bank gives them
+//   (e.g. "Kontoauszug_0386826510_(258663519).PDF"),
+//   and print their paths to stdout.
+//   Downloading marks the documents as read in the mailbox.
+//
 // Environment: HYPOVEREINSBANK_USERNAME (Direct Banking Nummer),
 // HYPOVEREINSBANK_PASSWORD (else manual login)
 //
 // The login has to be confirmed in the HVB app (SCA).
 
+import path from "node:path"
+import {pathToFileURL} from "node:url"
+
+import fse from "fs-extra"
+
 import {
   captureAttachment,
+  captureAttachmentResponse,
   dumpDebugFiles,
   getCredentials,
   launchBrowser,
@@ -47,11 +62,17 @@ async function login (page, {username, password}) {
   await page.goto(url, {timeout: 30000})
 
   try {
-    if (!username || !password) {
-      throw new Error("No credentials configured")
+    if (username && password) {
+      await page.fill("#username", username, {timeout: 15000})
+      await page.fill("#px2", password, {timeout: 15000})
     }
-    await page.fill("#username", username, {timeout: 15000})
-    await page.fill("#px2", password, {timeout: 15000})
+    else {
+      // The browser profile may have saved the credentials.
+      // Chromium hides autofilled values from the page until the user
+      // interacts with it, but they match `:autofill`.
+      log("No credentials configured, wait for the browser to autofill them")
+      await page.waitForSelector("#px2:autofill", {timeout: 10000})
+    }
     await page.click("#loginCommandButton", {timeout: 15000})
   }
   catch (error) {
@@ -84,6 +105,94 @@ async function exportCsv (page, {startDate, endDate}) {
 }
 
 
+// The file name of a "Content-Disposition" header, without directories
+function getFileName (disposition) {
+  const encoded = disposition.match(/filename\*=(?:UTF-8|utf-8)''([^;]+)/)
+  const plain = disposition.match(/filename="?([^";]+)"?/)
+  const name = encoded
+    ? decodeURIComponent(encoded[1])
+    : plain?.[1]
+  return name
+    ? path.basename(name.trim())
+    : null
+}
+
+
+// The documents in the table of the current page
+function getListedDocuments (page) {
+  return page.$$eval("#postboxDocumentTable_data tr[data-rk]", rows =>
+    rows.map(row => {
+      const cells = [...row.querySelectorAll("td")]
+        .map(cell => cell.innerText.trim()
+          .replace(/\s+/g, " "))
+      return {id: row.dataset.rk, date: cells[1], subject: cells[2]}
+    }))
+}
+
+
+export async function downloadDocuments (
+  page,
+  {outputDir, startDate, endDate},
+) {
+  log("Go to documents page")
+  await page.goto(
+    `${baseUrl}/portal?view=/de/banking/uebersicht/postfach/ihre-dokumente.jsp`,
+    {timeout: 30000},
+  )
+  await page.waitForSelector("#dateFrom_input")
+
+  log(`Set period ${toDDdotMMdotYYYY(startDate)} - ${
+    toDDdotMMdotYYYY(endDate)}`)
+  await page.fill("#dateFrom_input", toDDdotMMdotYYYY(startDate))
+  await page.fill("#dateTo_input", toDDdotMMdotYYYY(endDate))
+  await page.click("#refreshbutton")
+  await page.waitForLoadState("networkidle")
+
+  await fse.ensureDir(outputDir)
+  const existingFiles = await fse.readdir(outputDir)
+  const seenIds = new Set()
+  let downloadCounter = 0
+
+  while (true) {
+    for (const document of await getListedDocuments(page)) {
+      if (seenIds.has(document.id)) {
+        continue
+      }
+      seenIds.add(document.id)
+      // The bank's file names end with the document id, e.g. "(258663519).PDF"
+      if (existingFiles.some(fileName => fileName.includes(document.id))) {
+        log(`Skip ${document.date} ${document.subject} (already downloaded)`)
+        continue
+      }
+
+      const {body, headers} = await captureAttachmentResponse(page, () =>
+        page.click(`tr[data-rk="${document.id}"] a[id$=":doDownload"]`))
+      const fileName =
+        getFileName(headers["content-disposition"] || "") ??
+        `${document.id}.pdf`
+      const filePath = path.join(outputDir, fileName)
+      await fse.writeFile(filePath, body)
+      log(`Saved ${document.date} ${document.subject}`)
+      console.info(filePath)
+      downloadCounter += 1
+      // Downloading refreshes the table to mark the document as read
+      await page.waitForLoadState("networkidle")
+    }
+
+    const nextLink = page.locator(
+      "#postboxDocumentTable a.ui-paginator-next:not(.ui-state-disabled)")
+    if (await nextLink.count() === 0) {
+      break
+    }
+    await nextLink.first()
+      .click()
+    await page.waitForLoadState("networkidle")
+  }
+
+  log(`Downloaded ${downloadCounter} new documents`)
+}
+
+
 async function main () {
   const credentials = await getCredentials(
     "HYPOVEREINSBANK", "HypoVereinsbank")
@@ -99,6 +208,16 @@ async function main () {
 
   try {
     await login(page, credentials)
+
+    if (process.argv[2] === "documents") {
+      await downloadDocuments(page, {
+        outputDir: process.argv[3] || ".",
+        startDate,
+        endDate,
+      })
+      return
+    }
+
     const csv = await exportCsv(page, {startDate, endDate})
     process.stdout.write(csv)
   }
@@ -113,4 +232,7 @@ async function main () {
 }
 
 
-main()
+// Allows importing the functions, e.g. to test them in a running browser
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+}

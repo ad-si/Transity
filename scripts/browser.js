@@ -63,21 +63,22 @@ export async function getCredentials (prefix, displayName) {
 }
 
 
-// Runs `trigger` (e.g. a click on an export link) and returns the body
-// of the first response served as an attachment. The request is answered
-// with an empty response, so no browser download happens:
-// Chromium crashes (SIGSEGV) when Playwright handles downloads.
-export async function captureAttachment (
+// Runs `trigger` (e.g. a click on an export link) and returns
+// `{body, headers}` of the first response served as an attachment.
+// The request is answered with an empty response, so no browser download
+// happens: Chromium crashes (SIGSEGV) when Playwright handles downloads.
+export async function captureAttachmentResponse (
   page,
   trigger,
   {timeout = 60000} = {},
 ) {
-  let body = null
+  let captured = null
   await page.route("**/*", async route => {
     const response = await route.fetch()
-    const disposition = response.headers()["content-disposition"] || ""
-    if (!body && /attachment/i.test(disposition)) {
-      body = await response.body()
+    const headers = response.headers()
+    const disposition = headers["content-disposition"] || ""
+    if (!captured && /attachment/i.test(disposition)) {
+      captured = {body: await response.body(), headers}
       await route.fulfill({status: 204, body: ""})
     }
     else {
@@ -87,7 +88,7 @@ export async function captureAttachment (
 
   try {
     await trigger()
-    for (let waited = 0; !body && waited < timeout; waited += 500) {
+    for (let waited = 0; !captured && waited < timeout; waited += 500) {
       await page.waitForTimeout(500)
     }
   }
@@ -95,10 +96,16 @@ export async function captureAttachment (
     await page.unrouteAll({behavior: "ignoreErrors"})
   }
 
-  if (!body) {
+  if (!captured) {
     throw new Error("No file was served")
   }
-  return body
+  return captured
+}
+
+
+// Like `captureAttachmentResponse`, but only returns the body
+export async function captureAttachment (page, trigger, options) {
+  return (await captureAttachmentResponse(page, trigger, options)).body
 }
 
 
