@@ -8,6 +8,12 @@
 //   Download all account statements ("Kontoauszüge") from the mailbox
 //   which are not yet in <dir>, named "<statement date>_<number>.pdf"
 //
+//   node dkb.js documents <dir> [from <YYYY-MM-DD>] [to <YYYY-MM-DD>]
+//   (default: the last 90 days until today)
+//   Download all documents of the period from the mailbox
+//   which are not yet in <dir>, with the names the bank gives them,
+//   and print their paths to stdout.
+//
 // Environment: DKB_USERNAME, DKB_PASSWORD (else manual login),
 // DKB_IBAN (account to export, default: the first account)
 //
@@ -144,14 +150,89 @@ async function exportCsv (page, {startDate, endDate}) {
 
 
 // Uses the JSON API of the mailbox ("Postfach") with the session cookies
-async function downloadStatements (page, outputDir) {
-  const documents = await page.evaluate(async () => {
+function getDocuments (page) {
+  return page.evaluate(async () => {
     const response = await fetch(
       "/api/documentstorage/documents?page%5Blimit%5D=1000",
       {headers: {accept: "application/vnd.api+json"}},
     )
     return (await response.json()).data
   })
+}
+
+
+async function fetchDocument (page, id) {
+  const base64 = await page.evaluate(async documentId => {
+    const response = await fetch(
+      `/api/documentstorage/documents/${documentId}`,
+      {headers: {accept: "application/pdf"}},
+    )
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    let binary = ""
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte)
+    }
+    return btoa(binary)
+  }, id)
+  return Buffer.from(base64, "base64")
+}
+
+
+// The date (YYYY-MM-DD) the document was put into the mailbox
+function getDocumentDate ({attributes}) {
+  const date = attributes.creationDate ??
+    attributes.receivedDate ??
+    attributes.documentDate ??
+    attributes.metadata?.statementDate
+  return date?.slice(0, 10) ?? null
+}
+
+
+async function downloadDocuments (page, {outputDir, startDate, endDate}) {
+  const documents = await getDocuments(page)
+  const toIsoDate = date => [
+    date.getFullYear(),
+    String(date.getMonth() + 1)
+      .padStart(2, "0"),
+    String(date.getDate())
+      .padStart(2, "0"),
+  ].join("-")
+  const [start, end] = [toIsoDate(startDate), toIsoDate(endDate)]
+
+  await fse.ensureDir(outputDir)
+  let downloadCounter = 0
+
+  for (const document of documents) {
+    const {fileName} = document.attributes
+    const date = getDocumentDate(document)
+    if (!date) {
+      log(`No date for "${fileName}": ${JSON.stringify(document.attributes)}`)
+    }
+    else if (date < start || date > end) {
+      continue
+    }
+
+    const filePath = path.join(
+      outputDir,
+      /\.pdf$/i.test(fileName) ? fileName : `${fileName}.pdf`,
+    )
+    if (await fse.pathExists(filePath)) {
+      log(`Skip ${date} ${fileName} (already downloaded)`)
+      continue
+    }
+
+    await fse.writeFile(filePath, await fetchDocument(page, document.id))
+    log(`Saved ${date} ${fileName}`)
+    console.info(filePath)
+    downloadCounter += 1
+  }
+
+  log(`Downloaded ${downloadCounter} new documents`)
+}
+
+
+async function downloadStatements (page, outputDir) {
+  const documents = await getDocuments(page)
 
   let downloadCounter = 0
   for (const document of documents) {
@@ -169,19 +250,7 @@ async function downloadStatements (page, outputDir) {
     }
 
     log(`Download ${filePath}`)
-    const base64 = await page.evaluate(async id => {
-      const response = await fetch(
-        `/api/documentstorage/documents/${id}`,
-        {headers: {accept: "application/pdf"}},
-      )
-      const bytes = new Uint8Array(await response.arrayBuffer())
-      let binary = ""
-      for (const byte of bytes) {
-        binary += String.fromCharCode(byte)
-      }
-      return btoa(binary)
-    }, document.id)
-    await fse.writeFile(filePath, Buffer.from(base64, "base64"))
+    await fse.writeFile(filePath, await fetchDocument(page, document.id))
     downloadCounter += 1
   }
 
@@ -206,6 +275,14 @@ async function main () {
 
     if (process.argv[2] === "statements") {
       await downloadStatements(page, process.argv[3] || ".")
+      return
+    }
+    if (process.argv[2] === "documents") {
+      await downloadDocuments(page, {
+        outputDir: process.argv[3] || ".",
+        startDate,
+        endDate,
+      })
       return
     }
 
