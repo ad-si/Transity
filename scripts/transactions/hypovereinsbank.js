@@ -82,6 +82,9 @@ async function login (page, {username, password}) {
 
   log("Wait for the login (confirm it in the HVB app) …")
   await page.waitForURL(/finanzstatus\.jsp/, {timeout: 600000})
+  // The portal still sets up the session after showing the overview.
+  // Navigating away before it is done ends in a redirect loop.
+  await page.waitForLoadState("networkidle")
 }
 
 
@@ -135,10 +138,19 @@ export async function downloadDocuments (
   {outputDir, startDate, endDate},
 ) {
   log("Go to documents page")
-  await page.goto(
-    `${baseUrl}/portal?view=/de/banking/uebersicht/postfach/ihre-dokumente.jsp`,
-    {timeout: 30000},
-  )
+  const documentsUrl =
+    `${baseUrl}/portal?view=/de/banking/uebersicht/postfach/ihre-dokumente.jsp`
+  try {
+    await page.goto(documentsUrl, {timeout: 30000})
+  }
+  catch (error) {
+    if (!error.message.includes("ERR_TOO_MANY_REDIRECTS")) {
+      throw error
+    }
+    log("Redirect loop, retry in 5 s")
+    await page.waitForTimeout(5000)
+    await page.goto(documentsUrl, {timeout: 30000})
+  }
   await page.waitForSelector("#dateFrom_input")
 
   log(`Set period ${toDDdotMMdotYYYY(startDate)} - ${
@@ -147,6 +159,18 @@ export async function downloadDocuments (
   await page.fill("#dateTo_input", toDDdotMMdotYYYY(endDate))
   await page.click("#refreshbutton")
   await page.waitForLoadState("networkidle")
+
+  // Show as many documents per page as possible (the largest option is
+  // the total count), as paging races with the refresh after each download
+  const rowsPerPage = page.locator(
+    "#postboxDocumentTable_paginator_bottom select.ui-paginator-rpp-options")
+  if (await rowsPerPage.count() > 0) {
+    const options = await rowsPerPage.locator("option")
+      .evaluateAll(elements => elements.map(element => Number(element.value)))
+    await rowsPerPage.selectOption(String(Math.max(...options)))
+    await page.waitForLoadState("networkidle")
+    await page.waitForTimeout(2000)
+  }
 
   await fse.ensureDir(outputDir)
   const existingFiles = await fse.readdir(outputDir)
@@ -175,7 +199,8 @@ export async function downloadDocuments (
       log(`Saved ${document.date} ${document.subject}`)
       console.info(filePath)
       downloadCounter += 1
-      // Downloading refreshes the table to mark the document as read
+      // Downloading refreshes the table (delayed) to mark the document as read
+      await page.waitForTimeout(2000)
       await page.waitForLoadState("networkidle")
     }
 
