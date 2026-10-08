@@ -2,7 +2,7 @@ import os from "node:os"
 import path from "node:path"
 
 import fse from "fs-extra"
-import { chromium } from "playwright"
+import { chromium, firefox } from "playwright"
 import { temporaryFile } from "tempy"
 
 
@@ -132,11 +132,48 @@ export async function dumpDebugFiles (page, namePrefix = "page-debug") {
 // The system Chrome is used by default.
 // `TRANSITY_BROWSER=chromium` uses Playwright's bundled Chromium instead
 // (system Chrome 154 sometimes crashes with SIGSEGV during downloads).
+// `TRANSITY_BROWSER=firefox` uses Playwright's Firefox
+// (install it with `npx playwright install firefox`),
+// for sites which don't render in Chromium (e.g. the DKB login).
 function systemChannel () {
   if (process.env.TRANSITY_BROWSER === "chromium") {
     throw new Error("Bundled Chromium requested")
   }
   return "chrome"
+}
+
+
+async function launchFirefox (
+  { shallShowBrowser, persistentProfileName, acceptDownloads },
+) {
+  const options = {
+    headless: !shallShowBrowser,
+    acceptDownloads,
+    // Equivalent of Chromium's "AutomationControlled" flag
+    firefoxUserPrefs: { "dom.webdriver.enabled": false },
+  }
+  let browser = null
+  let context = null
+
+  if (persistentProfileName) {
+    // Firefox can't use the Chromium profiles
+    const userDataDir = path.join(
+      os.homedir(), ".cache", "transity", `${persistentProfileName}-firefox`)
+    context = await firefox.launchPersistentContext(userDataDir, options)
+    // Closing the context also closes the browser
+    browser = context
+  }
+  else {
+    const { acceptDownloads: _, ...launchOptions } = options
+    browser = await firefox.launch(launchOptions)
+    context = await browser.newContext({ acceptDownloads })
+  }
+
+  const page = context.pages()[0] ?? await context.newPage()
+  // Leave time for manual 2FA/TAN confirmation during logins
+  page.setDefaultTimeout(120000)
+
+  return { browser, page }
 }
 
 
@@ -160,6 +197,10 @@ export async function launchBrowser (options = {}) {
   // to update selectors after site redesigns
   if (process.env.TRANSITY_DEBUG_PORT) {
     args.push(`--remote-debugging-port=${process.env.TRANSITY_DEBUG_PORT}`)
+  }
+
+  if (process.env.TRANSITY_BROWSER === "firefox") {
+    return launchFirefox({ shallShowBrowser, persistentProfileName, acceptDownloads })
   }
 
   if (persistentProfileName) {
