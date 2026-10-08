@@ -51,6 +51,22 @@ will refuse to start because the assets are `include_bytes!`’d into the binary
 `make build` and `make install` both chain `server-build` first; only plain
 `cargo build` / `cargo install` skip it.
 
+## Downloading bank documents
+
+For emails announcing new documents in an online banking mailbox, run the
+matching script with the target directory. Each one opens a browser window in
+which the user logs in, and prints the paths of the downloaded files.
+
+- HypoVereinsbank ("neue Dokumente in Ihrem digitalen Postfach"):
+  `node scripts/transactions/hypovereinsbank.js documents <dir>
+  [from <YYYY-MM-DD>] [to <YYYY-MM-DD>]`
+  — downloads all unread documents of the period automatically.
+- FNZ Bank / ebase / Finvesto ("neues Dokument … im Online-Banking",
+  from `noreply@online.fnz.de`): `node scripts/documents/fnz.js <dir>`
+  — downloads all unread documents from the "Online-Postkorb".
+  If the announced document isn't among them (it was already read),
+  run it again with `all` to download all documents of the last 12 months.
+
 ## Architecture notes worth knowing up front
 
 - **Domain model** (`src/lib.rs`): `Ledger` → `Entity` → `Account` → `Balance`,

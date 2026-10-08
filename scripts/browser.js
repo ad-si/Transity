@@ -67,13 +67,15 @@ export async function getCredentials (prefix, displayName) {
 // `{body, headers}` of the first response served as an attachment.
 // The request is answered with an empty response, so no browser download
 // happens: Chromium crashes (SIGSEGV) when Playwright handles downloads.
+// Also captures files served in popups (e.g. FNZ Bank's Postkorb).
 export async function captureAttachmentResponse (
   page,
   trigger,
   {timeout = 60000} = {},
 ) {
+  const context = page.context()
   let captured = null
-  await page.route("**/*", async route => {
+  await context.route("**/*", async route => {
     const response = await route.fetch()
     const headers = response.headers()
     const disposition = headers["content-disposition"] || ""
@@ -93,7 +95,7 @@ export async function captureAttachmentResponse (
     }
   }
   finally {
-    await page.unrouteAll({behavior: "ignoreErrors"})
+    await context.unrouteAll({behavior: "ignoreErrors"})
   }
 
   if (!captured) {

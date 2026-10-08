@@ -1,15 +1,38 @@
-import assert from "assert"
+// Prints the total balance of the FNZ Bank (formerly ebase / Finvesto) depot
+// from https://portal.fnz.de
+//
+// Environment: FNZ_USERNAME (Zugangs-ID), FNZ_PASSWORD (PIN)
+// (else prompted for, or manual login)
 
-import inquirer from "inquirer"
+import {pathToFileURL} from "node:url"
 
 import {prettyPrint} from "../helpers.js"
-import {launchBrowser} from "../browser.js"
+import {dumpDebugFiles, getCredentials, launchBrowser} from "../browser.js"
+import {login} from "../documents/fnz.js"
 
 
-const prompt = inquirer.createPromptModule({ output: process.stderr })
 const log = process.env.NODE_DEBUG
   ? console.warn
   : () => {}
+
+
+// The "Gesamtbestand" of all depots on the start page,
+// e.g. `<span class="sum">50.273,<i>93</i> €</span>`
+export async function readBalance (page) {
+  log("Retrieve current balance")
+  const balanceSelector = ".depot-data-head .sum"
+  await page.waitForSelector(balanceSelector, {timeout: 30000})
+  const balance = await page.evaluate(
+    selector => document
+      .querySelector(selector)
+      .textContent
+      .replace(/[€\s]|EUR/g, "")
+      .replace(/\./g, "")
+      .replace(/,/g, "."),
+    balanceSelector,
+  )
+  return balance + " €"
+}
 
 
 async function getBalance (options = {}) {
@@ -20,69 +43,45 @@ async function getBalance (options = {}) {
     shallShowBrowser = true,
   } = options
 
-  assert(username)
-  assert(password)
-
   if (isDevMode) return "1234.56 €"
 
-  const baseUrl = "https://portal.ebase.com"
-  const loginUrl = `${baseUrl}/(e1)/finvesto`
-
-  const {browser, page} = await launchBrowser({shallShowBrowser})
+  const {browser, page} = await launchBrowser({
+    shallShowBrowser,
+    persistentProfileName: "fnz",
+  })
 
   try {
-    log(`Open ${loginUrl}`)
-    await page.goto(loginUrl)
-    await page.waitForSelector("#loginfelder")
-
-
-    log("Log in")
-    await page.fill("#eox_ContentPane_3_depotNrTextBox", username)
-    await page.fill("#eox_ContentPane_3_pinTextBox", password)
-    await page.click("#eox_ContentPane_3_LOGIN")
-    await page.waitForSelector(".tabNavBody")
-
-
-    log("Retrieve current balance")
-    const balance = await page.evaluate(
-      selector => document
-        .querySelector(selector)
-        .textContent
-        .replace(/\./g, "")
-        .replace(/,/g, "."),
-      "#eox_ContentPane_4_VermoegensuebersichtBody1_" +
-        "repeaterDepotsKonten_ctl02_lblBestandGesamt",
-    )
-
-    return balance + " €"
+    await login(page, {username, password})
+    return await readBalance(page)
+  }
+  catch (error) {
+    await dumpDebugFiles(page, "finvesto-debug")
+    throw error
   }
   finally {
     await browser.close()
   }
 }
 
-const promptValues = [
-  {
-    type: "input",
-    name: "username",
-    message: "Finvesto Username:",
-  },
-  {
-    type: "password",
-    name: "password",
-    message: "Finvesto Password:",
-  },
-]
 
-prompt(promptValues)
-  .then(async answers => {
-    try {
-      const balance = await getBalance(answers)
-      prettyPrint("Finvesto", balance)
-      process.exit(0)
-    }
-    catch (error) {
-      console.error(error)
-      process.exit(1)
-    }
-  })
+async function main () {
+  try {
+    const credentials = await getCredentials("FNZ", "FNZ Bank")
+    const balance = await getBalance(credentials)
+    prettyPrint("Finvesto", balance)
+    process.exit(0)
+  }
+  catch (error) {
+    console.error(error)
+    process.exit(1)
+  }
+}
+
+
+// Allows importing the functions, e.g. to test them in a running browser
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
+  main()
+}

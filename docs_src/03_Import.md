@@ -70,7 +70,7 @@ Currently supported accounts for balances:
 - [AWS](https://aws.amazon.com)
 - [DKB](https://dkb.de)
 - [Fidor](https://fidor.de)
-- [Finvesto](https://finvesto.de)
+- [FNZ Bank (formerly ebase / Finvesto)](https://fnz.de)
 - [HypoVereinsbank](https://www.hypovereinsbank.de)
 - [MBS](https://mbs.de)
 - [PayPal](https://paypal.com)
