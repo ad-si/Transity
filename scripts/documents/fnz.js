@@ -59,7 +59,34 @@ export async function login (page, {username, password}) {
 
   log("Wait for the login …")
   await page.waitForSelector("a[href*='services/logout']", {timeout: 600000})
+  await confirmLogin(page)
   await closeAdPopup(page)
+}
+
+
+// After the PIN login, the login must be confirmed ("Login freigeben")
+// with a security factor (e.g. the FNZsecure app).
+// The page already shows the logout link, but everything else
+// redirects back to it until the login is confirmed.
+async function confirmLogin (page) {
+  const scaHeading = page.getByRole("heading", {name: "Login freigeben"})
+  try {
+    await scaHeading.waitFor({timeout: 10000})
+  }
+  catch {
+    return // No confirmation required
+  }
+
+  try {
+    await page.locator("button", {hasText: "Freigabe-Aufforderung senden"})
+      .click({timeout: 15000})
+    log("Sent the confirmation request to the security factor")
+  }
+  catch (error) {
+    log(`Could not request the confirmation (${error.message.split("\n")[0]})`)
+  }
+  log("Please confirm the login (e.g. in the FNZsecure app) …")
+  await scaHeading.waitFor({state: "detached", timeout: 600000})
 }
 
 
