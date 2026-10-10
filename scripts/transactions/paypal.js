@@ -332,6 +332,40 @@ async function downloadStatements (options = {}) {
 }
 
 
+// After the password login PayPal may ask how to confirm it
+// (text message, PayPal app, …). Choose the push notification of the app.
+async function chooseAppConfirmation (page) {
+  const appOption = page
+    .locator("label, button, [role=radio], [role=button], li")
+    .filter({hasText: /PayPal[- ]?App/i})
+    .first()
+
+  try {
+    await appOption.waitFor({state: "visible", timeout: 20000})
+  }
+  catch {
+    if (!page.url().includes("/reports/dlog")) {
+      log("No PayPal app option found for the confirmation")
+      await dumpDebugFiles(page, "paypal-2fa")
+    }
+    return
+  }
+
+  log("Choose confirmation with the PayPal app")
+  await appOption.click()
+  await page.waitForTimeout(1000)
+
+  const submitButton = page
+    .locator("button[type=submit], button")
+    .filter({hasText: /^\s*(Weiter|Next|Continue|Senden|Send)\s*$/i})
+    .first()
+  if (await submitButton.isVisible()) {
+    await submitButton.click()
+  }
+  log("Confirm the login in the PayPal app …")
+}
+
+
 async function getActivity (options = {}) {
   const {
     username,
@@ -419,6 +453,7 @@ async function getActivity (options = {}) {
           await page.waitForSelector("#password:autofill", {timeout: 10000})
         }
         await page.click("#btnLogin", {timeout: 15000})
+        await chooseAppConfirmation(page)
       }
     }
     catch (error) {
