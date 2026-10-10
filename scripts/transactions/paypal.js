@@ -5,8 +5,11 @@
 // Usage:
 //   node paypal.js                Create and download a new report
 //   node paypal.js existing [n]   Download the nth existing report (default 1)
-//   node paypal.js from <date>    Create a report from <date> (YYYY-MM-DD)
-//                                 until today instead of "since last download"
+//   node paypal.js from <date> [to <date>]
+//                                 Create a report from <date> (YYYY-MM-DD)
+//                                 until today (or the "to" date)
+//                                 instead of "since last download".
+//                                 (PayPal rejects too long ranges)
 //   node paypal.js statements [dir]  Download missing monthly statements
 //
 // Environment: PAYPAL_USERNAME, PAYPAL_PASSWORD (else manual login),
@@ -51,6 +54,7 @@ async function createAndDownloadReport (options = {}) {
     filePathTemp,
     existingRowNumber = null,
     startDate = null,
+    endDate = null,
   } = options
 
   try {
@@ -65,11 +69,12 @@ async function createAndDownloadReport (options = {}) {
         const endValue = await page.inputValue("#end")
         const isDayFirst = endValue ===
           `${today.getDate()}/${today.getMonth() + 1}/${today.getFullYear()}`
+        const end = endDate ?? today
         log(`Set date range ${formatFormDate(startDate, isDayFirst)} - ${
-          formatFormDate(today, isDayFirst)}`)
+          formatFormDate(end, isDayFirst)}`)
         for (const [selector, date] of [
           ["#start", startDate],
-          ["#end", today],
+          ["#end", end],
         ]) {
           await page.click(selector)
           await page.keyboard.press("Meta+A")
@@ -333,6 +338,7 @@ async function getActivity (options = {}) {
     password,
     existingRowNumber,
     startDate,
+    endDate,
     statementsDir = null,
     shallShowBrowser = true,
   } = options
@@ -432,6 +438,7 @@ async function getActivity (options = {}) {
       filePathTemp,
       existingRowNumber,
       startDate,
+      endDate,
     })
 
     // Trailing blank lines break the CSV parser of the YAML converter
@@ -452,6 +459,16 @@ async function main () {
   const startDate = process.argv[2] === "from"
     ? new Date(`${process.argv[3]}T00:00:00`)
     : null
+  const endDate = startDate && process.argv[4] === "to"
+    ? new Date(`${process.argv[5]}T00:00:00`)
+    : null
+  for (const date of [startDate, endDate]) {
+    if (date && isNaN(date)) {
+      console.error(`Invalid date in "${process.argv.slice(2).join(" ")}", ` +
+        "expected: from <YYYY-MM-DD> [to <YYYY-MM-DD>]")
+      process.exit(1)
+    }
+  }
   const statementsDir = process.argv[2] === "statements"
     ? process.argv[3] || "."
     : null
@@ -462,6 +479,7 @@ async function main () {
       password: answers.password,
       existingRowNumber,
       startDate,
+      endDate,
       statementsDir,
       shallShowBrowser: true,
     })
