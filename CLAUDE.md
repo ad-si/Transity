@@ -67,6 +67,24 @@ which the user logs in, and prints the paths of the downloaded files.
   If the announced document isn't among them (it was already read),
   run it again with `all` to download all documents of the last 12 months.
 
+Invoices and receipts from vendor portals (`scripts/documents/`,
+usage in each file's header). They remember the login in a browser profile
+and mostly fetch the portal's internal APIs instead of scraping pages:
+
+- `amazon.js` — invoices/credit notes by order id or `year <YYYY>`
+  (`AMAZON_DOMAIN=amazon.co.za`; `AMAZON_PAYMENT_METHODS="<last digits> …"`
+  skips orders other people placed in a shared account)
+- `bahn.js` — Deutsche Bahn invoices by order number or `from <date>`
+- `alditalk.js` — ALDI TALK invoices and top-up confirmations
+- `audimee.js` — Audimee subscription invoices (Stripe billing portal)
+- `caya.js` — scanned letters from the Caya mailbox (`list` to only list)
+- `golem.js` — Golem pur subscription invoices
+- `uber.js` — Uber Eats receipts (incl. tips)
+
+`TRANSITY_PROXY=socks5://127.0.0.1:<port>` routes the browser through a proxy
+(e.g. an `ssh -D` tunnel) for sites that only allow logins from some countries.
+Requests made with `page.request` from a separate CDP connection bypass it.
+
 ## Architecture notes worth knowing up front
 
 - **Domain model** (`src/lib.rs`): `Ledger` → `Entity` → `Account` → `Balance`,

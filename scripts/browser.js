@@ -135,6 +135,16 @@ export async function dumpDebugFiles (page, namePrefix = "page-debug") {
 // `TRANSITY_BROWSER=firefox` uses Playwright's Firefox
 // (install it with `npx playwright install firefox`),
 // for sites which don't render in Chromium (e.g. the DKB login).
+// `TRANSITY_PROXY` routes the browser through a proxy
+// (e.g. "socks5://127.0.0.1:1080" for an `ssh -D 1080 <host>` tunnel),
+// for sites which only allow logins from certain countries.
+function proxyOption () {
+  return process.env.TRANSITY_PROXY
+    ? { proxy: { server: process.env.TRANSITY_PROXY } }
+    : {}
+}
+
+
 function systemChannel () {
   if (process.env.TRANSITY_BROWSER === "chromium") {
     throw new Error("Bundled Chromium requested")
@@ -151,6 +161,7 @@ async function launchFirefox (
     acceptDownloads,
     // Equivalent of Chromium's "AutomationControlled" flag
     firefoxUserPrefs: { "dom.webdriver.enabled": false },
+    ...proxyOption(),
   }
   let browser = null
   let context = null
@@ -210,6 +221,7 @@ export async function launchBrowser (options = {}) {
       headless: !shallShowBrowser,
       acceptDownloads,
       args,
+      ...proxyOption(),
     }
     let context = null
     try {
@@ -230,7 +242,7 @@ export async function launchBrowser (options = {}) {
     return { browser: context, page }
   }
 
-  const launchOptions = { headless: !shallShowBrowser, args }
+  const launchOptions = { headless: !shallShowBrowser, args, ...proxyOption() }
   let browser = null
 
   try {
