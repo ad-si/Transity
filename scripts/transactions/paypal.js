@@ -367,9 +367,17 @@ async function getActivity (options = {}) {
     try {
       await page.waitForTimeout(3000)
 
-      if (username && await page.isVisible("#email")) {
-        log("Enter email")
-        await page.fill("#email", username, {timeout: 30000})
+      if (await page.isVisible("#email")) {
+        if (username) {
+          log("Enter email")
+          await page.fill("#email", username, {timeout: 30000})
+        }
+        else {
+          // Chromium hides autofilled values from the page until the user
+          // interacts with it, but they match `:autofill`
+          log("No username configured, wait for the browser to autofill it")
+          await page.waitForSelector("#email:autofill", {timeout: 10000})
+        }
         await page.click("#btnNext", {timeout: 15000})
         await page.waitForTimeout(3000)
       }
@@ -383,9 +391,6 @@ async function getActivity (options = {}) {
       if (hasPasskeyPrompt) {
         log("Confirm the passkey prompt (Touch ID) in the browser …")
         await page.click("#logIn_start", {timeout: 15000})
-      }
-      else if (!password) {
-        throw new Error("No password configured")
       }
       else {
         // The password field is hidden behind
@@ -405,8 +410,14 @@ async function getActivity (options = {}) {
           await page.waitForSelector("#password", {timeout: 30000})
         }
 
-        log("Enter password")
-        await page.fill("#password", password, {timeout: 30000})
+        if (password) {
+          log("Enter password")
+          await page.fill("#password", password, {timeout: 30000})
+        }
+        else {
+          log("No password configured, wait for the browser to autofill it")
+          await page.waitForSelector("#password:autofill", {timeout: 10000})
+        }
         await page.click("#btnLogin", {timeout: 15000})
       }
     }
