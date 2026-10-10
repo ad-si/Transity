@@ -127,6 +127,11 @@ export async function downloadDocuments (
     {timeout: 30000})
   await page.waitForLoadState("networkidle")
   await closeAdPopup(page)
+  // Fail loudly instead of reporting 0 documents
+  // if the Postkorb didn't load (e.g. redirected to another page)
+  await page.locator(".postbox-table tbody tr")
+    .first()
+    .waitFor({timeout: 30000})
 
   await fse.ensureDir(outputDir)
   let downloadCounter = 0
