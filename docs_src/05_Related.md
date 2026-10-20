@@ -35,6 +35,7 @@ Here are some of the links that are especially relevant for Transity:
 - [DrCr] - Self-contained open-source double-entry bookkeeping framework.
 - [Empower] - Budget planner.
 - [Fidelity] - Financial planning, wealth management, trading, and brokerage.
+- [Finances] - Local-first desktop app to visualize spending from imported CSVs.
 - [FinBodh] - Personal finance app to track, understand, and plan your finances.
 - [FiTui] - Terminal based expense tracker written in Rust
 - [HandsOnMoney] - Simple, private double-entry home finance for iPhone with GnuCash sync.
@@ -55,6 +56,7 @@ Here are some of the links that are especially relevant for Transity:
 [DrCr]: https://yingtongli.me/git/DrCr
 [Empower]: https://empower.me/
 [Fidelity]: https://www.fidelity.com/
+[Finances]: https://thefinances.app/
 [FinBodh]: https://finbodhi.com/landing
 [FiTui]: https://github.com/ayanchavand/FiTui
 [HandsOnMoney]: https://handson.money/
