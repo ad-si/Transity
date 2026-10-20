@@ -6,45 +6,62 @@ Check out the `makefile` for all available tasks.
 By simply running `make` it will also print a short list of them.
 
 
+Prerequisites:
+[Rust], [cargo-leptos], and [Bun] (for the bundled Apache ECharts).
+Building the browser demo and the documentation additionally requires
+[wasm-pack] and [mdBook].
+
+[Rust]: https://www.rust-lang.org/tools/install
+[cargo-leptos]: https://github.com/leptos-rs/cargo-leptos
+[Bun]: https://bun.sh
+[wasm-pack]: https://github.com/rustwasm/wasm-pack
+[mdBook]: https://github.com/rust-lang/mdBook
+
+
 **Additional helpful commands:**
 
 Build and run:
 
 ```shell
-bunx spago run --exec-args 'balance test/test.yaml'
+cargo run -- balance examples/journal.yaml
 ```
 
-Make `transity` executable available in your path:
+Run the web server with live reload:
 
 ```shell
-npm link
+make dev
 ```
 
-All modifications to the source code (after building it)
-will now be available via the linked `transity` executable.
+Install the `transity` executable from the local source:
+
+```shell
+make install
+```
+
+Run the tests:
+
+```shell
+make test
+```
+
+If you intentionally changed the output format,
+review and accept the updated snapshots with `make update-snapshots`.
 
 
 ### Documentation
 
-Generate and serve the Pursuit documentation with:
+Build the documentation website (including the in-browser demo)
+into the `docs` directory:
 
 ```sh
-bunx spago docs
-cd generated-docs/html
-python3 -m http.server 1222
+make docs
 ```
 
-Then open [localhost:1222](http://localhost:1222).
+Generate and open the API documentation of the Rust crate with:
 
-
-Install [markdown-toc] with npm and run following command
-to update the table of contents in the readme:
-
-```shell
-markdown-toc -i readme.md
+```sh
+cargo doc --open
 ```
-
-[markdown-toc]: https://github.com/jonschlinkert/markdown-toc
 
 
 ### XLSX Generation
