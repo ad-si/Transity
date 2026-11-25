@@ -90,15 +90,29 @@ async function confirmLogin (page) {
 }
 
 
-// After the login an advertisement may cover the page
+// After the login an advertisement or a consent request
+// ("Zustimmung erforderlich", which only has "×" and "Zur Zustimmung")
+// may cover the page. Close them without consenting.
 async function closeAdPopup (page) {
-  const closeButton = page.locator(".modal.show button",
-    {hasText: "Schließen"})
-  try {
-    await closeButton.click({timeout: 5000})
-    log("Closed the popup")
+  const modal = page.locator(".modal.show")
+  const closeButton = modal
+    .locator("button")
+    .filter({hasText: /^\s*(Schließen|×)\s*$/})
+    .or(modal.locator(
+      ".close, .btn-close, [aria-label='Close'], [aria-label='Schließen']",
+    ))
+    .first()
+
+  // Several popups may be shown one after another
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await closeButton.click({timeout: 5000})
+      log("Closed a popup")
+    }
+    catch {
+      return // No (further) popup was shown
+    }
   }
-  catch { /* No popup was shown */ }
 }
 
 
