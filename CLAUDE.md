@@ -66,6 +66,12 @@ which the user logs in, and prints the paths of the downloaded files.
   — downloads all unread documents from the "Online-Postkorb".
   If the announced document isn't among them (it was already read),
   run it again with `all` to download all documents of the last 12 months.
+- Versicherungskammer Bayern / VKB ("Kundenportal: Sie haben Post!",
+  from `noreply@vkb.de`): `node scripts/documents/vkb.js <dir>`
+  — downloads all unread documents from the Kundenportal's "Postfach".
+  The user confirms the first download with an SMS code in the portal.
+  If the announced document isn't among them (it was already read),
+  run it again with `all` to download all documents.
 
 Invoices and receipts from vendor portals (`scripts/documents/`,
 usage in each file's header). They remember the login in a browser profile
