@@ -61,6 +61,16 @@ which the user logs in, and prints the paths of the downloaded files.
   `node scripts/transactions/hypovereinsbank.js documents <dir>
   [from <YYYY-MM-DD>] [to <YYYY-MM-DD>]`
   — downloads all unread documents of the period automatically.
+- Mittelbrandenburgische Sparkasse / MBS ("Neue Nachrichten in Ihrem
+  Elektronischen Postfach", from `noreply@sparkasse.de`):
+  `node scripts/transactions/mbs.js documents <dir> [from <YYYY-MM-DD>]`
+  — downloads all documents of any type (statements,
+  "Informationen/Dokumente", …) posted since the date (default: 90 days ago)
+  with the bank's file names. For a notification email use a few days
+  before its date. Login with `MBS_USERNAME`/`MBS_PASSWORD` (also from a
+  `.env` in the working directory, e.g. `~/Feram/finances`) and pushTAN.
+  `mbs.js postbox <dir>` only downloads the account and credit card
+  statements, named for the Feram finances repository.
 - FNZ Bank / ebase / Finvesto ("neues Dokument … im Online-Banking",
   from `noreply@online.fnz.de`): `node scripts/documents/fnz.js <dir>`
   — downloads all unread documents from the "Online-Postkorb".

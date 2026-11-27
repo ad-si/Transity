@@ -1,4 +1,32 @@
+// Downloads data from the online banking of the Mittelbrandenburgische
+// Sparkasse (MBS) or any other Sparkasse (see `SPARKASSE_URL` below).
+//
+// Usage:
+//   node mbs.js
+//   Print the transactions of the last 90 days as YAML
+//
+//   node mbs.js from <YYYY-MM-DD>
+//   Print the raw CSV export (CAMT V2) from the date until today
+//
+//   node mbs.js MT940 [<YYYY-MM>]
+//   Print the MT940 file of the month (default: the previous month)
+//
+//   node mbs.js postbox <dir>
+//   Download the new account and credit card statements
+//   from the electronic postbox as <dir>/<year>/<YYYY-MM>_mbs.pdf
+//   and <dir>/<year>/<YYYY-MM-DD>_credit_card_statement.pdf
+//
+//   node mbs.js documents <dir> [from <YYYY-MM-DD>]
+//   Download all documents of any type (statements,
+//   "Informationen/Dokumente", …) posted to the electronic postbox
+//   since the date (default: 90 days ago) which are not yet in <dir>,
+//   with the names the bank gives them, and print their paths to stdout
+//
+// Environment: MBS_USERNAME, MBS_PASSWORD (else manual login)
+// The login has to be confirmed with pushTAN.
+
 import { execFile } from "node:child_process"
+import path from "node:path"
 import { promisify } from "node:util"
 
 import fse from "fs-extra"
@@ -206,25 +234,127 @@ async function downloadRange (options = {}) {
 }
 
 
-// Extracts the single PDF of a downloaded document archive
+// Extracts the PDFs of a downloaded document archive
+// into a temporary directory and returns their paths
 // (`unzip` is preinstalled on macOS and Linux, so no dependency is needed)
-async function extractSinglePdf (zipPath, targetPath) {
+async function extractPdfs (zipPath) {
   const extractDir = temporaryDirectory()
   await promisify(execFile)("unzip", ["-j", "-q", zipPath, "-d", extractDir])
 
   const pdfNames = (await fse.readdir(extractDir))
     .filter(name => name.toLowerCase().endsWith(".pdf"))
+    .sort()
 
-  if (pdfNames.length !== 1) {
-    throw new Error(
-      `Expected exactly one PDF in ${zipPath}, got ${pdfNames.length}`)
+  if (pdfNames.length === 0) {
+    throw new Error(`No PDF in ${zipPath}`)
   }
 
-  await fse.move(`${extractDir}/${pdfNames[0]}`, targetPath, {overwrite: true})
+  return pdfNames.map(name => `${extractDir}/${name}`)
 }
 
 
-async function downloadPostboxDocuments (options = {}) {
+// Opens the inbox of the electronic postbox with all entries
+// and returns the result of `scan` (an array evaluated in the page).
+// Downloading navigates away and invalidates the per-render link tokens,
+// so this must be called again before every download.
+async function scanPostbox (page, scan) {
+  const log = console.warn
+
+  // Right after a download the inbox may still redirect
+  // to the busy download page, so retry the scan a few times
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await page.goto(
+      `${baseUrl}/de/home/onlinebanking/e_postfach/Posteingang.html`,
+      {timeout: 30000},
+    )
+    await page.waitForTimeout(5000)  // Let the page settle
+
+    // By default the inbox only lists 10 entries of the last few months.
+    // Option values are randomized, so options are picked by their label.
+    for (const label of ["Gesamtzeitraum", "50"]) {
+      const wasChanged = await page.evaluate(optionLabel => {
+        const select = Array
+          .from(document.querySelectorAll("select"))
+          .find(sel => Array
+            .from(sel.options)
+            .some(option => option.textContent.trim() === optionLabel))
+        const option = Array
+          .from(select?.options ?? [])
+          .find(anOption => anOption.textContent.trim() === optionLabel)
+        if (!select || !option || select.value === option.value) {
+          return false
+        }
+        select.value = option.value
+        select.dispatchEvent(new Event("change", {bubbles: true}))
+        return true
+      }, label)
+
+      if (wasChanged) {
+        log(`Set postbox filter to "${label}"`)
+        await page.waitForTimeout(5000)
+      }
+    }
+
+    const entries = await page.evaluate(scan)
+    if (entries.length > 0) {
+      return entries
+    }
+    log(`No documents found on scan attempt ${attempt}, retrying …`)
+
+    // The busy bulk download page keeps the whole session captive
+    // until its "Zurück" link is clicked
+    await page.evaluate(() => {
+      const backLink = Array
+        .from(document.querySelectorAll("a"))
+        .find(anchor => anchor.textContent.trim() === "Zurück")
+      backLink?.click()
+    })
+    await page.waitForTimeout(3000)
+  }
+
+  return []
+}
+
+
+// Clicks the "Herunterladen" link with the `href`
+// and returns the paths of the downloaded PDFs in a temporary directory
+// (named as the bank names them)
+async function downloadPostboxEntry (page, href) {
+  const downloadPromise = page.waitForEvent("download", {timeout: 60000})
+  // Prevent an unhandled rejection from masking errors of the click
+  downloadPromise.catch(() => {})
+  await page.evaluate(anHref => {
+    Array
+      .from(document.querySelectorAll("a"))
+      .find(anchor => anchor.href === anHref)
+      .click()
+  }, href)
+
+  // Documents are usually served as a zip archive
+  // (statements contain one PDF, messages may contain several)
+  const download = await downloadPromise
+  const fileName = path.basename(download.suggestedFilename() || "document")
+  let pdfPaths = null
+  if (fileName.toLowerCase().endsWith(".zip")) {
+    const zipPath = temporaryFile({name: "document.zip"})
+    await download.saveAs(zipPath)
+    pdfPaths = await extractPdfs(zipPath)
+  }
+  else {
+    pdfPaths = [`${temporaryDirectory()}/${fileName}`]
+    await download.saveAs(pdfPaths[0])
+  }
+
+  // The "Dokumente speichern" page blocks the session
+  // until its process is explicitly cancelled
+  await page.click("a.nav-back", {timeout: 15000})
+  await page.waitForTimeout(3000)
+
+  return pdfPaths
+}
+
+
+async function downloadPostboxStatements (options = {}) {
   const { page, outputDir } = options
   const log = console.warn
 
@@ -232,109 +362,54 @@ async function downloadPostboxDocuments (options = {}) {
     log("Go to electronic postbox")
     let downloadCounter = 0
 
-    // Downloading navigates away and invalidates the per-render link tokens,
-    // so re-open the inbox and re-scan the list before every download
     for (;;) {
-      // Right after a download the inbox may still redirect
-      // to the busy download page, so retry the scan a few times
-      let documents = []
-      for (let attempt = 1; attempt <= 3; attempt++) {
-        await page.goto(
-          "https://www.mbs.de/de/home/onlinebanking" +
-            "/e_postfach/Posteingang.html",
-          {timeout: 30000},
-        )
-        await page.waitForTimeout(5000)  // Let the page settle
-
-        // By default the inbox only lists 10 entries of the last few months.
-        // Option values are randomized, so options are picked by their label.
-        for (const label of ["Gesamtzeitraum", "50"]) {
-          const wasChanged = await page.evaluate(optionLabel => {
-            const select = Array
-              .from(document.querySelectorAll("select"))
-              .find(sel => Array
-                .from(sel.options)
-                .some(option => option.textContent.trim() === optionLabel))
-            const option = Array
-              .from(select?.options ?? [])
-              .find(anOption => anOption.textContent.trim() === optionLabel)
-            if (!select || !option || select.value === option.value) {
-              return false
-            }
-            select.value = option.value
-            select.dispatchEvent(new Event("change", {bubbles: true}))
-            return true
-          }, label)
-
-          if (wasChanged) {
-            log(`Set postbox filter to "${label}"`)
-            await page.waitForTimeout(5000)
+      // Associate each "Herunterladen" link
+      // with its "Kontoauszug X/YYYY" row
+      const documents = await scanPostbox(page, () => Array
+        .from(document.querySelectorAll("a"))
+        .filter(anchor => anchor.textContent.trim() === "Herunterladen")
+        .map(anchor => {
+          let container = anchor.parentElement
+          const titlePattern =
+            /(Kontoauszug\s+(\d+)\/(\d{4}))|(Kreditkartenabrechnung.*?(\d{2})\.(\d{2})\.(\d{4}))/
+          while (
+            container &&
+            container.querySelectorAll("a").length < 10 &&
+            !titlePattern.test(container.textContent)
+          ) {
+            container = container.parentElement
           }
-        }
+          const hasUniqueDownloadLink = container
+            ? Array
+              .from(container.querySelectorAll("a"))
+              .filter(anc => anc.textContent.trim() === "Herunterladen")
+              .length === 1
+            : false
+          if (!container || !hasUniqueDownloadLink) {
+            return null
+          }
 
-        // Associate each "Herunterladen" link
-        // with its "Kontoauszug X/YYYY" row
-        documents = await page.evaluate(() => Array
-          .from(document.querySelectorAll("a"))
-          .filter(anchor => anchor.textContent.trim() === "Herunterladen")
-          .map(anchor => {
-            let container = anchor.parentElement
-            const titlePattern =
-              /(Kontoauszug\s+(\d+)\/(\d{4}))|(Kreditkartenabrechnung.*?(\d{2})\.(\d{2})\.(\d{4}))/
-            while (
-              container &&
-              container.querySelectorAll("a").length < 10 &&
-              !titlePattern.test(container.textContent)
-            ) {
-              container = container.parentElement
+          const text = container.textContent.replace(/\s+/g, " ")
+          const statement = text.match(/Kontoauszug\s+(\d+)\/(\d{4})/)
+          if (statement) {
+            return {
+              name: `${statement[2]}-${
+                statement[1].padStart(2, "0")}_mbs`,
+              href: anchor.href,
             }
-            const hasUniqueDownloadLink = container
-              ? Array
-                .from(container.querySelectorAll("a"))
-                .filter(anc => anc.textContent.trim() === "Herunterladen")
-                .length === 1
-              : false
-            if (!container || !hasUniqueDownloadLink) {
-              return null
+          }
+
+          const card = text.match(
+            /Kreditkartenabrechnung.*?(\d{2})\.(\d{2})\.(\d{4})/)
+          return card
+            ? {
+              name: `${card[3]}-${card[2]}-${card[1]}_credit_card_statement`,
+              href: anchor.href,
             }
-
-            const text = container.textContent.replace(/\s+/g, " ")
-            const statement = text.match(/Kontoauszug\s+(\d+)\/(\d{4})/)
-            if (statement) {
-              return {
-                name: `${statement[2]}-${
-                  statement[1].padStart(2, "0")}_mbs`,
-                href: anchor.href,
-              }
-            }
-
-            const card = text.match(
-              /Kreditkartenabrechnung.*?(\d{2})\.(\d{2})\.(\d{4})/)
-            return card
-              ? {
-                name: `${card[3]}-${card[2]}-${card[1]}_credit_card_statement`,
-                href: anchor.href,
-              }
-              : null
-          })
-          .filter(Boolean),
-        )
-
-        if (documents.length > 0) {
-          break
-        }
-        log(`No documents found on scan attempt ${attempt}, retrying …`)
-
-        // The busy bulk download page keeps the whole session captive
-        // until its "Zurück" link is clicked
-        await page.evaluate(() => {
-          const backLink = Array
-            .from(document.querySelectorAll("a"))
-            .find(anchor => anchor.textContent.trim() === "Zurück")
-          backLink?.click()
+            : null
         })
-        await page.waitForTimeout(3000)
-      }
+        .filter(Boolean),
+      )
 
       if (documents.length === 0) {
         throw new Error("No statement documents were found in the postbox")
@@ -344,24 +419,6 @@ async function downloadPostboxDocuments (options = {}) {
         log(`Found documents: ${documents.map(doc => doc.name).join(", ")}`)
 
         if (process.env.NODE_DEBUG) {
-          const stats = await page.evaluate(() => ({
-            downloadLinks: Array
-              .from(document.querySelectorAll("a"))
-              .filter(anchor => anchor.textContent.trim() === "Herunterladen")
-              .length,
-            pageSize: Array
-              .from(document.querySelectorAll("select"))
-              .find(sel => Array
-                .from(sel.options)
-                .some(option => option.textContent.trim() === "50"))
-              ?.value,
-            titles: Array
-              .from(document.querySelectorAll("h3, h4, .mkp-headline-05"))
-              .map(element => element.textContent.replace(/\s+/g, " ").trim())
-              .filter(Boolean)
-              .slice(0, 60),
-          }))
-          log(JSON.stringify(stats, null, 2))
           await dumpDebugFiles(page, "postbox-debug")
         }
       }
@@ -393,26 +450,12 @@ async function downloadPostboxDocuments (options = {}) {
       const filePath = toFilePath(nextDoc)
       await fse.ensureDir(`${outputDir}/${nextDoc.name.slice(0, 4)}`)
       log(`Download ${filePath}`)
-      const downloadPromise = page.waitForEvent("download", {timeout: 60000})
-      // Prevent an unhandled rejection from masking errors of the click
-      downloadPromise.catch(() => {})
-      await page.evaluate(href => {
-        Array
-          .from(document.querySelectorAll("a"))
-          .find(anchor => anchor.href === href)
-          .click()
-      }, nextDoc.href)
-
-      // Documents are served as a zip archive containing a single PDF
-      const download = await downloadPromise
-      const zipPath = temporaryFile({name: "statement.zip"})
-      await download.saveAs(zipPath)
-      await extractSinglePdf(zipPath, filePath)
-
-      // The "Dokumente speichern" page blocks the session
-      // until its process is explicitly cancelled
-      await page.click("a.nav-back", {timeout: 15000})
-      await page.waitForTimeout(3000)
+      const pdfPaths = await downloadPostboxEntry(page, nextDoc.href)
+      if (pdfPaths.length !== 1) {
+        throw new Error(`Expected exactly one PDF for ${nextDoc.name}, ` +
+          `got ${pdfPaths.length}`)
+      }
+      await fse.move(pdfPaths[0], filePath, {overwrite: true})
 
       downloadCounter += 1
     }
@@ -421,6 +464,111 @@ async function downloadPostboxDocuments (options = {}) {
   }
   catch (error) {
     await dumpDebugFiles(page, "umsaetze-debug")
+    throw error
+  }
+}
+
+
+// Every entry of the postbox (statements, "Informationen/Dokumente", …)
+// as `{text, date, href}`, with `date` as "YYYY-MM-DD" (null if not found)
+function scanPostboxEntries () {
+  const isDownloadLink = anchor =>
+    anchor.textContent.trim() === "Herunterladen"
+  const countDownloadLinks = element => Array
+    .from(element.querySelectorAll("a"))
+    .filter(isDownloadLink)
+    .length
+
+  return Array
+    .from(document.querySelectorAll("a"))
+    .filter(isDownloadLink)
+    .map(anchor => {
+      // The entry is the largest element with only this download link
+      let entry = anchor
+      while (
+        entry.parentElement &&
+        countDownloadLinks(entry.parentElement) === 1
+      ) {
+        entry = entry.parentElement
+      }
+      const text = entry.textContent.replace(/\s+/g, " ").trim()
+      // The first date of an entry is the date it was posted
+      const date = text.match(/(\d{2})\.(\d{2})\.(\d{4})/)
+      return {
+        text,
+        date: date ? `${date[3]}-${date[2]}-${date[1]}` : null,
+        href: anchor.href,
+      }
+    })
+}
+
+
+// Downloads all documents posted since `startDate` (YYYY-MM-DD)
+// which are not yet in `outputDir`, with the names the bank gives them,
+// and prints their paths to stdout
+async function downloadPostboxDocuments (options = {}) {
+  const { page, outputDir, startDate } = options
+  const log = console.warn
+
+  try {
+    log("Go to electronic postbox")
+    await fse.ensureDir(outputDir)
+
+    // Entries are identified by their text (and position among entries
+    // with the same text), as the links change on each scan
+    const handledKeys = new Set()
+    let downloadCounter = 0
+
+    for (;;) {
+      const occurrences = new Map()
+      const entries = (await scanPostbox(page, scanPostboxEntries))
+        .map(entry => {
+          const occurrence = (occurrences.get(entry.text) ?? 0) + 1
+          occurrences.set(entry.text, occurrence)
+          return {...entry, key: `${entry.text}#${occurrence}`}
+        })
+      if (handledKeys.size === 0) {
+        if (entries.length === 0) {
+          throw new Error("No documents were found in the postbox")
+        }
+        if (process.env.NODE_DEBUG) {
+          await dumpDebugFiles(page, "postbox-debug")
+        }
+        for (const entry of entries) {
+          if (!entry.date) {
+            log(`No date found in entry "${entry.text}"`)
+          }
+        }
+      }
+
+      const nextEntry = entries.find(entry =>
+        !handledKeys.has(entry.key) &&
+        (!entry.date || entry.date >= startDate))
+      if (!nextEntry) {
+        break
+      }
+      handledKeys.add(nextEntry.key)
+      if (!nextEntry.date) {
+        continue
+      }
+
+      log(`Download "${nextEntry.text}"`)
+      for (const pdfPath of await downloadPostboxEntry(page, nextEntry.href)) {
+        const filePath = path.join(outputDir, path.basename(pdfPath))
+        if (await fse.pathExists(filePath)) {
+          log(`Skip ${filePath} (already downloaded)`)
+          continue
+        }
+        await fse.move(pdfPath, filePath)
+        console.info(filePath)
+        downloadCounter += 1
+      }
+    }
+
+    log(`Downloaded ${downloadCounter} new documents`)
+  }
+  catch (error) {
+    await dumpDebugFiles(page, "postbox-debug")
     throw error
   }
 }
@@ -490,9 +638,27 @@ async function getTransactions (options = {}) {
 
 
     if (process.argv[2] === "postbox") {
+      await downloadPostboxStatements({
+        page,
+        outputDir: process.argv[3] || ".",
+      })
+      return
+    }
+
+    if (process.argv[2] === "documents") {
+      const fromIndex = process.argv.indexOf("from")
+      const fromDate = fromIndex > -1
+        ? process.argv[fromIndex + 1]
+        : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate ?? "")) {
+        throw new Error(`Date must be formatted as YYYY-MM-DD: "${fromDate}"`)
+      }
       await downloadPostboxDocuments({
         page,
         outputDir: process.argv[3] || ".",
+        startDate: fromDate,
       })
       return
     }
